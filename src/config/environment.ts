@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 export const EnvironmentSchema = z.object({
+  PORT: z
+    .string()
+    .transform((port) => parseInt(port))
+    .optional(),
+
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
 
