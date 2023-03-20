@@ -1,5 +1,11 @@
 # Nostr Relay NestJS
 
+A Nostr relay implemented using the NestJS framework
+
+## Quick Start
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
+
 ## Support NIPs
 
 - [x] NIP-01: Basic protocol flow description
@@ -20,7 +26,6 @@
 ## ToDo
 
 - [ ] test
-- [ ] quick start
 - [ ] support multi nodes
 
 ## Structure
