@@ -2,11 +2,13 @@
 
 A Nostr relay implemented using the NestJS framework
 
+Try here: wss://nostr-relay.app
+
 ## Quick Start
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
 
-## Support NIPs
+## Features
 
 - [x] NIP-01: Basic protocol flow description
 - [x] NIP-02: Contact List and Petnames
@@ -27,7 +29,14 @@ A Nostr relay implemented using the NestJS framework
 
 - [ ] test
 - [ ] support multi nodes
+- [ ] support for Bitcoin Lightning Network payments
 
 ## Structure
 
-![structure](./resources/nostr-relay-nestjs-structure.png)
+![structure light](https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png#gh-light-mode-only)
+
+![structure dark](https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-dark.png#gh-dark-mode-only)
+
+## License
+
+This project is MIT licensed.
