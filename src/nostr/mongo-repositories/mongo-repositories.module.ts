@@ -8,9 +8,9 @@ import { MongoEventRepository } from './mongo-event.repository';
   imports: [
     MongooseModule.forRootAsync({
       useFactory: () => {
-        const uri = process.env.MONGO_URI;
+        const uri = process.env.MONGO_URL;
         if (!uri) {
-          throw new Error('missing MONGO_URI');
+          throw new Error('missing MONGO_URL');
         }
         return { uri };
       },
