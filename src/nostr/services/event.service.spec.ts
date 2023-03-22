@@ -1,0 +1,152 @@
+import { createMock } from '@golevelup/ts-jest';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { from, lastValueFrom } from 'rxjs';
+import {
+  DELETION_EVENT,
+  EPHEMERAL_EVENT,
+  EVENT_IDS_TO_BE_DELETED,
+  REGULAR_EVENT,
+  REPLACEABLE_EVENT,
+} from '../../../seeds';
+import { EventRepository } from '../repositories';
+import { createCommandResultResponse } from '../utils';
+import { EventService } from './event.service';
+
+describe('EventService', () => {
+  describe('handleEvent', () => {
+    let eventEmitter: EventEmitter2, emitMock: jest.Mock;
+
+    beforeEach(() => {
+      emitMock = jest.fn();
+      eventEmitter = createMock<EventEmitter2>({
+        emit: emitMock,
+      });
+    });
+
+    describe('handleRegularEvent', () => {
+      it('should save the event successfully', async () => {
+        const eventRepository = createMock<EventRepository>({
+          create: async () => true,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
+          createCommandResultResponse(REGULAR_EVENT.id, true),
+        );
+        expect(emitMock).toBeCalled();
+      });
+
+      it('should return duplicate when the event already exists', async () => {
+        const eventRepository = createMock<EventRepository>({
+          create: async () => false,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
+          createCommandResultResponse(
+            REGULAR_EVENT.id,
+            true,
+            'duplicate: the event already exists',
+          ),
+        );
+        expect(emitMock).not.toBeCalled();
+      });
+    });
+
+    describe('handleReplaceableEvent', () => {
+      it('should replace the event successfully', async () => {
+        const eventRepository = createMock<EventRepository>({
+          upsert: async () => true,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await expect(
+          eventService.handleEvent(REPLACEABLE_EVENT),
+        ).resolves.toEqual(
+          createCommandResultResponse(REPLACEABLE_EVENT.id, true),
+        );
+        expect(emitMock).toBeCalled();
+      });
+
+      it('should return duplicate when the event already exists', async () => {
+        const eventRepository = createMock<EventRepository>({
+          upsert: async () => false,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await expect(
+          eventService.handleEvent(REPLACEABLE_EVENT),
+        ).resolves.toEqual(
+          createCommandResultResponse(
+            REPLACEABLE_EVENT.id,
+            true,
+            'duplicate: the event already exists',
+          ),
+        );
+        expect(emitMock).not.toBeCalled();
+      });
+    });
+
+    describe('handleEphemeralEvent', () => {
+      it('should broadcast the event', async () => {
+        const eventRepository = createMock<EventRepository>();
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await expect(
+          eventService.handleEvent(EPHEMERAL_EVENT),
+        ).resolves.toBeUndefined();
+        expect(emitMock).toBeCalled();
+      });
+    });
+
+    describe('handleDeletionEvent', () => {
+      it('should delete specified events', async () => {
+        const deleteMock = jest.fn();
+        const eventRepository = createMock<EventRepository>({
+          create: async () => true,
+          delete: deleteMock,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await eventService.handleEvent(DELETION_EVENT);
+        expect(emitMock).toBeCalled();
+        expect(deleteMock).toHaveBeenCalledWith(
+          DELETION_EVENT.pubkey,
+          EVENT_IDS_TO_BE_DELETED,
+        );
+      });
+    });
+
+    describe('findByFilters', () => {
+      it('should return an observable object when EventRepository.findByFilters return an observable object', async () => {
+        const events = [REGULAR_EVENT, REPLACEABLE_EVENT, DELETION_EVENT];
+        const eventRepository = createMock<EventRepository>({
+          findByFilters: async () => from(events),
+        });
+
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        const event$ = await eventService.findByFilters({} as any);
+
+        let i = 0;
+        event$.subscribe((event) => expect(event).toEqual(events[i++]));
+        await lastValueFrom(event$);
+      });
+
+      it('should return an observable object when EventRepository.findByFilters return an array', async () => {
+        const events = [REGULAR_EVENT, REPLACEABLE_EVENT, DELETION_EVENT];
+        const eventRepository = createMock<EventRepository>({
+          findByFilters: async () => events,
+        });
+
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        const event$ = await eventService.findByFilters({} as any);
+
+        let i = 0;
+        event$.subscribe((event) => expect(event).toEqual(events[i++]));
+        await lastValueFrom(event$);
+      });
+    });
+  });
+});

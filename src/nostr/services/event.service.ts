@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { union } from 'lodash';
 import { from, Observable } from 'rxjs';
 import { E_EVENT_BROADCAST, TagName } from '../constants';
 import { EventRepository } from '../repositories';
@@ -44,13 +45,15 @@ export class EventService {
   }
 
   private async handleDeletionEvent(event: Event) {
-    const eventIds = event.tags
-      .filter(
-        ([tagName, tagValue]) =>
-          tagName === TagName.EVENT &&
-          EventIdSchema.safeParse(tagValue).success,
-      )
-      .map(([, tagValue]) => tagValue);
+    const eventIds = union(
+      event.tags
+        .filter(
+          ([tagName, tagValue]) =>
+            tagName === TagName.EVENT &&
+            EventIdSchema.safeParse(tagValue).success,
+        )
+        .map(([, tagValue]) => tagValue),
+    );
 
     if (eventIds.length > 0) {
       await this.eventRepository.delete(event.pubkey, eventIds);
