@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { union } from 'lodash';
-import { from, Observable } from 'rxjs';
+import { difference, union } from 'lodash';
 import { E_EVENT_BROADCAST, TagName } from '../constants';
 import { EventRepository } from '../repositories';
 import { Event, EventIdSchema, Filter } from '../schemas';
@@ -20,12 +19,8 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async findByFilters(filters: Filter[]): Promise<Observable<Event>> {
-    const events = await this.eventRepository.findByFilters(filters);
-    if (events instanceof Observable) {
-      return events;
-    }
-    return from(events);
+  async findByFilters(filters: Filter[]): Promise<Event[]> {
+    return await this.eventRepository.find(filters);
   }
 
   async handleEvent(event: Event): Promise<void | CommandResultResponse> {
@@ -56,7 +51,16 @@ export class EventService {
     );
 
     if (eventIds.length > 0) {
-      await this.eventRepository.delete(event.pubkey, eventIds);
+      const events = await this.eventRepository.find({ ids: eventIds });
+      const eventIdsNotBelongToPubkey = events
+        .filter((event) => event.pubkey !== event.pubkey)
+        .map((event) => event.id);
+
+      const eventIdsToBeDeleted = difference(
+        eventIds,
+        eventIdsNotBelongToPubkey,
+      );
+      await this.eventRepository.delete(event.pubkey, eventIdsToBeDeleted);
     }
 
     return this.handleRegularEvent(event);
@@ -65,7 +69,19 @@ export class EventService {
   private async handleReplaceableEvent(
     event: Event,
   ): Promise<CommandResultResponse> {
-    const success = await this.eventRepository.upsert(event);
+    const oldEvent = await this.eventRepository.findOne({
+      kinds: [event.kind],
+      authors: [event.pubkey],
+    });
+    if (oldEvent && oldEvent.created_at > event.created_at) {
+      return createCommandResultResponse(
+        event.id,
+        true,
+        'duplicate: the event already exists',
+      );
+    }
+
+    const success = await this.eventRepository.replace(event, oldEvent?.id);
     if (success) {
       this.broadcastEvent(event);
     }
@@ -87,13 +103,11 @@ export class EventService {
 
     if (success) {
       this.broadcastEvent(event);
-      return createCommandResultResponse(event.id, true);
     }
-
     return createCommandResultResponse(
       event.id,
       true,
-      'duplicate: the event already exists',
+      success ? '' : 'duplicate: the event already exists',
     );
   }
 

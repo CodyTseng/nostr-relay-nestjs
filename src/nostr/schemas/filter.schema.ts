@@ -14,7 +14,7 @@ const NormalFilterSchema = z
     kinds: z.array(EventKindSchema).max(20),
     since: TimestampInSecSchema,
     until: TimestampInSecSchema,
-    limit: z.number().int().min(0).max(5000),
+    limit: z.number().int().min(0).max(1000),
   })
   .partial();
 

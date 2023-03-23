@@ -1,8 +1,6 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { difference } from 'lodash';
 import { MongoServerError } from 'mongodb';
 import { FilterQuery, Model } from 'mongoose';
-import { from, map, Observable } from 'rxjs';
 import { EventKind, EVENT_ID_LENGTH, PUBKEY_LENGTH } from '../constants';
 import { EventRepository } from '../repositories/event.repository';
 import { Event, EventId, Filter, Pubkey } from '../schemas';
@@ -26,101 +24,37 @@ export class MongoEventRepository extends EventRepository {
     }
   }
 
-  async findByFilters(filters: Filter[]): Promise<Observable<Event>> {
-    const filterQueries = filters.map((filter) => {
-      const filterQuery: FilterQuery<DbEventDocument> = {};
+  async find(filters: Filter[] | Filter): Promise<Event[]> {
+    const dbEvents = await this.eventModel
+      .find(this.buildMongoFilter(filters))
+      .limit(this.getLimitFrom(filters))
+      .sort({ created_at: -1 });
 
-      if (filter.ids) {
-        filterQuery._id = {
-          $in: filter.ids.map((id) =>
-            id.length === EVENT_ID_LENGTH ? id : new RegExp(`^${id}`),
-          ),
-        };
-      }
-
-      if (filter.authors) {
-        filterQuery.pubkey = {
-          $in: filter.authors.map((author) =>
-            author.length === PUBKEY_LENGTH ? author : new RegExp(`^${author}`),
-          ),
-        };
-      }
-
-      if (filter.kinds) {
-        filterQuery.kind = { $in: filter.kinds };
-      }
-
-      if (filter.since) {
-        filterQuery.created_at = { $gte: filter.since };
-      }
-
-      if (filter.until) {
-        if (!filterQuery.created_at) {
-          filterQuery.created_at = {};
-        }
-        filterQuery.created_at.$lte = filter.until;
-      }
-
-      const tagFilters = Object.keys(filter)
-        .filter(isGenericTagName)
-        .map((key) => ({
-          tags: {
-            $elemMatch: {
-              '0': key[1],
-              '1': { $in: filter[key] },
-            },
-          },
-        }));
-      if (tagFilters.length > 0) {
-        filterQuery.$and = tagFilters;
-      }
-
-      return filterQuery;
-    });
-
-    const cursor = this.eventModel
-      .find(
-        filterQueries.length === 1
-          ? { ...filterQueries[0], deleted: false }
-          : { $or: filterQueries, deleted: false },
-      )
-      .limit(Math.max(...filters.map((filter) => filter.limit ?? 1000)))
-      .sort({ created_at: -1 })
-      .cursor({ batchSize: 100 });
-
-    return from(cursor).pipe(map(this.toEvent));
+    return dbEvents.map(this.toEvent);
   }
 
-  async upsert(event: Event): Promise<boolean> {
-    const oldDbEvent = await this.eventModel.findOne({
-      kind: event.kind,
-      pubkey: event.pubkey,
-      deleted: false,
-    });
-    if (oldDbEvent && oldDbEvent.created_at > event.created_at) {
+  async findOne(filters: Filter[] | Filter): Promise<Event | null> {
+    const dbEvent = await this.eventModel
+      .findOne(this.buildMongoFilter(filters))
+      .sort({ created_at: -1 });
+    return dbEvent ? this.toEvent(dbEvent) : null;
+  }
+
+  async replace(event: Event, oldEventId?: EventId): Promise<boolean> {
+    if (event.id === oldEventId) {
       return false;
     }
-
-    if (oldDbEvent) {
-      await this.eventModel.deleteOne({ _id: oldDbEvent.id });
+    if (oldEventId) {
+      await this.eventModel.deleteOne({ _id: oldEventId });
     }
 
     return this.create(event);
   }
 
   async delete(pubkey: Pubkey, eventIds: EventId[]): Promise<number> {
-    const dbEvents = await this.eventModel
-      .find({ _id: { $in: eventIds }, deleted: false })
-      .select({ _id: 1, pubkey: 1 });
-
-    const eventIdsNotBelongToPubkey = dbEvents
-      .filter((dbEvent) => dbEvent.pubkey !== pubkey)
-      .map((dbEvent) => dbEvent._id);
-    const eventIdsToBeDeleted = difference(eventIds, eventIdsNotBelongToPubkey);
-
     const { modifiedCount } = await this.eventModel.updateMany(
       {
-        _id: { $in: eventIdsToBeDeleted },
+        _id: { $in: eventIds },
         deleted: false,
       },
       {
@@ -159,5 +93,72 @@ export class MongoEventRepository extends EventRepository {
       sig: event.sig,
       deleted: false,
     };
+  }
+
+  private buildMongoFilter(filters: Filter[] | Filter) {
+    const filterQueries = (Array.isArray(filters) ? filters : [filters]).map(
+      (filter) => {
+        const filterQuery: FilterQuery<DbEventDocument> = {};
+
+        if (filter.ids) {
+          filterQuery._id = {
+            $in: filter.ids.map((id) =>
+              id.length === EVENT_ID_LENGTH ? id : new RegExp(`^${id}`),
+            ),
+          };
+        }
+
+        if (filter.authors) {
+          filterQuery.pubkey = {
+            $in: filter.authors.map((author) =>
+              author.length === PUBKEY_LENGTH
+                ? author
+                : new RegExp(`^${author}`),
+            ),
+          };
+        }
+
+        if (filter.kinds) {
+          filterQuery.kind = { $in: filter.kinds };
+        }
+
+        if (filter.since) {
+          filterQuery.created_at = { $gte: filter.since };
+        }
+
+        if (filter.until) {
+          if (!filterQuery.created_at) {
+            filterQuery.created_at = {};
+          }
+          filterQuery.created_at.$lte = filter.until;
+        }
+
+        const tagFilters = Object.keys(filter)
+          .filter(isGenericTagName)
+          .map((key) => ({
+            tags: {
+              $elemMatch: {
+                '0': key[1],
+                '1': { $in: filter[key] },
+              },
+            },
+          }));
+        if (tagFilters.length > 0) {
+          filterQuery.$and = tagFilters;
+        }
+
+        return filterQuery;
+      },
+    );
+
+    return filterQueries.length === 1
+      ? { ...filterQueries[0], deleted: false }
+      : { $or: filterQueries, deleted: false };
+  }
+
+  private getLimitFrom(filters: Filter[] | Filter) {
+    return Array.isArray(filters)
+      ? Math.max(...filters.map((filter) => filter.limit ?? 100))
+      : filters.limit ?? 100;
   }
 }

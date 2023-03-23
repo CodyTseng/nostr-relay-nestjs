@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { concatWith, map, of } from 'rxjs';
+import { concatWith, from, map, of } from 'rxjs';
 import { WebSocket } from 'ws';
 import { WsExceptionFilter } from '../common/filters';
 import { ZodValidationPipe } from '../common/pipes';
@@ -68,11 +68,13 @@ export class NostrGateway implements OnGatewayDisconnect {
       return await this.eventService.handleEvent(event);
     } catch (error) {
       this.logger.error(error);
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'error: ' + error.message,
-      );
+      if (error instanceof Error) {
+        return createCommandResultResponse(
+          event.id,
+          false,
+          'error: ' + error.message,
+        );
+      }
     }
   }
 
@@ -84,8 +86,8 @@ export class NostrGateway implements OnGatewayDisconnect {
   ) {
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
-    const event$ = await this.eventService.findByFilters(filters);
-    return event$.pipe(
+    const events = await this.eventService.findByFilters(filters);
+    return from(events).pipe(
       map((event) => createEventResponse(subscriptionId, event)),
       concatWith(of(createEndOfStoredEventResponse(subscriptionId))),
     );
