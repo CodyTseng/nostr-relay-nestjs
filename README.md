@@ -22,7 +22,7 @@ Try here: wss://nostr-relay.app
 - [ ] NIP-22: Event created_at Limits
 - [ ] NIP-26: Delegated Event Signing
 - [x] NIP-28: Public Chat
-- [ ] NIP-33: Parameterized Replaceable Events
+- [x] NIP-33: Parameterized Replaceable Events
 - [ ] NIP-40: Expiration Timestamp
 
 ## ToDo

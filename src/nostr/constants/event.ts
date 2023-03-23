@@ -22,9 +22,13 @@ export enum EventKind {
   // Ephemeral Events
   EPHEMERAL_FIRST = 20000,
   EPHEMERAL_LAST = 29999,
+  // Parameterized Replaceable Events
+  PARAMETERIZED_REPLACEABLE_FIRST = 30000,
+  PARAMETERIZED_REPLACEABLE_LAST = 39999,
 }
 
 export enum TagName {
   EVENT = 'e',
   PUBKEY = 'p',
+  D = 'd',
 }

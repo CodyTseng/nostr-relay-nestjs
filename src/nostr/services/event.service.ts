@@ -7,8 +7,10 @@ import { Event, EventIdSchema, Filter } from '../schemas';
 import {
   CommandResultResponse,
   createCommandResultResponse,
+  extractDTagValueFromEvent,
   isDeletionEvent,
   isEphemeralEvent,
+  isParameterizedReplaceableEvent,
   isReplaceableEvent,
 } from '../utils';
 
@@ -34,6 +36,10 @@ export class EventService {
 
     if (isDeletionEvent(event)) {
       return this.handleDeletionEvent(event);
+    }
+
+    if (isParameterizedReplaceableEvent(event)) {
+      return this.handleParameterizedReplaceableEvent(event);
     }
 
     return this.handleRegularEvent(event);
@@ -70,26 +76,20 @@ export class EventService {
     event: Event,
   ): Promise<CommandResultResponse> {
     const oldEvent = await this.eventRepository.findOne({
-      kinds: [event.kind],
       authors: [event.pubkey],
+      kinds: [event.kind],
     });
-    if (oldEvent && oldEvent.created_at > event.created_at) {
-      return createCommandResultResponse(
-        event.id,
-        true,
-        'duplicate: the event already exists',
-      );
-    }
+    return this.replaceEvent(event, oldEvent);
+  }
 
-    const success = await this.eventRepository.replace(event, oldEvent?.id);
-    if (success) {
-      this.broadcastEvent(event);
-    }
-    return createCommandResultResponse(
-      event.id,
-      true,
-      success ? '' : 'duplicate: the event already exists',
-    );
+  private async handleParameterizedReplaceableEvent(event: Event) {
+    const dTagValue = extractDTagValueFromEvent(event);
+    const oldEvent = await this.eventRepository.findOne({
+      authors: [event.pubkey],
+      kinds: [event.kind],
+      dTagValues: [dTagValue],
+    });
+    return await this.replaceEvent(event, oldEvent);
   }
 
   private handleEphemeralEvent(event: Event): void {
@@ -101,6 +101,29 @@ export class EventService {
   ): Promise<CommandResultResponse> {
     const success = await this.eventRepository.create(event);
 
+    if (success) {
+      this.broadcastEvent(event);
+    }
+    return createCommandResultResponse(
+      event.id,
+      true,
+      success ? '' : 'duplicate: the event already exists',
+    );
+  }
+
+  private async replaceEvent(
+    event: Event,
+    oldEvent: Event | null,
+  ): Promise<CommandResultResponse> {
+    if (oldEvent && oldEvent.created_at > event.created_at) {
+      return createCommandResultResponse(
+        event.id,
+        true,
+        'duplicate: the event already exists',
+      );
+    }
+
+    const success = await this.eventRepository.replace(event, oldEvent?.id);
     if (success) {
       this.broadcastEvent(event);
     }

@@ -4,6 +4,7 @@ import {
   DELETION_EVENT,
   EPHEMERAL_EVENT,
   EVENT_IDS_TO_BE_DELETED,
+  PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../../seeds';
@@ -108,6 +109,23 @@ describe('EventService', () => {
           ),
         );
         expect(emitMock).not.toBeCalled();
+      });
+    });
+
+    describe('handleParameterizedReplaceableEvent', () => {
+      it('should replace the event successfully', async () => {
+        const eventRepository = createMock<EventRepository>({
+          findOne: async () => null,
+          replace: async () => true,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await expect(
+          eventService.handleEvent(PARAMETERIZED_REPLACEABLE_EVENT),
+        ).resolves.toEqual(
+          createCommandResultResponse(PARAMETERIZED_REPLACEABLE_EVENT.id, true),
+        );
+        expect(emitMock).toBeCalled();
       });
     });
 

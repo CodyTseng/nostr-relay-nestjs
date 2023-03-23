@@ -48,3 +48,17 @@ export const EVENT_IDS_TO_BE_DELETED = [
   '1c7c87a5e52e6c4e94a6c018920f31f256db83f8560b26a493f059caaf730f56',
   '9cca98e4f6814e4efacec09d04f32dadeaba2cda9c492e63372fa171ca31012d',
 ];
+
+export const PARAMETERIZED_REPLACEABLE_EVENT = {
+  id: '3af892aeb1dee9a711891d03d31f27ed11fb97fc965e5586022dfde254ada8ac',
+  pubkey: '43fa6380631860e67ba87677872c42b3a74482b04d07ca9b1dd70d1a4e6775ef',
+  created_at: 1679582827,
+  kind: 30000,
+  tags: [
+    ['d', 'test'],
+    ['p', '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0'],
+    ['p', 'bd338e052dacfe55ff6d8cca8624df6ec9293ff3dc6c6f1dbf4b2388e9fb20fa'],
+  ],
+  content: '',
+  sig: 'f652c9a5b5750cdde39a593a0e74507fcceb4a2fd38de02ad5c843515b1b22ee2d577a723db840f2d8f93913a73ff23fcd6ceb9f4eb62c8f523b0e56a228b88e',
+};

@@ -26,6 +26,9 @@ export class DbEvent {
   @Prop({ required: true })
   sig: string;
 
+  @Prop({})
+  dTagValue?: string;
+
   @Prop({ default: false })
   deleted: boolean;
 }

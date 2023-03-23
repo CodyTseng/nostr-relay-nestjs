@@ -2,9 +2,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { MongoServerError } from 'mongodb';
 import { FilterQuery, Model } from 'mongoose';
 import { EventKind, EVENT_ID_LENGTH, PUBKEY_LENGTH } from '../constants';
-import { EventRepository } from '../repositories/event.repository';
-import { Event, EventId, Filter, Pubkey } from '../schemas';
-import { isGenericTagName } from '../utils';
+import {
+  EventRepository,
+  EventRepositoryFilter,
+} from '../repositories/event.repository';
+import { Event, EventId, Pubkey } from '../schemas';
+import {
+  extractDTagValueFromEvent,
+  isGenericTagName,
+  isParameterizedReplaceableEvent,
+} from '../utils';
 import { DbEvent, DbEventDocument } from './db-event.schema';
 
 export class MongoEventRepository extends EventRepository {
@@ -24,7 +31,9 @@ export class MongoEventRepository extends EventRepository {
     }
   }
 
-  async find(filters: Filter[] | Filter): Promise<Event[]> {
+  async find(
+    filters: EventRepositoryFilter[] | EventRepositoryFilter,
+  ): Promise<Event[]> {
     const dbEvents = await this.eventModel
       .find(this.buildMongoFilter(filters))
       .limit(this.getLimitFrom(filters))
@@ -33,7 +42,9 @@ export class MongoEventRepository extends EventRepository {
     return dbEvents.map(this.toEvent);
   }
 
-  async findOne(filters: Filter[] | Filter): Promise<Event | null> {
+  async findOne(
+    filters: EventRepositoryFilter[] | EventRepositoryFilter,
+  ): Promise<Event | null> {
     const dbEvent = await this.eventModel
       .findOne(this.buildMongoFilter(filters))
       .sort({ created_at: -1 });
@@ -83,7 +94,7 @@ export class MongoEventRepository extends EventRepository {
   }
 
   private toDbEvent(event: Event): DbEvent {
-    return {
+    const dbEvent: DbEvent = {
       _id: event.id,
       pubkey: event.pubkey,
       created_at: event.created_at,
@@ -93,14 +104,20 @@ export class MongoEventRepository extends EventRepository {
       sig: event.sig,
       deleted: false,
     };
+    if (isParameterizedReplaceableEvent(event)) {
+      dbEvent.dTagValue = extractDTagValueFromEvent(event);
+    }
+    return dbEvent;
   }
 
-  private buildMongoFilter(filters: Filter[] | Filter) {
+  private buildMongoFilter(
+    filters: EventRepositoryFilter[] | EventRepositoryFilter,
+  ) {
     const filterQueries = (Array.isArray(filters) ? filters : [filters]).map(
       (filter) => {
         const filterQuery: FilterQuery<DbEventDocument> = {};
 
-        if (filter.ids) {
+        if (filter.ids?.length) {
           filterQuery._id = {
             $in: filter.ids.map((id) =>
               id.length === EVENT_ID_LENGTH ? id : new RegExp(`^${id}`),
@@ -108,7 +125,7 @@ export class MongoEventRepository extends EventRepository {
           };
         }
 
-        if (filter.authors) {
+        if (filter.authors?.length) {
           filterQuery.pubkey = {
             $in: filter.authors.map((author) =>
               author.length === PUBKEY_LENGTH
@@ -118,7 +135,7 @@ export class MongoEventRepository extends EventRepository {
           };
         }
 
-        if (filter.kinds) {
+        if (filter.kinds?.length) {
           filterQuery.kind = { $in: filter.kinds };
         }
 
@@ -147,6 +164,10 @@ export class MongoEventRepository extends EventRepository {
           filterQuery.$and = tagFilters;
         }
 
+        if (filter.dTagValues?.length) {
+          filterQuery.dTagValue = { $in: filter.dTagValues };
+        }
+
         return filterQuery;
       },
     );
@@ -156,7 +177,9 @@ export class MongoEventRepository extends EventRepository {
       : { $or: filterQueries, deleted: false };
   }
 
-  private getLimitFrom(filters: Filter[] | Filter) {
+  private getLimitFrom(
+    filters: EventRepositoryFilter[] | EventRepositoryFilter,
+  ) {
     return Array.isArray(filters)
       ? Math.max(...filters.map((filter) => filter.limit ?? 100))
       : filters.limit ?? 100;
