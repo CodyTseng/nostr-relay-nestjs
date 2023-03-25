@@ -62,3 +62,13 @@ export const PARAMETERIZED_REPLACEABLE_EVENT = {
   content: '',
   sig: 'f652c9a5b5750cdde39a593a0e74507fcceb4a2fd38de02ad5c843515b1b22ee2d577a723db840f2d8f93913a73ff23fcd6ceb9f4eb62c8f523b0e56a228b88e',
 };
+
+export const CAUSE_ERROR_EVENT = {
+  id: '7e8b1ecd5e1bd8e49e0a1f7b350b289ad4553c35e570e44c6a11d727ade74b19',
+  pubkey: '601ac81a5bbd42cec83d8564ab6b1b145e61dd95689b11b6a67d37bf420c6268',
+  created_at: 1679744985,
+  kind: 1,
+  tags: [],
+  content: 'error',
+  sig: '2a4ed22c281140cbb530833df12f36edb5bd9330d0fad48f149c0fee849288c54385c1cca3983dd70af4a89401c8236562239ba360cc4544bbb31fac4ff117af',
+};
