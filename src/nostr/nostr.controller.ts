@@ -8,7 +8,7 @@ export class NostrController {
   constructor(private readonly configService: ConfigService<Config, true>) {}
 
   @Get()
-  async root(@Req() req: Request, @Res() res: Response) {
+  root(@Req() req: Request, @Res() res: Response) {
     if (req.headers.accept === 'application/nostr+json') {
       const relayInfoDoc = this.configService.get('relayInfoDoc', {
         infer: true,
