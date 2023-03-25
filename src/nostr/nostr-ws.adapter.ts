@@ -26,7 +26,9 @@ export class NostrWsAdapter extends WsAdapter {
       }
       return transform(messageHandler.callback(data));
     } catch (error) {
-      return transform(createNoticeResponse((error as Error).message));
+      return transform(
+        createNoticeResponse('error: ' + (error as Error).message),
+      );
     }
   }
 }
