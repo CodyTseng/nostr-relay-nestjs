@@ -1,43 +1,47 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { WebSocket } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import { E_EVENT_BROADCAST } from '../constants';
 import { Event, Filter, SubscriptionId } from '../schemas';
 import { createEventResponse, isEventMatchingFilter } from '../utils';
 
 @Injectable()
 export class SubscriptionService {
-  private readonly subscriptionsMap = new Map<
+  private readonly subscriptionsMap = new WeakMap<
     WebSocket,
     Map<SubscriptionId, Filter[]>
   >();
+  private server?: WebSocketServer;
 
   constructor(
     @InjectPinoLogger(SubscriptionService.name)
     private readonly logger: PinoLogger,
   ) {}
 
+  setServer(server: WebSocketServer) {
+    this.server = server;
+  }
+
   subscribe(
     client: WebSocket,
     subscriptionId: SubscriptionId,
     filters: Filter[],
   ) {
-    let subscriptions = this.subscriptionsMap.get(client);
+    const subscriptions = this.subscriptionsMap.get(client);
     if (!subscriptions) {
-      subscriptions = new Map();
+      this.subscriptionsMap.set(client, new Map([[subscriptionId, filters]]));
+      return;
     }
     subscriptions.set(subscriptionId, filters);
-    return this.subscriptionsMap.set(client, subscriptions);
   }
 
   unSubscribe(client: WebSocket, subscriptionId: SubscriptionId) {
     const subscriptions = this.subscriptionsMap.get(client);
     if (!subscriptions) {
-      return;
+      return false;
     }
-    subscriptions.delete(subscriptionId);
-    return this.subscriptionsMap.set(client, subscriptions);
+    return subscriptions.delete(subscriptionId);
   }
 
   clear(client: WebSocket) {
@@ -47,11 +51,18 @@ export class SubscriptionService {
   @OnEvent(E_EVENT_BROADCAST, { async: true })
   broadcast(event: Event) {
     try {
-      this.subscriptionsMap.forEach((clientSubscriptions, client) => {
+      if (!this.server) {
+        throw new Error('WebSocketServer not found');
+      }
+      this.server.clients.forEach((client) => {
         if (client.readyState !== WebSocket.OPEN) {
           return;
         }
-        clientSubscriptions.forEach((filters, subscriptionId) => {
+        const subscriptions = this.subscriptionsMap.get(client);
+        if (!subscriptions) {
+          return;
+        }
+        subscriptions.forEach((filters, subscriptionId) => {
           if (!filters.some((filter) => isEventMatchingFilter(event, filter))) {
             return;
           }

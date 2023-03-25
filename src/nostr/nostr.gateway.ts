@@ -3,12 +3,13 @@ import {
   ConnectedSocket,
   MessageBody,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { concatWith, from, map, of } from 'rxjs';
-import { WebSocket } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import { WsExceptionFilter } from '../common/filters';
 import { ZodValidationPipe } from '../common/pipes';
 import { MessageType } from './constants';
@@ -32,13 +33,17 @@ import {
 
 @WebSocketGateway()
 @UseFilters(WsExceptionFilter)
-export class NostrGateway implements OnGatewayDisconnect {
+export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   constructor(
     @InjectPinoLogger(NostrGateway.name)
     private readonly logger: PinoLogger,
     private readonly subscriptionService: SubscriptionService,
     private readonly eventService: EventService,
   ) {}
+
+  afterInit(server: WebSocketServer) {
+    this.subscriptionService.setServer(server);
+  }
 
   handleDisconnect(client: WebSocket) {
     this.subscriptionService.clear(client);
