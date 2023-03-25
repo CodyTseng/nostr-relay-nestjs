@@ -15,12 +15,12 @@ import { EventService } from './event.service';
 
 describe('EventService', () => {
   describe('handleEvent', () => {
-    let eventEmitter: EventEmitter2, emitMock: jest.Mock;
+    let eventEmitter: EventEmitter2, mockEmit: jest.Mock;
 
     beforeEach(() => {
-      emitMock = jest.fn();
+      mockEmit = jest.fn();
       eventEmitter = createMock<EventEmitter2>({
-        emit: emitMock,
+        emit: mockEmit,
       });
     });
 
@@ -34,7 +34,7 @@ describe('EventService', () => {
         await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
           createCommandResultResponse(REGULAR_EVENT.id, true),
         );
-        expect(emitMock).toBeCalled();
+        expect(mockEmit).toBeCalled();
       });
 
       it('should return duplicate when the event already exists', async () => {
@@ -50,7 +50,7 @@ describe('EventService', () => {
             'duplicate: the event already exists',
           ),
         );
-        expect(emitMock).not.toBeCalled();
+        expect(mockEmit).not.toBeCalled();
       });
     });
 
@@ -67,7 +67,7 @@ describe('EventService', () => {
         ).resolves.toEqual(
           createCommandResultResponse(REPLACEABLE_EVENT.id, true),
         );
-        expect(emitMock).toBeCalled();
+        expect(mockEmit).toBeCalled();
       });
 
       it('should return duplicate when the event already exists', async () => {
@@ -86,7 +86,7 @@ describe('EventService', () => {
             'duplicate: the event already exists',
           ),
         );
-        expect(emitMock).not.toBeCalled();
+        expect(mockEmit).not.toBeCalled();
       });
 
       it('should return duplicate when the event older than a similar event that already exists', async () => {
@@ -108,7 +108,7 @@ describe('EventService', () => {
             'duplicate: the event already exists',
           ),
         );
-        expect(emitMock).not.toBeCalled();
+        expect(mockEmit).not.toBeCalled();
       });
     });
 
@@ -125,7 +125,7 @@ describe('EventService', () => {
         ).resolves.toEqual(
           createCommandResultResponse(PARAMETERIZED_REPLACEABLE_EVENT.id, true),
         );
-        expect(emitMock).toBeCalled();
+        expect(mockEmit).toBeCalled();
       });
     });
 
@@ -137,46 +137,46 @@ describe('EventService', () => {
         await expect(
           eventService.handleEvent(EPHEMERAL_EVENT),
         ).resolves.toBeUndefined();
-        expect(emitMock).toBeCalled();
+        expect(mockEmit).toBeCalled();
       });
     });
 
     describe('handleDeletionEvent', () => {
       it('should delete specified events', async () => {
-        const deleteMock = jest.fn();
+        const mockDelete = jest.fn();
         const eventRepository = createMock<EventRepository>({
           find: async () =>
             EVENT_IDS_TO_BE_DELETED.map(
               (id) => ({ id, pubkey: DELETION_EVENT.pubkey } as Event),
             ),
           create: async () => true,
-          delete: deleteMock,
+          delete: mockDelete,
         });
         const eventService = new EventService(eventRepository, eventEmitter);
 
         await eventService.handleEvent(DELETION_EVENT);
-        expect(emitMock).toBeCalled();
-        expect(deleteMock).toHaveBeenCalledWith(
+        expect(mockEmit).toBeCalled();
+        expect(mockDelete).toHaveBeenCalledWith(
           DELETION_EVENT.pubkey,
           EVENT_IDS_TO_BE_DELETED,
         );
       });
 
       it('should ignore events with different pubkey', async () => {
-        const deleteMock = jest.fn();
+        const mockDelete = jest.fn();
         const eventRepository = createMock<EventRepository>({
           find: async () =>
             EVENT_IDS_TO_BE_DELETED.map(
               (id) => ({ id, pubkey: 'fake-pubkey' } as Event),
             ),
           create: async () => true,
-          delete: deleteMock,
+          delete: mockDelete,
         });
         const eventService = new EventService(eventRepository, eventEmitter);
 
         await eventService.handleEvent(DELETION_EVENT);
-        expect(emitMock).toBeCalled();
-        expect(deleteMock).toHaveBeenCalledWith(DELETION_EVENT.pubkey, []);
+        expect(mockEmit).toBeCalled();
+        expect(mockDelete).toHaveBeenCalledWith(DELETION_EVENT.pubkey, []);
       });
     });
 

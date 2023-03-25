@@ -61,15 +61,15 @@ describe('SubscriptionService', () => {
 
   describe('broadcast', () => {
     it('should broadcast successfully', () => {
-      const clientASendMock = jest.fn();
-      const clientBSendMock = jest.fn();
+      const mockClientASend = jest.fn();
+      const mockClientBSend = jest.fn();
       const clientA = createMock<WebSocket>({
         readyState: WebSocket.OPEN,
-        send: clientASendMock,
+        send: mockClientASend,
       });
       const clientB = createMock<WebSocket>({
         readyState: WebSocket.OPEN,
-        send: clientBSendMock,
+        send: mockClientBSend,
       });
       const clientC = createMock<WebSocket>({
         readyState: WebSocket.OPEN,
@@ -87,15 +87,15 @@ describe('SubscriptionService', () => {
       subscriptionService.subscribe(clientB, subscriptionId, filters);
       subscriptionService.broadcast(REGULAR_EVENT);
 
-      expect(clientASendMock).toBeCalledTimes(1);
-      expect(clientBSendMock).toBeCalledTimes(1);
+      expect(mockClientASend).toBeCalledTimes(1);
+      expect(mockClientBSend).toBeCalledTimes(1);
     });
 
     it('should not send when the readyState of client is not OPEN', () => {
-      const clientSendMock = jest.fn();
+      const mockClientSend = jest.fn();
       const client = createMock<WebSocket>({
         readyState: WebSocket.CLOSED,
-        send: clientSendMock,
+        send: mockClientSend,
       });
       const subscriptionId = 'test';
       const filters: Filter[] = [{ kinds: [1] }];
@@ -106,14 +106,14 @@ describe('SubscriptionService', () => {
       subscriptionService.subscribe(client, subscriptionId, filters);
       subscriptionService.broadcast(REGULAR_EVENT);
 
-      expect(clientSendMock).not.toBeCalled();
+      expect(mockClientSend).not.toBeCalled();
     });
 
     it('should not send when the event not match', () => {
-      const clientSendMock = jest.fn();
+      const mockClientSend = jest.fn();
       const client = createMock<WebSocket>({
         readyState: WebSocket.OPEN,
-        send: clientSendMock,
+        send: mockClientSend,
       });
       const subscriptionId = 'test';
       const filters: Filter[] = [{ kinds: [2] }];
@@ -124,18 +124,18 @@ describe('SubscriptionService', () => {
       subscriptionService.subscribe(client, subscriptionId, filters);
       subscriptionService.broadcast(REGULAR_EVENT);
 
-      expect(clientSendMock).not.toBeCalled();
+      expect(mockClientSend).not.toBeCalled();
     });
 
     it('should log error when the WebSocketServer not found', () => {
-      const loggerErrorMock = jest.fn();
+      const mockErrorLog = jest.fn();
       (subscriptionService as any).logger = createMock<PinoLogger>({
-        error: loggerErrorMock,
+        error: mockErrorLog,
       });
 
       subscriptionService.broadcast(REGULAR_EVENT);
 
-      expect(loggerErrorMock).toBeCalledWith(
+      expect(mockErrorLog).toBeCalledWith(
         new Error('WebSocketServer not found'),
       );
     });
