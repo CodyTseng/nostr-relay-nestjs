@@ -161,6 +161,23 @@ describe('EventService', () => {
           EVENT_IDS_TO_BE_DELETED,
         );
       });
+
+      it('should ignore events with different pubkey', async () => {
+        const deleteMock = jest.fn();
+        const eventRepository = createMock<EventRepository>({
+          find: async () =>
+            EVENT_IDS_TO_BE_DELETED.map(
+              (id) => ({ id, pubkey: 'fake-pubkey' } as Event),
+            ),
+          create: async () => true,
+          delete: deleteMock,
+        });
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        await eventService.handleEvent(DELETION_EVENT);
+        expect(emitMock).toBeCalled();
+        expect(deleteMock).toHaveBeenCalledWith(DELETION_EVENT.pubkey, []);
+      });
     });
 
     describe('findByFilters', () => {
