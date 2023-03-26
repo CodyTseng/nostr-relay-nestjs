@@ -1,22 +1,33 @@
 export const REGULAR_EVENT = {
-  id: 'e5055648849a5eb964a9cd9a43a375ea8082a54167e2913ba0654e79fd611990',
-  pubkey: 'e439e14accbb5bd6b615a5d3b18bc135fb525f4f594946b72ebe8fa1ec2e5d9a',
-  created_at: 1679496449,
+  id: 'f2c611fb04e2586703ccc13a6ddcbfe7ac5026ace1e0cf2ab79337b3ff73ac70',
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  created_at: 1679816105,
   kind: 1,
   tags: [],
   content: 'hello world!',
-  sig: '16d63a9143a86e4eadce11c1d6e371e2c695ae212432346a7039a096f067d0e6d60b9191dde95b6f0354b43851b06e6203f5637289db6f5d75a7b48058061426',
+  sig: 'fa6418a8a9cc2ed336fad1ee971c5e352ad81f2fb642121705eb2a2053a410f6addb225e3684d6aa3a20f6b24731cc6f25fe191f7e937c6d580fe684df41ad8a',
 };
 
 export const REPLACEABLE_EVENT = {
-  id: '1fb2161b27b2fba2ed3dc1b4131357994888bd68a6a4dc60ddb148ce6dcbaf0d',
-  pubkey: 'e439e14accbb5bd6b615a5d3b18bc135fb525f4f594946b72ebe8fa1ec2e5d9a',
-  created_at: 1679496449,
+  id: '475511d5d231fd0209ff1f03ec74695b05fef16b33206efe15280c69b953e769',
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  created_at: 1679816038,
   kind: 0,
   tags: [],
   content:
     '{"display_name":"Cody Tseng","website":"","name":"cody","about":"","lud06":""}',
-  sig: '55844eac40161bbef079ab38da02dcaff9d64ed498fbb15ea8b349fb1dcb428f1144f5747abfdb180dd3f5ac98ff3b6c47428ca36113da73d0a1943a9a712232',
+  sig: '825a5e943b11ed85210cfcfef1894f51459391d7e531a502e4a1c53c2b6a523409063a4b2b15c226f3a0dd44dab93dea20aea2c46cac3464decb4ed617013d27',
+};
+
+export const REPLACEABLE_EVENT_NEW = {
+  id: '50e1264bcca1e12ccd56e99e4b99d755aa993d5fb420489e25ecfa2cebb0f4da',
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  created_at: 1679816105,
+  kind: 0,
+  tags: [],
+  content:
+    '{"display_name":"Cody Tseng","website":"","name":"cody","about":"","lud06":""}',
+  sig: 'f94af45f6539a78480f96ca71e3ac55a29967f654c30f2ad5dd968fdb4f54cde6a0c0ce0741f9f89785dbf8afd4c377ffc4a9bb38eb1f02fb7e30c6781a138dc',
 };
 
 export const EPHEMERAL_EVENT = {
