@@ -1,5 +1,7 @@
 # Nostr Relay NestJS
 
+[![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs)
+
 A Nostr relay implemented using the NestJS framework
 
 Try here: wss://nostr-relay.app
