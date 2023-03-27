@@ -34,7 +34,7 @@ function loggerModuleFactory(configService: ConfigService<Config, true>) {
       options: { destination: path.join(dir, 'common.log') },
     });
   }
-  targets.push({ level, target: 'pino-pretty', options: {} });
+  targets.push({ level, target: 'pino/file', options: { destination: 1 } });
   return {
     pinoHttp: {
       transport: {
