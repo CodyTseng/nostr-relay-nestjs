@@ -1,6 +1,7 @@
 import { createMock } from '@golevelup/ts-jest';
 import { PinoLogger } from 'nestjs-pino';
 import { lastValueFrom } from 'rxjs';
+import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT,
   REGULAR_EVENT,
@@ -21,22 +22,35 @@ import {
 describe('NostrGateway', () => {
   const ERROR_MSG = 'test';
   const FIND_EVENTS = [REGULAR_EVENT, REPLACEABLE_EVENT];
-  const mockLogger = createMock<PinoLogger>();
-  const mockSubscriptionService = createMock<SubscriptionService>();
-  const mockEventService = createMock<EventService>({
-    handleEvent: async (event: Event) => {
-      if (event.id === CAUSE_ERROR_EVENT.id) {
-        throw new Error(ERROR_MSG);
-      }
-      return createCommandResultResponse(event.id, true);
-    },
-    findByFilters: async () => FIND_EVENTS,
+
+  let nostrGateway: NostrGateway;
+  let mockSubscriptionServiceSetServer: jest.Mock;
+  let mockSubscriptionServiceClear: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const mockLogger = createMock<PinoLogger>();
+    mockSubscriptionServiceSetServer = jest.fn();
+    mockSubscriptionServiceClear = jest.fn();
+    const mockSubscriptionService = createMock<SubscriptionService>({
+      setServer: mockSubscriptionServiceSetServer,
+      clear: mockSubscriptionServiceClear,
+    });
+    const mockEventService = createMock<EventService>({
+      handleEvent: async (event: Event) => {
+        if (event.id === CAUSE_ERROR_EVENT.id) {
+          throw new Error(ERROR_MSG);
+        }
+        return createCommandResultResponse(event.id, true);
+      },
+      findByFilters: async () => FIND_EVENTS,
+    });
+    nostrGateway = new NostrGateway(
+      mockLogger,
+      mockSubscriptionService,
+      mockEventService,
+    );
   });
-  const nostrGateway = new NostrGateway(
-    mockLogger,
-    mockSubscriptionService,
-    mockEventService,
-  );
 
   describe('EVENT', () => {
     it('should handle event successfully', async () => {
@@ -105,6 +119,22 @@ describe('NostrGateway', () => {
       expect(() =>
         nostrGateway.close({} as any, [subscriptionId]),
       ).not.toThrowError();
+    });
+  });
+
+  describe('Hooks', () => {
+    it('should set server to subscriptionService after init', () => {
+      const mockWebSocketServer = createMock<WebSocketServer>();
+      nostrGateway.afterInit(mockWebSocketServer);
+      expect(mockSubscriptionServiceSetServer).toBeCalledWith(
+        mockWebSocketServer,
+      );
+    });
+
+    it('should clear all subscriptions of the client when it disconnects', () => {
+      const mockClient = createMock<WebSocket>();
+      nostrGateway.handleDisconnect(mockClient);
+      expect(mockSubscriptionServiceClear).toBeCalledWith(mockClient);
     });
   });
 });
