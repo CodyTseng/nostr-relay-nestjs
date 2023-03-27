@@ -1,6 +1,6 @@
 # Nostr Relay NestJS
 
-[![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs)
+[![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master)
 
 A Nostr relay implemented using the NestJS framework
 
