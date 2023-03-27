@@ -4,14 +4,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { LoggerModule } from 'nestjs-pino';
 import * as path from 'path';
 import { TransportTargetOptions } from 'pino';
-import { Config, config, validateEnvironment } from './config';
+import { Config, config } from './config';
 import { NostrModule } from './nostr/nostr.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       load: [config],
-      validate: validateEnvironment,
       cache: true,
       isGlobal: true,
     }),

@@ -1,9 +1,9 @@
-import { Environment } from './environment';
+import { validateEnvironment } from './environment';
 import { loggerConfig } from './logger.config';
 import { relayInfoDocConfig } from './relay-info-doc.config';
 
 export function config() {
-  const env = process.env as Environment;
+  const env = validateEnvironment(process.env);
   return {
     port: env.PORT ?? 3000,
     relayInfoDoc: relayInfoDocConfig(env),
