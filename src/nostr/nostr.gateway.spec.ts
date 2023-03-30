@@ -1,9 +1,12 @@
 import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
+import { get } from 'lodash';
 import { PinoLogger } from 'nestjs-pino';
 import { lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT,
+  FUTURE_REGULAR_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../seeds';
@@ -22,6 +25,9 @@ import {
 describe('NostrGateway', () => {
   const ERROR_MSG = 'test';
   const FIND_EVENTS = [REGULAR_EVENT, REPLACEABLE_EVENT];
+  const CONFIG = {
+    limit: { createdAt: { upper: 60 } },
+  };
 
   let nostrGateway: NostrGateway;
   let mockSubscriptionServiceSetServer: jest.Mock;
@@ -32,6 +38,9 @@ describe('NostrGateway', () => {
     const mockLogger = createMock<PinoLogger>();
     mockSubscriptionServiceSetServer = jest.fn();
     mockSubscriptionServiceClear = jest.fn();
+    const mockConfigService = createMock<ConfigService>({
+      get: (path) => get(CONFIG, path),
+    });
     const mockSubscriptionService = createMock<SubscriptionService>({
       setServer: mockSubscriptionServiceSetServer,
       clear: mockSubscriptionServiceClear,
@@ -49,6 +58,7 @@ describe('NostrGateway', () => {
       mockLogger,
       mockSubscriptionService,
       mockEventService,
+      mockConfigService,
     );
   });
 
@@ -89,6 +99,16 @@ describe('NostrGateway', () => {
           CAUSE_ERROR_EVENT.id,
           false,
           'error: ' + ERROR_MSG,
+        ),
+      );
+    });
+
+    it('should return invalid created_at', async () => {
+      await expect(nostrGateway.event([FUTURE_REGULAR_EVENT])).resolves.toEqual(
+        createCommandResultResponse(
+          FUTURE_REGULAR_EVENT.id,
+          false,
+          'invalid: created_at must not be later than 60 seconds from the current time.',
         ),
       );
     });
