@@ -11,11 +11,13 @@ describe('config', () => {
         PORT: '3000',
         LOG_DIR: 'logs',
         LOG_LEVEL: 'info',
+        EVENT_CREATED_AT_UPPER_LIMIT: '60',
       }),
     ).toEqual({
       PORT: 3000,
       LOG_DIR: 'logs',
       LOG_LEVEL: 'info',
+      EVENT_CREATED_AT_UPPER_LIMIT: 60,
     });
   });
 });

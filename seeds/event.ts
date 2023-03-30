@@ -83,3 +83,13 @@ export const CAUSE_ERROR_EVENT = {
   content: 'error',
   sig: '2a4ed22c281140cbb530833df12f36edb5bd9330d0fad48f149c0fee849288c54385c1cca3983dd70af4a89401c8236562239ba360cc4544bbb31fac4ff117af',
 };
+
+export const FUTURE_REGULAR_EVENT = {
+  id: 'ef45d21874ed132de29274d5ebafce77292120aa1599b33d6123c9e6feb20ac7',
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  created_at: 43019827200,
+  kind: 1,
+  tags: [],
+  content: 'from the future',
+  sig: 'f0e28991ac6a69e0b0993a4073e5750f37206f2b40f7c9b5d9d091558e481e4121d755a99bef8c5b5d170114e80f5f6da63ffc8270688abacea1d7b467b934c2',
+};

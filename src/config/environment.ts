@@ -18,6 +18,11 @@ export const EnvironmentSchema = z.object({
     .optional(),
   RELAY_CONTACT: z.string().optional(),
   RELAY_SUPPORTED_NIPS: z.array(z.number().int()).optional(),
+
+  EVENT_CREATED_AT_UPPER_LIMIT: z
+    .string()
+    .transform((upperLimit) => parseInt(upperLimit))
+    .optional(),
 });
 export type Environment = z.infer<typeof EnvironmentSchema>;
 

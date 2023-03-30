@@ -1,4 +1,5 @@
 import { UseFilters } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,11 +8,13 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
+import { isNil } from 'lodash';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { concatWith, from, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import { WsExceptionFilter } from '../common/filters';
 import { ZodValidationPipe } from '../common/pipes';
+import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
 import {
   CloseMessage,
@@ -34,12 +37,19 @@ import {
 @WebSocketGateway()
 @UseFilters(WsExceptionFilter)
 export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
+  private readonly limitConfig: LimitConfig;
+
   constructor(
     @InjectPinoLogger(NostrGateway.name)
     private readonly logger: PinoLogger,
     private readonly subscriptionService: SubscriptionService,
     private readonly eventService: EventService,
-  ) {}
+    configService: ConfigService<Config, true>,
+  ) {
+    this.limitConfig = configService.get('limit', {
+      infer: true,
+    });
+  }
 
   afterInit(server: WebSocketServer) {
     this.subscriptionService.setServer(server);
@@ -66,6 +76,16 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
         event.id,
         false,
         'invalid: signature is wrong',
+      );
+    }
+    if (
+      !isNil(this.limitConfig.createdAt.upper) &&
+      event.created_at - Date.now() / 1000 > this.limitConfig.createdAt.upper
+    ) {
+      return createCommandResultResponse(
+        event.id,
+        false,
+        `invalid: created_at must not be later than ${this.limitConfig.createdAt.upper} seconds from the current time.`,
       );
     }
 

@@ -21,7 +21,7 @@ Try here: wss://nostr-relay.app
 - [x] NIP-15: End of Stored Events Notice
 - [x] NIP-16: Event Treatment
 - [x] NIP-20: Command Results
-- [ ] NIP-22: Event created_at Limits
+- [x] NIP-22: Event created_at Limits (Restrict future events only)
 - [ ] NIP-26: Delegated Event Signing
 - [x] NIP-28: Public Chat
 - [x] NIP-33: Parameterized Replaceable Events
