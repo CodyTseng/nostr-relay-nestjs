@@ -1,6 +1,6 @@
 # Nostr Relay NestJS
 
-[![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master)
+<a href='https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master'><img src='https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master' alt='Coverage Status' /></a>
 
 A Nostr relay implemented using the NestJS framework
 
