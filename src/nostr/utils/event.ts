@@ -62,7 +62,10 @@ export async function isEventValid(
     return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time.`;
   }
 
-  if (options.eventIdMinLeadingZeroBits) {
+  if (
+    options.eventIdMinLeadingZeroBits &&
+    options.eventIdMinLeadingZeroBits > 0
+  ) {
     const pow = countLeadingZeroBits(e.id);
     if (pow < options.eventIdMinLeadingZeroBits) {
       return `pow: difficulty ${pow} is less than ${options.eventIdMinLeadingZeroBits}`;
