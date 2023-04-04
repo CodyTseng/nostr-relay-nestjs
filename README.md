@@ -17,7 +17,7 @@ Try here: wss://nostr-relay.app
 - [x] NIP-09: Event Deletion
 - [x] NIP-11: Relay Information Document
 - [x] NIP-12: Generic Tag Queries
-- [ ] NIP-13: Proof of Work
+- [x] NIP-13: Proof of Work
 - [x] NIP-15: End of Stored Events Notice
 - [x] NIP-16: Event Treatment
 - [x] NIP-20: Command Results

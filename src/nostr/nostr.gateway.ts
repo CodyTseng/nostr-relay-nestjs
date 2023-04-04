@@ -8,7 +8,6 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { isNil } from 'lodash';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { concatWith, from, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
@@ -30,8 +29,7 @@ import {
   createCommandResultResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
-  isEventIdValid,
-  isEventSigValid,
+  isEventValid,
 } from './utils';
 
 @WebSocketGateway()
@@ -64,29 +62,12 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
     @MessageBody(new ZodValidationPipe(EventMessageSchema))
     [event]: EventMessage,
   ) {
-    if (!(await isEventIdValid(event))) {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'invalid: id is wrong',
-      );
-    }
-    if (!(await isEventSigValid(event))) {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'invalid: signature is wrong',
-      );
-    }
-    if (
-      !isNil(this.limitConfig.createdAt.upper) &&
-      event.created_at - Date.now() / 1000 > this.limitConfig.createdAt.upper
-    ) {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        `invalid: created_at must not be later than ${this.limitConfig.createdAt.upper} seconds from the current time.`,
-      );
+    const validateErrorMsg = await isEventValid(event, {
+      createdAtUpperLimit: this.limitConfig.createdAt.upper,
+      eventIdMinLeadingZeroBits: this.limitConfig.eventId.minLeadingZeroBits,
+    });
+    if (validateErrorMsg) {
+      return createCommandResultResponse(event.id, false, validateErrorMsg);
     }
 
     try {

@@ -7,6 +7,9 @@ import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT,
   FUTURE_REGULAR_EVENT,
+  LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT,
+  LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT,
+  LEADING_8_ZERO_BITS_REGULAR_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../seeds';
@@ -26,7 +29,7 @@ describe('NostrGateway', () => {
   const ERROR_MSG = 'test';
   const FIND_EVENTS = [REGULAR_EVENT, REPLACEABLE_EVENT];
   const CONFIG = {
-    limit: { createdAt: { upper: 60 } },
+    limit: { createdAt: { upper: 60 }, eventId: { minLeadingZeroBits: 0 } },
   };
 
   let nostrGateway: NostrGateway;
@@ -109,6 +112,55 @@ describe('NostrGateway', () => {
           FUTURE_REGULAR_EVENT.id,
           false,
           'invalid: created_at must not be later than 60 seconds from the current time.',
+        ),
+      );
+    });
+
+    it('should handle successfully when event pow is enough', async () => {
+      (nostrGateway as any).limitConfig = {
+        createdAt: { upper: 60 },
+        eventId: { minLeadingZeroBits: 4 },
+      };
+
+      await expect(
+        nostrGateway.event([LEADING_8_ZERO_BITS_REGULAR_EVENT]),
+      ).resolves.toEqual(
+        createCommandResultResponse(LEADING_8_ZERO_BITS_REGULAR_EVENT.id, true),
+      );
+      await expect(
+        nostrGateway.event([
+          LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT,
+        ]),
+      ).resolves.toEqual(
+        createCommandResultResponse(
+          LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT.id,
+          true,
+        ),
+      );
+    });
+
+    it('should return pow is less', async () => {
+      (nostrGateway as any).limitConfig = {
+        createdAt: { upper: 60 },
+        eventId: { minLeadingZeroBits: 16 },
+      };
+
+      await expect(
+        nostrGateway.event([LEADING_8_ZERO_BITS_REGULAR_EVENT]),
+      ).resolves.toEqual(
+        createCommandResultResponse(
+          LEADING_8_ZERO_BITS_REGULAR_EVENT.id,
+          false,
+          'pow: difficulty 8 is less than 16',
+        ),
+      );
+      await expect(
+        nostrGateway.event([LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT]),
+      ).resolves.toEqual(
+        createCommandResultResponse(
+          LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT.id,
+          false,
+          'pow: difficulty 8 is less than 16',
         ),
       );
     });
