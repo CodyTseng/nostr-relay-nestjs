@@ -93,3 +93,33 @@ export const FUTURE_REGULAR_EVENT = {
   content: 'from the future',
   sig: 'f0e28991ac6a69e0b0993a4073e5750f37206f2b40f7c9b5d9d091558e481e4121d755a99bef8c5b5d170114e80f5f6da63ffc8270688abacea1d7b467b934c2',
 };
+
+export const LEADING_8_ZERO_BITS_REGULAR_EVENT = {
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  kind: 1,
+  content: 'hello world!',
+  tags: [['nonce', '270', '8']],
+  created_at: 1680570950,
+  id: '00cb6fcaeb76d8a88a7744890c6750002eac2a3e633f8d55d9355eb0843bd3f2',
+  sig: '8dd183d868ea7c691e230e4526eb5290e6889d0a3ee0a937caddc9b0f1430fd94e8634a2fa4b4c2e5328285e7efea3f4e9c881e512d926c617f0020bb0524d6e',
+};
+
+export const LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT = {
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  kind: 1,
+  tags: [],
+  content: 'hello world!',
+  created_at: 1680572659,
+  id: '03ce214162a49910ab7d0837e4b6951d0aaa5b16e9c60f28d31c334a0dedf210',
+  sig: '0e21dedd377f7ef24d5d8075c5e30d70de79953df26e4aff1eefc005dde6d6fe4fa73c32de21772e1da42becdc2678039447897651bf41cfdb2965e71432ca3c',
+};
+
+export const LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT = {
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  kind: 1,
+  content: 'hello world!',
+  tags: [['nonce', '82742', '8']],
+  created_at: 1680573114,
+  id: '0000883357a4c2adcd7374ef32e05be72146ce76b5e71bf6e08e20b982ccba94',
+  sig: 'e83f033333a36a9def543ba367c748008a69e6298cd73e2410f9bd752361b69b810f45db41648db7ee27473913aafefb4b7f59572f7882594b5fbaba16a1d041',
+};

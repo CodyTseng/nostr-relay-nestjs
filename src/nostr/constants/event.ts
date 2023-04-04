@@ -31,4 +31,5 @@ export enum TagName {
   EVENT = 'e',
   PUBKEY = 'p',
   D = 'd',
+  NONCE = 'nonce',
 }

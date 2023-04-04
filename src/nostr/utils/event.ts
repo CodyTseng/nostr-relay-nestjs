@@ -1,6 +1,8 @@
 import { schnorr, utils } from '@noble/secp256k1';
+import { isNil } from 'lodash';
 import { EventKind, TagName } from '../constants';
 import { Event } from '../schemas';
+import { countLeadingZeroBits } from './proof-of-work';
 
 export function isReplaceableEvent({ kind }: Event) {
   return (
@@ -36,6 +38,51 @@ export async function isEventIdValid(e: Event) {
 
 export async function isEventSigValid(e: Event) {
   return schnorr.verify(e.sig, e.id, e.pubkey);
+}
+
+export async function isEventValid(
+  e: Event,
+  options: {
+    createdAtUpperLimit?: number;
+    eventIdMinLeadingZeroBits?: number;
+  } = {},
+): Promise<string | void> {
+  if (!(await isEventIdValid(e))) {
+    return 'invalid: id is wrong';
+  }
+
+  if (!(await isEventSigValid(e))) {
+    return 'invalid: signature is wrong';
+  }
+
+  if (
+    !isNil(options.createdAtUpperLimit) &&
+    e.created_at - Date.now() / 1000 > options.createdAtUpperLimit
+  ) {
+    return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time.`;
+  }
+
+  if (
+    options.eventIdMinLeadingZeroBits &&
+    options.eventIdMinLeadingZeroBits > 0
+  ) {
+    const pow = countLeadingZeroBits(e.id);
+    if (pow < options.eventIdMinLeadingZeroBits) {
+      return `pow: difficulty ${pow} is less than ${options.eventIdMinLeadingZeroBits}`;
+    }
+
+    const nonceTag = e.tags.find(
+      (tag) => tag[0] === TagName.NONCE && tag.length === 3,
+    );
+    if (!nonceTag) {
+      return;
+    }
+
+    const targetPow = parseInt(nonceTag[2]);
+    if (isNaN(targetPow) || targetPow < options.eventIdMinLeadingZeroBits) {
+      return `pow: difficulty ${targetPow} is less than ${options.eventIdMinLeadingZeroBits}`;
+    }
+  }
 }
 
 export function extractDTagValueFromEvent(event: Event) {
