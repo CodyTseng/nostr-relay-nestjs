@@ -3,7 +3,7 @@ import { HydratedDocument } from 'mongoose';
 
 export type DbEventDocument = HydratedDocument<DbEvent>;
 
-@Schema({ _id: false, collection: 'event' })
+@Schema({ _id: false, collection: 'event', timestamps: true })
 export class DbEvent {
   @Prop({ required: true })
   _id: string;
