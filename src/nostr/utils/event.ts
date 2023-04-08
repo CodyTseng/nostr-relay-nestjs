@@ -59,7 +59,7 @@ export async function isEventValid(
     !isNil(options.createdAtUpperLimit) &&
     e.created_at - Date.now() / 1000 > options.createdAtUpperLimit
   ) {
-    return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time.`;
+    return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time`;
   }
 
   if (
@@ -85,7 +85,7 @@ export async function isEventValid(
   }
 }
 
-export function extractDTagValueFromEvent(event: Event) {
+export function extractDTagValueFromEvent(event: Pick<Event, 'tags'>) {
   const [, dTagValue] = event.tags.find(
     ([tagName, tagValue]) => tagName === TagName.D && !!tagValue,
   ) ?? [TagName.D, ''];
