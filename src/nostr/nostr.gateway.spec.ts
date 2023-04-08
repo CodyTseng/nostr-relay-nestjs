@@ -1,15 +1,10 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
-import { get } from 'lodash';
 import { PinoLogger } from 'nestjs-pino';
 import { lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT,
-  FUTURE_REGULAR_EVENT,
-  LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT,
-  LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT,
-  LEADING_8_ZERO_BITS_REGULAR_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../seeds';
@@ -28,9 +23,6 @@ import {
 describe('NostrGateway', () => {
   const ERROR_MSG = 'test';
   const FIND_EVENTS = [REGULAR_EVENT, REPLACEABLE_EVENT];
-  const CONFIG = {
-    limit: { createdAt: { upper: 60 }, eventId: { minLeadingZeroBits: 0 } },
-  };
 
   let nostrGateway: NostrGateway;
   let mockSubscriptionServiceSetServer: jest.Mock;
@@ -41,9 +33,7 @@ describe('NostrGateway', () => {
     const mockLogger = createMock<PinoLogger>();
     mockSubscriptionServiceSetServer = jest.fn();
     mockSubscriptionServiceClear = jest.fn();
-    const mockConfigService = createMock<ConfigService>({
-      get: (path) => get(CONFIG, path),
-    });
+    const mockConfigService = createMock<ConfigService>();
     const mockSubscriptionService = createMock<SubscriptionService>({
       setServer: mockSubscriptionServiceSetServer,
       clear: mockSubscriptionServiceClear,
@@ -72,21 +62,9 @@ describe('NostrGateway', () => {
       );
     });
 
-    it('should return event id is wrong', async () => {
-      const fakeEventId = 'fake-id';
-
+    it('should return validate error', async () => {
       await expect(
-        nostrGateway.event([{ ...REGULAR_EVENT, id: fakeEventId }]),
-      ).resolves.toEqual(
-        createCommandResultResponse(fakeEventId, false, 'invalid: id is wrong'),
-      );
-    });
-
-    it('should return signature is wrong', async () => {
-      const fakeSig = 'fake-sig';
-
-      await expect(
-        nostrGateway.event([{ ...REGULAR_EVENT, sig: fakeSig }]),
+        nostrGateway.event([{ ...REGULAR_EVENT, sig: 'fake-sig' }]),
       ).resolves.toEqual(
         createCommandResultResponse(
           REGULAR_EVENT.id,
@@ -102,65 +80,6 @@ describe('NostrGateway', () => {
           CAUSE_ERROR_EVENT.id,
           false,
           'error: ' + ERROR_MSG,
-        ),
-      );
-    });
-
-    it('should return invalid created_at', async () => {
-      await expect(nostrGateway.event([FUTURE_REGULAR_EVENT])).resolves.toEqual(
-        createCommandResultResponse(
-          FUTURE_REGULAR_EVENT.id,
-          false,
-          'invalid: created_at must not be later than 60 seconds from the current time.',
-        ),
-      );
-    });
-
-    it('should handle successfully when event pow is enough', async () => {
-      (nostrGateway as any).limitConfig = {
-        createdAt: { upper: 60 },
-        eventId: { minLeadingZeroBits: 4 },
-      };
-
-      await expect(
-        nostrGateway.event([LEADING_8_ZERO_BITS_REGULAR_EVENT]),
-      ).resolves.toEqual(
-        createCommandResultResponse(LEADING_8_ZERO_BITS_REGULAR_EVENT.id, true),
-      );
-      await expect(
-        nostrGateway.event([
-          LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT,
-        ]),
-      ).resolves.toEqual(
-        createCommandResultResponse(
-          LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT.id,
-          true,
-        ),
-      );
-    });
-
-    it('should return pow is less', async () => {
-      (nostrGateway as any).limitConfig = {
-        createdAt: { upper: 60 },
-        eventId: { minLeadingZeroBits: 16 },
-      };
-
-      await expect(
-        nostrGateway.event([LEADING_8_ZERO_BITS_REGULAR_EVENT]),
-      ).resolves.toEqual(
-        createCommandResultResponse(
-          LEADING_8_ZERO_BITS_REGULAR_EVENT.id,
-          false,
-          'pow: difficulty 8 is less than 16',
-        ),
-      );
-      await expect(
-        nostrGateway.event([LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT]),
-      ).resolves.toEqual(
-        createCommandResultResponse(
-          LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT.id,
-          false,
-          'pow: difficulty 8 is less than 16',
         ),
       );
     });
