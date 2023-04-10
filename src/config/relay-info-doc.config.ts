@@ -12,3 +12,4 @@ export function relayInfoDocConfig(env: Environment) {
     version: packageJson.version,
   };
 }
+export type RelayInfoDoc = ReturnType<typeof relayInfoDocConfig>;
