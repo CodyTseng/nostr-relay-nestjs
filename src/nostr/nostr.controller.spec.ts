@@ -53,17 +53,14 @@ describe('NostrController', () => {
         'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7';
       (nostrController as any).relayInfoDoc = { pubkey };
 
-      expect(await nostrController.nip05('admin')).toEqual({
-        names: { admin: pubkey },
+      expect(await nostrController.nip05('_')).toEqual({
+        names: { _: pubkey },
       });
-    });
-
-    it('should return empty JSON object when query non-admin', async () => {
       expect(await nostrController.nip05('non-admin')).toEqual({});
     });
 
     it('should return empty JSON object when no pubkey is configured', async () => {
-      expect(await nostrController.nip05('admin')).toEqual({});
+      expect(await nostrController.nip05('_')).toEqual({});
     });
   });
 });

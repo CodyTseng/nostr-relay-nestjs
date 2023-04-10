@@ -39,17 +39,13 @@ export class NostrController {
   @Get('.well-known/nostr.json')
   @Header('access-control-allow-origin', '*')
   async nip05(@Query('name') name?: string) {
-    if (name !== 'admin') {
-      return {};
-    }
-
     const { pubkey } = this.relayInfoDoc;
-    if (!pubkey) return {};
-
-    return {
-      names: {
-        admin: pubkey,
-      },
-    };
+    return name === '_' && pubkey
+      ? {
+          names: {
+            _: pubkey,
+          },
+        }
+      : {};
   }
 }
