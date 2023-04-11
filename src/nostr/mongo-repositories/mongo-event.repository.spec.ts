@@ -3,13 +3,13 @@ import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection } from 'mongoose';
 import {
+  EXPIRED_EVENT,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
 import { EventRepository } from '../repositories';
-import { EXPIRED_EVENT } from './../../../seeds/event';
 import { MongoRepositoriesModule } from './mongo-repositories.module';
 
 describe('MongoEventRepository', () => {
