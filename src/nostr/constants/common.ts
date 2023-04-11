@@ -5,3 +5,5 @@ export const E_EVENT_BROADCAST = 'event.broadcast';
 export const EVENT_ID_LENGTH = 64;
 export const PUBKEY_LENGTH = 64;
 export const SIGNATURE_LENGTH = 128;
+
+export const MAX_TIMESTAMP = 9999999999;

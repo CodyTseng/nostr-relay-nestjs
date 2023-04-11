@@ -32,4 +32,5 @@ export enum TagName {
   PUBKEY = 'p',
   D = 'd',
   NONCE = 'nonce',
+  EXPIRATION = 'expiration',
 }

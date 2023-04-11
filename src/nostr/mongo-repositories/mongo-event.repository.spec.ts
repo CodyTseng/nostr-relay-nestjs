@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection } from 'mongoose';
 import {
+  EXPIRED_EVENT,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
@@ -57,6 +58,7 @@ describe('MongoEventRepository', () => {
         eventRepository.create(REGULAR_EVENT),
         eventRepository.create(REPLACEABLE_EVENT),
         eventRepository.create(PARAMETERIZED_REPLACEABLE_EVENT),
+        eventRepository.create(EXPIRED_EVENT),
       ]);
     });
 

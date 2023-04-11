@@ -1,14 +1,24 @@
 import {
+  EXPIRED_EVENT,
   FUTURE_REGULAR_EVENT,
   LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT,
   LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT,
   LEADING_8_ZERO_BITS_REGULAR_EVENT,
+  NON_EXPIRED_EVENT,
   REGULAR_EVENT,
 } from '../../../seeds';
-import { extractDTagValueFromEvent, isEventValid } from './event';
+import {
+  extractDTagValueFromEvent,
+  extractExpirationTimestamp,
+  isEventValid,
+} from './event';
 
 describe('event', () => {
   describe('isEventValid', () => {
+    it('should return undefined', async () => {
+      expect(await isEventValid(NON_EXPIRED_EVENT)).toBeUndefined();
+    });
+
     it('should return event id is wrong', async () => {
       expect(await isEventValid({ ...REGULAR_EVENT, id: 'fake-id' })).toBe(
         'invalid: id is wrong',
@@ -57,6 +67,12 @@ describe('event', () => {
         }),
       ).toBe('pow: difficulty 8 is less than 16');
     });
+
+    it('should return event is expired', async () => {
+      expect(await isEventValid(EXPIRED_EVENT)).toBe(
+        'reject: event is expired',
+      );
+    });
   });
 
   describe('extractDTagValueFromEvent', () => {
@@ -68,6 +84,22 @@ describe('event', () => {
 
     it('should return empty string when dTag not found', () => {
       expect(extractDTagValueFromEvent({ tags: [] })).toBe('');
+    });
+  });
+
+  describe('extractExpirationTimestamp', () => {
+    it('should return expiration timestamp', () => {
+      expect(
+        extractExpirationTimestamp({ tags: [['expiration', '1681224755']] }),
+      ).toBe(1681224755);
+    });
+
+    it('should return undefined', () => {
+      expect(extractExpirationTimestamp({ tags: [] })).toBeUndefined();
+
+      expect(
+        extractExpirationTimestamp({ tags: [['expiration']] }),
+      ).toBeUndefined();
     });
   });
 });
