@@ -123,3 +123,23 @@ export const LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT = {
   id: '0000883357a4c2adcd7374ef32e05be72146ce76b5e71bf6e08e20b982ccba94',
   sig: 'e83f033333a36a9def543ba367c748008a69e6298cd73e2410f9bd752361b69b810f45db41648db7ee27473913aafefb4b7f59572f7882594b5fbaba16a1d041',
 };
+
+export const EXPIRED_EVENT = {
+  id: '6c61bbfa615e4fb8ea5a4cfc21b83712780bc2f260d3f777221c06287a1419c4',
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  created_at: 1681223538,
+  kind: 1,
+  tags: [['expiration', '1681223568']],
+  content: 'hello',
+  sig: 'd1029be23ad06079f7091b75cc23e26d2bcab3fb17c4da685bdcb56ce647713750214734f5c9c2e1f53c64ebe03d91abf2d77427fa0f2f297acf28972fc916b6',
+};
+
+export const NON_EXPIRED_EVENT = {
+  id: '4946dbd9772b4cd6252346d0f05fe5c36e7b16080fa0229b6de3f6ec168df79d',
+  pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
+  created_at: 1681223538,
+  kind: 1,
+  tags: [['expiration', '9999999999']],
+  content: 'hello',
+  sig: 'dcadbf6d8fd3568c90d504a58b8f977ef829546254ff0d14c4b6386ccbcea9e7f271307ba0939f55d5b08c21e633da997b33d0512e8c4808fc9664d8811aea5f',
+};

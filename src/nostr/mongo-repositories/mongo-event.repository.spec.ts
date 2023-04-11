@@ -9,6 +9,7 @@ import {
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
 import { EventRepository } from '../repositories';
+import { EXPIRED_EVENT } from './../../../seeds/event';
 import { MongoRepositoriesModule } from './mongo-repositories.module';
 
 describe('MongoEventRepository', () => {
@@ -57,6 +58,7 @@ describe('MongoEventRepository', () => {
         eventRepository.create(REGULAR_EVENT),
         eventRepository.create(REPLACEABLE_EVENT),
         eventRepository.create(PARAMETERIZED_REPLACEABLE_EVENT),
+        eventRepository.create(EXPIRED_EVENT),
       ]);
     });
 

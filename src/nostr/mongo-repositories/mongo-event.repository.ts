@@ -1,7 +1,12 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { MongoServerError } from 'mongodb';
 import { FilterQuery, Model } from 'mongoose';
-import { EventKind, EVENT_ID_LENGTH, PUBKEY_LENGTH } from '../constants';
+import {
+  EventKind,
+  EVENT_ID_LENGTH,
+  MAX_TIMESTAMP,
+  PUBKEY_LENGTH,
+} from '../constants';
 import {
   EventRepository,
   EventRepositoryFilter,
@@ -9,6 +14,8 @@ import {
 import { Event, EventId, Pubkey } from '../schemas';
 import {
   extractDTagValueFromEvent,
+  extractExpirationTimestamp,
+  getTimestampInSeconds,
   isGenericTagName,
   isParameterizedReplaceableEvent,
 } from '../utils';
@@ -70,7 +77,7 @@ export class MongoEventRepository extends EventRepository {
       },
       {
         pubkey,
-        created_at: Math.floor(Date.now() / 1000),
+        created_at: getTimestampInSeconds(),
         kind: EventKind.DELETION,
         tags: [],
         content: '',
@@ -102,6 +109,7 @@ export class MongoEventRepository extends EventRepository {
       tags: event.tags,
       content: event.content,
       sig: event.sig,
+      expirationTimestamp: extractExpirationTimestamp(event) ?? MAX_TIMESTAMP,
       deleted: false,
     };
     if (isParameterizedReplaceableEvent(event)) {
@@ -172,9 +180,18 @@ export class MongoEventRepository extends EventRepository {
       },
     );
 
+    const now = getTimestampInSeconds();
     return filterQueries.length === 1
-      ? { ...filterQueries[0], deleted: false }
-      : { $or: filterQueries, deleted: false };
+      ? {
+          ...filterQueries[0],
+          expirationTimestamp: { $gte: now },
+          deleted: false,
+        }
+      : {
+          $or: filterQueries,
+          expirationTimestamp: { $gte: now },
+          deleted: false,
+        };
   }
 
   private getLimitFrom(

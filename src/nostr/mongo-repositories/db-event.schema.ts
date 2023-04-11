@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { MAX_TIMESTAMP } from '../constants';
 
 export type DbEventDocument = HydratedDocument<DbEvent>;
 
@@ -25,6 +26,9 @@ export class DbEvent {
 
   @Prop({ required: true })
   sig: string;
+
+  @Prop({ default: MAX_TIMESTAMP })
+  expirationTimestamp: number;
 
   @Prop({})
   dTagValue?: string;

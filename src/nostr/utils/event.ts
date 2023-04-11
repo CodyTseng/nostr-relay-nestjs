@@ -3,6 +3,7 @@ import { isNil } from 'lodash';
 import { EventKind, TagName } from '../constants';
 import { Event } from '../schemas';
 import { countLeadingZeroBits } from './proof-of-work';
+import { getTimestampInSeconds } from './time';
 
 export function isReplaceableEvent({ kind }: Event) {
   return (
@@ -55,9 +56,16 @@ export async function isEventValid(
     return 'invalid: signature is wrong';
   }
 
+  const now = getTimestampInSeconds();
+
+  const expirationTimestamp = extractExpirationTimestamp(e);
+  if (expirationTimestamp && expirationTimestamp < now) {
+    return 'reject: event is expired';
+  }
+
   if (
     !isNil(options.createdAtUpperLimit) &&
-    e.created_at - Date.now() / 1000 > options.createdAtUpperLimit
+    e.created_at - now > options.createdAtUpperLimit
   ) {
     return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time`;
   }
@@ -91,4 +99,18 @@ export function extractDTagValueFromEvent(event: Pick<Event, 'tags'>) {
   ) ?? [TagName.D, ''];
 
   return dTagValue;
+}
+
+export function extractExpirationTimestamp(
+  event: Pick<Event, 'tags'>,
+): number | undefined {
+  const expirationTag = event.tags.find(
+    ([tagName]) => tagName === TagName.EXPIRATION,
+  );
+  if (!expirationTag) {
+    return;
+  }
+
+  const expirationTimestamp = parseInt(expirationTag[1]);
+  return isNaN(expirationTimestamp) ? undefined : expirationTimestamp;
 }
