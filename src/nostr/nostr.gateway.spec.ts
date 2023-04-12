@@ -8,15 +8,13 @@ import {
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../seeds';
+import { MessageType } from './constants';
 import { NostrGateway } from './nostr.gateway';
 import { Event } from './schemas';
 import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
 import {
-  createCommandResultResponse,
-  createCountResponse,
-  createEndOfStoredEventResponse,
-  createEventResponse,
+  CommandResultResponse,
   EndOfStoredEventResponse,
   EventResponse,
 } from './utils';
@@ -44,7 +42,7 @@ describe('NostrGateway', () => {
         if (event.id === CAUSE_ERROR_EVENT.id) {
           throw new Error(ERROR_MSG);
         }
-        return createCommandResultResponse(event.id, true);
+        return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
       findByFilters: async () => FIND_EVENTS,
       countByFilters: async () => FIND_EVENTS.length,
@@ -59,31 +57,32 @@ describe('NostrGateway', () => {
 
   describe('EVENT', () => {
     it('should handle event successfully', async () => {
-      await expect(nostrGateway.event([REGULAR_EVENT])).resolves.toEqual(
-        createCommandResultResponse(REGULAR_EVENT.id, true),
-      );
+      await expect(nostrGateway.event([REGULAR_EVENT])).resolves.toEqual([
+        MessageType.OK,
+        REGULAR_EVENT.id,
+        true,
+        '',
+      ]);
     });
 
     it('should return validate error', async () => {
       await expect(
         nostrGateway.event([{ ...REGULAR_EVENT, sig: 'fake-sig' }]),
-      ).resolves.toEqual(
-        createCommandResultResponse(
-          REGULAR_EVENT.id,
-          false,
-          'invalid: signature is wrong',
-        ),
-      );
+      ).resolves.toEqual([
+        MessageType.OK,
+        REGULAR_EVENT.id,
+        false,
+        'invalid: signature is wrong',
+      ]);
     });
 
     it('should return an error', async () => {
-      await expect(nostrGateway.event([CAUSE_ERROR_EVENT])).resolves.toEqual(
-        createCommandResultResponse(
-          CAUSE_ERROR_EVENT.id,
-          false,
-          'error: ' + ERROR_MSG,
-        ),
-      );
+      await expect(nostrGateway.event([CAUSE_ERROR_EVENT])).resolves.toEqual([
+        MessageType.OK,
+        CAUSE_ERROR_EVENT.id,
+        false,
+        'error: ' + ERROR_MSG,
+      ]);
     });
   });
 
@@ -97,10 +96,12 @@ describe('NostrGateway', () => {
       await lastValueFrom(response$);
 
       expect(responses).toEqual([
-        ...FIND_EVENTS.map((event) =>
-          createEventResponse(subscriptionId, event),
-        ),
-        createEndOfStoredEventResponse(subscriptionId),
+        ...FIND_EVENTS.map((event) => [
+          MessageType.EVENT,
+          subscriptionId,
+          event,
+        ]),
+        [MessageType.EOSE, subscriptionId],
       ]);
     });
   });
@@ -119,9 +120,11 @@ describe('NostrGateway', () => {
     it('should count successfully', async () => {
       const subscriptionId = 'test:count';
 
-      expect(await nostrGateway.count([subscriptionId, {}])).toEqual(
-        createCountResponse(subscriptionId, FIND_EVENTS.length),
-      );
+      expect(await nostrGateway.count([subscriptionId, {}])).toEqual([
+        MessageType.COUNT,
+        subscriptionId,
+        { count: FIND_EVENTS.length },
+      ]);
     });
   });
 
