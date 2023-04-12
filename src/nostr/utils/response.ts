@@ -29,3 +29,15 @@ export type NoticeResponse = [MessageType.NOTICE, string];
 export function createNoticeResponse(message: string): NoticeResponse {
   return [MessageType.NOTICE, message];
 }
+
+export type CountResponse = [
+  MessageType.COUNT,
+  SubscriptionId,
+  { count: number },
+];
+export function createCountResponse(
+  subscriptionId: SubscriptionId,
+  count: number,
+): CountResponse {
+  return [MessageType.COUNT, subscriptionId, { count }];
+}

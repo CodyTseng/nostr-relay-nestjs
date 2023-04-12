@@ -58,6 +58,12 @@ export class MongoEventRepository extends EventRepository {
     return dbEvent ? this.toEvent(dbEvent) : null;
   }
 
+  async count(
+    filters: EventRepositoryFilter | EventRepositoryFilter[],
+  ): Promise<number> {
+    return this.eventModel.countDocuments(this.buildMongoFilter(filters));
+  }
+
   async replace(event: Event, oldEventId?: EventId): Promise<boolean> {
     if (event.id === oldEventId) {
       return false;
