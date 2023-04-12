@@ -25,6 +25,7 @@ Try here: wss://nostr-relay.app
 - [x] [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)
 - [x] [NIP-33: Parameterized Replaceable Events](https://github.com/nostr-protocol/nips/blob/master/33.md)
 - [x] [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)
+- [x] [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)
 
 ## ToDo
 
