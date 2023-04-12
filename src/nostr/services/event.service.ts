@@ -25,6 +25,10 @@ export class EventService {
     return await this.eventRepository.find(filters);
   }
 
+  async countByFilters(filters: Filter[]): Promise<number> {
+    return await this.eventRepository.count(filters);
+  }
+
   async handleEvent(event: Event): Promise<void | CommandResultResponse> {
     if (isReplaceableEvent(event)) {
       return this.handleReplaceableEvent(event);

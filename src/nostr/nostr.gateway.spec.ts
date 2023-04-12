@@ -14,6 +14,7 @@ import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
 import {
   createCommandResultResponse,
+  createCountResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
   EndOfStoredEventResponse,
@@ -46,6 +47,7 @@ describe('NostrGateway', () => {
         return createCommandResultResponse(event.id, true);
       },
       findByFilters: async () => FIND_EVENTS,
+      countByFilters: async () => FIND_EVENTS.length,
     });
     nostrGateway = new NostrGateway(
       mockLogger,
@@ -110,6 +112,16 @@ describe('NostrGateway', () => {
       expect(() =>
         nostrGateway.close({} as any, [subscriptionId]),
       ).not.toThrowError();
+    });
+  });
+
+  describe('COUNT', () => {
+    it('should count successfully', async () => {
+      const subscriptionId = 'test:count';
+
+      expect(await nostrGateway.count([subscriptionId, {}])).toEqual(
+        createCountResponse(subscriptionId, FIND_EVENTS.length),
+      );
     });
   });
 

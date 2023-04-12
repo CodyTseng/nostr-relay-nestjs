@@ -192,5 +192,18 @@ describe('EventService', () => {
         await expect(eventService.findByFilters([{}])).resolves.toEqual(events);
       });
     });
+
+    describe('countByFilters', () => {
+      it('should return count', async () => {
+        const COUNT = 10;
+        const eventRepository = createMock<EventRepository>({
+          count: async () => COUNT,
+        });
+
+        const eventService = new EventService(eventRepository, eventEmitter);
+
+        expect(await eventService.countByFilters([{}])).toBe(COUNT);
+      });
+    });
   });
 });

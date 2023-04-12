@@ -13,3 +13,8 @@ export type ReqMessage = z.infer<typeof ReqMessageSchema>;
 
 export const CloseMessageSchema = z.tuple([SubscriptionIdSchema]);
 export type CloseMessage = z.infer<typeof CloseMessageSchema>;
+
+export const CountMessageSchema = z
+  .tuple([SubscriptionIdSchema])
+  .rest(FilterSchema);
+export type CountMessage = z.infer<typeof CountMessageSchema>;

@@ -18,6 +18,8 @@ import { MessageType } from './constants';
 import {
   CloseMessage,
   CloseMessageSchema,
+  CountMessage,
+  CountMessageSchema,
   EventMessage,
   EventMessageSchema,
   ReqMessage,
@@ -27,6 +29,7 @@ import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
 import {
   createCommandResultResponse,
+  createCountResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
   isEventValid,
@@ -106,5 +109,14 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
     [subscriptionId]: CloseMessage,
   ) {
     this.subscriptionService.unSubscribe(client, subscriptionId);
+  }
+
+  @SubscribeMessage(MessageType.COUNT)
+  async count(
+    @MessageBody(new ZodValidationPipe(CountMessageSchema))
+    [subscriptionId, ...filters]: CountMessage,
+  ) {
+    const count = await this.eventService.countByFilters(filters);
+    return createCountResponse(subscriptionId, count);
   }
 }
