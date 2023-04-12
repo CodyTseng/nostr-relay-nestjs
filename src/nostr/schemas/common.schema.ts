@@ -23,5 +23,5 @@ export const EventContentSchema = z.string().max(100 * 1024);
 
 export const EventSigSchema = HexStringSchema.length(SIGNATURE_LENGTH);
 
-export const SubscriptionIdSchema = z.string().min(1).max(256);
+export const SubscriptionIdSchema = z.string().min(1).max(64);
 export type SubscriptionId = z.infer<typeof SubscriptionIdSchema>;
