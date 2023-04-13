@@ -24,6 +24,7 @@ export class NostrWsAdapter extends WsAdapter {
       if (!messageHandler) {
         return transform(createNoticeResponse('invalid: unknown message type'));
       }
+      this.logger.log({ type, data });
       return transform(messageHandler.callback(data));
     } catch (error) {
       return transform(
