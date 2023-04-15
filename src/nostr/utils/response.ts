@@ -1,7 +1,6 @@
 import { MessageType } from '../constants';
 import { Event } from '../entities';
-import { EventDto } from '../interface';
-import { EventId, SubscriptionId } from '../interface';
+import { EventDto, EventId, SubscriptionId } from '../interface';
 
 export type CommandResultResponse = [MessageType.OK, EventId, boolean, string];
 export function createCommandResultResponse(
