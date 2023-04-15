@@ -15,7 +15,7 @@ import { WsExceptionFilter } from '../common/filters';
 import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
-import { Event } from './entities/event.entity';
+import { Event, Filter } from './entities';
 import {
   CloseMessageDto,
   CountMessageDto,
@@ -94,8 +94,9 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   async req(
     @ConnectedSocket() client: WebSocket,
     @MessageBody(new ZodValidationPipe(ReqMessageSchema))
-    [subscriptionId, ...filters]: ReqMessageDto,
+    [subscriptionId, ...filtersDto]: ReqMessageDto,
   ) {
+    const filters = filtersDto.map(Filter.fromFilterDto);
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
     const events = await this.eventService.findByFilters(filters);
@@ -117,9 +118,11 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage(MessageType.COUNT)
   async count(
     @MessageBody(new ZodValidationPipe(CountMessageSchema))
-    [subscriptionId, ...filters]: CountMessageDto,
+    [subscriptionId, ...filtersDto]: CountMessageDto,
   ) {
-    const count = await this.eventService.countByFilters(filters);
+    const count = await this.eventService.countByFilters(
+      filtersDto.map(Filter.fromFilterDto),
+    );
     return createCountResponse(subscriptionId, count);
   }
 }

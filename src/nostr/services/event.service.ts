@@ -2,10 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { difference, union } from 'lodash';
 import { EventType, E_EVENT_BROADCAST, TagName } from '../constants';
-import { Event } from '../entities';
+import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventIdSchema } from '../schemas';
-import { FilterDto } from '../interface';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
 
 @Injectable()
@@ -15,11 +14,11 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async findByFilters(filters: FilterDto[]): Promise<Event[]> {
+  async findByFilters(filters: Filter[]): Promise<Event[]> {
     return await this.eventRepository.find(filters);
   }
 
-  async countByFilters(filters: FilterDto[]): Promise<number> {
+  async countByFilters(filters: Filter[]): Promise<number> {
     return await this.eventRepository.count(filters);
   }
 

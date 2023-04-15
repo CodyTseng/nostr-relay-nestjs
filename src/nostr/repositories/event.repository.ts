@@ -1,7 +1,17 @@
-import { Event } from '../entities';
-import { EventId, FilterDto, Pubkey } from '../interface';
+import { Event, Filter } from '../entities';
+import { EventId, Pubkey } from '../interface';
 
-export type EventRepositoryFilter = FilterDto & { dTagValues?: string[] };
+export type EventRepositoryFilter = Pick<
+  Filter,
+  | 'ids'
+  | 'authors'
+  | 'kinds'
+  | 'limit'
+  | 'since'
+  | 'until'
+  | 'tags'
+  | 'dTagValues'
+>;
 
 export abstract class EventRepository {
   abstract create(event: Event): Promise<boolean>;

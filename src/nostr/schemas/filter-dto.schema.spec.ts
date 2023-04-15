@@ -19,13 +19,13 @@ describe('FilterSchema', () => {
       authors: [
         '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
       ],
-      '#p': [
-        '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-      ],
+      tags: {
+        p: ['096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0'],
+      },
     });
   });
 
   it('should throw error', () => {
-    expect(() => FilterDtoSchema.parse({ '#test': ['test'] })).toThrowError();
+    expect(() => FilterDtoSchema.parse({ '#1': ['test'] })).toThrowError();
   });
 });

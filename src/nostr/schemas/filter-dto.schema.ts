@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TAG_NAME_REGEX } from '../constants';
+import { TagName } from '../constants';
 import {
   EventIdPrefixSchema,
   EventKindSchema,
@@ -7,45 +7,51 @@ import {
   TimestampInSecSchema,
 } from './common.schema';
 
-const NormalFilterSchema = z
-  .object({
-    ids: z.array(EventIdPrefixSchema).max(1000),
-    authors: z.array(PubkeyPrefixSchema).max(1000),
-    kinds: z.array(EventKindSchema).max(20),
-    since: TimestampInSecSchema,
-    until: TimestampInSecSchema,
-    limit: z.number().int().min(0).max(1000),
-  })
-  .partial();
+const TagFilterValuesSchema = z.array(z.string().max(1024)).max(256);
 
-const TagFilterSchema = z.record(
-  z.string().regex(TAG_NAME_REGEX),
-  z.array(z.string().max(1024)).max(256),
+const TagsFilterSchema = z.record(
+  z.string().regex(/^[a-z]$/),
+  TagFilterValuesSchema,
 );
 
-export const FilterDtoSchema = z
-  .preprocess(
-    (obj: object) => {
-      const normalFilter = {};
-      const tagFilter = {};
+export const FilterDtoSchema = z.preprocess(
+  (obj: object) => {
+    const filter = {};
+    const tags = {};
 
-      for (const key of Object.keys(obj)) {
-        if (key.startsWith('#')) tagFilter[key] = obj[key];
-        else normalFilter[key] = obj[key];
+    let dTagValues = undefined;
+
+    Object.entries(obj).forEach(([key, value]) => {
+      if (!key.startsWith('#')) {
+        filter[key] = value;
+        return;
       }
-      return {
-        normalFilter,
-        tagFilter,
-      };
-    },
-    z.object({
-      normalFilter: NormalFilterSchema,
-      tagFilter: TagFilterSchema,
-    }),
-  )
-  .transform(({ normalFilter, tagFilter }) => {
-    return Object.assign(
-      normalFilter,
-      tagFilter as Record<`#${string}`, string[]>,
-    );
-  });
+
+      const tagName = key[1];
+      if (tagName === TagName.D) {
+        dTagValues = value;
+        return;
+      }
+
+      tags[tagName] = value;
+    });
+
+    return {
+      ...filter,
+      tags,
+      dTagValues,
+    };
+  },
+  z
+    .object({
+      ids: z.array(EventIdPrefixSchema).max(1000),
+      authors: z.array(PubkeyPrefixSchema).max(1000),
+      kinds: z.array(EventKindSchema).max(20),
+      since: TimestampInSecSchema,
+      until: TimestampInSecSchema,
+      limit: z.number().int().min(0).max(1000),
+      tags: TagsFilterSchema,
+      dTagValues: TagFilterValuesSchema,
+    })
+    .partial(),
+);

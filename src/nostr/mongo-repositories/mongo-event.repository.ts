@@ -8,7 +8,7 @@ import {
   EventRepositoryFilter,
 } from '../repositories/event.repository';
 import { EventId, Pubkey } from '../interface';
-import { getTimestampInSeconds, isGenericTagName } from '../utils';
+import { getTimestampInSeconds } from '../utils';
 import { DbEvent, DbEventDocument } from './db-event.schema';
 
 export class MongoEventRepository extends EventRepository {
@@ -154,16 +154,16 @@ export class MongoEventRepository extends EventRepository {
           filterQuery.created_at.$lte = filter.until;
         }
 
-        const tagFilters = Object.keys(filter)
-          .filter(isGenericTagName)
-          .map((key) => ({
-            tags: {
-              $elemMatch: {
-                '0': key[1],
-                '1': { $in: filter[key] },
+        const tagFilters = filter.tags
+          ? Object.entries(filter.tags).map(([tagKey, tagValues]) => ({
+              tags: {
+                $elemMatch: {
+                  '0': tagKey,
+                  '1': { $in: tagValues },
+                },
               },
-            },
-          }));
+            }))
+          : [];
         if (tagFilters.length > 0) {
           filterQuery.$and = tagFilters;
         }

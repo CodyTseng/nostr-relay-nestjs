@@ -8,7 +8,7 @@ import {
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../../seeds';
-import { Event } from '../entities';
+import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { createCommandResultResponse } from '../utils';
 import { EventService } from './event.service';
@@ -190,7 +190,9 @@ describe('EventService', () => {
 
         const eventService = new EventService(eventRepository, eventEmitter);
 
-        await expect(eventService.findByFilters([{}])).resolves.toEqual(events);
+        await expect(
+          eventService.findByFilters([{}].map(Filter.fromFilterDto)),
+        ).resolves.toEqual(events);
       });
     });
 
@@ -203,7 +205,9 @@ describe('EventService', () => {
 
         const eventService = new EventService(eventRepository, eventEmitter);
 
-        expect(await eventService.countByFilters([{}])).toBe(COUNT);
+        expect(
+          await eventService.countByFilters([{}].map(Filter.fromFilterDto)),
+        ).toBe(COUNT);
       });
     });
   });
