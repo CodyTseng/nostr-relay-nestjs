@@ -8,8 +8,8 @@ import {
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../../seeds';
+import { Event } from '../entities';
 import { EventRepository } from '../repositories';
-import { Event } from '../schemas';
 import { createCommandResultResponse } from '../utils';
 import { EventService } from './event.service';
 
@@ -91,10 +91,11 @@ describe('EventService', () => {
 
       it('should return duplicate when the event older than a similar event that already exists', async () => {
         const eventRepository = createMock<EventRepository>({
-          findOne: async () => ({
-            ...REPLACEABLE_EVENT,
-            created_at: REPLACEABLE_EVENT.created_at + 1,
-          }),
+          findOne: async () =>
+            Event.fromEventDto({
+              ...REPLACEABLE_EVENT,
+              created_at: REPLACEABLE_EVENT.created_at + 1,
+            }),
           replace: async () => true,
         });
         const eventService = new EventService(eventRepository, eventEmitter);

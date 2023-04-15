@@ -1,9 +1,9 @@
-import { FilterSchema } from './filter.schema';
+import { FilterDtoSchema } from './filter-dto.schema';
 
 describe('FilterSchema', () => {
   it('should parse successfully', () => {
     expect(
-      FilterSchema.parse({
+      FilterDtoSchema.parse({
         ids: [
           '1c7c87a5e52e6c4e94a6c018920f31f256db83f8560b26a493f059caaf730f56',
         ],
@@ -26,6 +26,6 @@ describe('FilterSchema', () => {
   });
 
   it('should throw error', () => {
-    expect(() => FilterSchema.parse({ '#test': ['test'] })).toThrowError();
+    expect(() => FilterDtoSchema.parse({ '#test': ['test'] })).toThrowError();
   });
 });

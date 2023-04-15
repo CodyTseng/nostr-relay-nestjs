@@ -3,14 +3,15 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
 import { E_EVENT_BROADCAST } from '../constants';
-import { Event, Filter, SubscriptionId } from '../schemas';
+import { Event } from '../entities';
+import { FilterDto, SubscriptionId } from '../interface';
 import { createEventResponse, isEventMatchingFilter } from '../utils';
 
 @Injectable()
 export class SubscriptionService {
   private readonly subscriptionsMap = new WeakMap<
     WebSocket,
-    Map<SubscriptionId, Filter[]>
+    Map<SubscriptionId, FilterDto[]>
   >();
   private server?: WebSocketServer;
 
@@ -26,7 +27,7 @@ export class SubscriptionService {
   subscribe(
     client: WebSocket,
     subscriptionId: SubscriptionId,
-    filters: Filter[],
+    filters: FilterDto[],
   ) {
     const subscriptions = this.subscriptionsMap.get(client);
     if (!subscriptions) {

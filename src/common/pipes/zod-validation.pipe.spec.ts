@@ -1,14 +1,14 @@
 import { ZodValidationPipe } from '.';
-import { REGULAR_EVENT } from '../../../seeds';
-import { EventSchema } from '../../nostr/schemas';
+import { REGULAR_EVENT_SCHEMA } from '../../../seeds';
+import { EventDtoSchema } from '../../nostr/schemas';
 
 describe('ZodValidationPipe', () => {
-  const pipe = new ZodValidationPipe(EventSchema);
+  const pipe = new ZodValidationPipe(EventDtoSchema);
 
   it('should pase validate', async () => {
-    const validatedEvent = await pipe.transform(REGULAR_EVENT);
+    const validatedEvent = await pipe.transform(REGULAR_EVENT_SCHEMA);
 
-    expect(validatedEvent).toEqual(REGULAR_EVENT);
+    expect(validatedEvent).toEqual(REGULAR_EVENT_SCHEMA);
   });
 
   it('should throw error', async () => {

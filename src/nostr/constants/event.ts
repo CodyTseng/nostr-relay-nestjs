@@ -34,3 +34,11 @@ export enum TagName {
   NONCE = 'nonce',
   EXPIRATION = 'expiration',
 }
+
+export enum EventType {
+  REGULAR = 'REGULAR',
+  REPLACEABLE = 'REPLACEABLE',
+  EPHEMERAL = 'EPHEMERAL',
+  DELETION = 'DELETION',
+  PARAMETERIZED_REPLACEABLE = 'PARAMETERIZED_REPLACEABLE',
+}

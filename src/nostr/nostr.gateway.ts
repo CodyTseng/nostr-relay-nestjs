@@ -15,14 +15,17 @@ import { WsExceptionFilter } from '../common/filters';
 import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
+import { Event } from './entities/event.entity';
 import {
-  CloseMessage,
+  CloseMessageDto,
+  CountMessageDto,
+  EventMessageDto,
+  ReqMessageDto,
+} from './interface';
+import {
   CloseMessageSchema,
-  CountMessage,
   CountMessageSchema,
-  EventMessage,
   EventMessageSchema,
-  ReqMessage,
   ReqMessageSchema,
 } from './schemas';
 import { EventService } from './services/event.service';
@@ -32,7 +35,6 @@ import {
   createCountResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
-  isEventValid,
 } from './utils';
 
 @WebSocketGateway()
@@ -63,9 +65,10 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage(MessageType.EVENT)
   async event(
     @MessageBody(new ZodValidationPipe(EventMessageSchema))
-    [event]: EventMessage,
+    [e]: EventMessageDto,
   ) {
-    const validateErrorMsg = await isEventValid(event, {
+    const event = Event.fromEventDto(e);
+    const validateErrorMsg = await event.validate({
       createdAtUpperLimit: this.limitConfig.createdAt.upper,
       eventIdMinLeadingZeroBits: this.limitConfig.eventId.minLeadingZeroBits,
     });
@@ -91,7 +94,7 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   async req(
     @ConnectedSocket() client: WebSocket,
     @MessageBody(new ZodValidationPipe(ReqMessageSchema))
-    [subscriptionId, ...filters]: ReqMessage,
+    [subscriptionId, ...filters]: ReqMessageDto,
   ) {
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
@@ -106,7 +109,7 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   close(
     @ConnectedSocket() client: WebSocket,
     @MessageBody(new ZodValidationPipe(CloseMessageSchema))
-    [subscriptionId]: CloseMessage,
+    [subscriptionId]: CloseMessageDto,
   ) {
     this.subscriptionService.unSubscribe(client, subscriptionId);
   }
@@ -114,7 +117,7 @@ export class NostrGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage(MessageType.COUNT)
   async count(
     @MessageBody(new ZodValidationPipe(CountMessageSchema))
-    [subscriptionId, ...filters]: CountMessage,
+    [subscriptionId, ...filters]: CountMessageDto,
   ) {
     const count = await this.eventService.countByFilters(filters);
     return createCountResponse(subscriptionId, count);

@@ -1,6 +1,7 @@
-import { Event, EventId, Filter, Pubkey } from '../schemas';
+import { Event } from '../entities';
+import { EventId, FilterDto, Pubkey } from '../interface';
 
-export type EventRepositoryFilter = Filter & { dTagValues?: string[] };
+export type EventRepositoryFilter = FilterDto & { dTagValues?: string[] };
 
 export abstract class EventRepository {
   abstract create(event: Event): Promise<boolean>;

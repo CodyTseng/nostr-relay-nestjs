@@ -1,11 +1,12 @@
 import { TAG_NAME_REGEX } from '../constants';
-import { Event, Filter } from '../schemas';
+import { Event } from '../entities';
+import { FilterDto } from '../interface';
 
 export function isGenericTagName(tagName: string) {
   return TAG_NAME_REGEX.test(tagName);
 }
 
-export function isEventMatchingFilter(event: Event, filter: Filter) {
+export function isEventMatchingFilter(event: Event, filter: FilterDto) {
   if (filter.ids && !filter.ids.some((id) => event.id.startsWith(id))) {
     return false;
   }

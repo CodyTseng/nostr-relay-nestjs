@@ -1,5 +1,7 @@
 import { MessageType } from '../constants';
-import { EventId, Event, SubscriptionId } from '../schemas';
+import { Event } from '../entities';
+import { EventDto } from '../interface';
+import { EventId, SubscriptionId } from '../interface';
 
 export type CommandResultResponse = [MessageType.OK, EventId, boolean, string];
 export function createCommandResultResponse(
@@ -10,12 +12,12 @@ export function createCommandResultResponse(
   return [MessageType.OK, eventId, success, message];
 }
 
-export type EventResponse = [MessageType.EVENT, SubscriptionId, Event];
+export type EventResponse = [MessageType.EVENT, SubscriptionId, EventDto];
 export function createEventResponse(
   subscriptionId: SubscriptionId,
   event: Event,
 ): EventResponse {
-  return [MessageType.EVENT, subscriptionId, event];
+  return [MessageType.EVENT, subscriptionId, event.toEventDto()];
 }
 
 export type EndOfStoredEventResponse = [MessageType.EOSE, SubscriptionId];

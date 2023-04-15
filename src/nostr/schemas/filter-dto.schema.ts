@@ -23,7 +23,7 @@ const TagFilterSchema = z.record(
   z.array(z.string().max(1024)).max(256),
 );
 
-export const FilterSchema = z
+export const FilterDtoSchema = z
   .preprocess(
     (obj: object) => {
       const normalFilter = {};
@@ -49,4 +49,3 @@ export const FilterSchema = z
       tagFilter as Record<`#${string}`, string[]>,
     );
   });
-export type Filter = z.infer<typeof FilterSchema>;

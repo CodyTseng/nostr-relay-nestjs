@@ -1,18 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { difference, union } from 'lodash';
-import { E_EVENT_BROADCAST, TagName } from '../constants';
+import { EventType, E_EVENT_BROADCAST, TagName } from '../constants';
+import { Event } from '../entities';
 import { EventRepository } from '../repositories';
-import { Event, EventIdSchema, Filter } from '../schemas';
-import {
-  CommandResultResponse,
-  createCommandResultResponse,
-  extractDTagValueFromEvent,
-  isDeletionEvent,
-  isEphemeralEvent,
-  isParameterizedReplaceableEvent,
-  isReplaceableEvent,
-} from '../utils';
+import { EventIdSchema } from '../schemas';
+import { FilterDto } from '../interface';
+import { CommandResultResponse, createCommandResultResponse } from '../utils';
 
 @Injectable()
 export class EventService {
@@ -21,32 +15,27 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async findByFilters(filters: Filter[]): Promise<Event[]> {
+  async findByFilters(filters: FilterDto[]): Promise<Event[]> {
     return await this.eventRepository.find(filters);
   }
 
-  async countByFilters(filters: Filter[]): Promise<number> {
+  async countByFilters(filters: FilterDto[]): Promise<number> {
     return await this.eventRepository.count(filters);
   }
 
   async handleEvent(event: Event): Promise<void | CommandResultResponse> {
-    if (isReplaceableEvent(event)) {
-      return this.handleReplaceableEvent(event);
+    switch (event.type) {
+      case EventType.REPLACEABLE:
+        return this.handleReplaceableEvent(event);
+      case EventType.EPHEMERAL:
+        return this.handleEphemeralEvent(event);
+      case EventType.DELETION:
+        return this.handleDeletionEvent(event);
+      case EventType.PARAMETERIZED_REPLACEABLE:
+        return this.handleParameterizedReplaceableEvent(event);
+      default:
+        return this.handleRegularEvent(event);
     }
-
-    if (isEphemeralEvent(event)) {
-      return this.handleEphemeralEvent(event);
-    }
-
-    if (isDeletionEvent(event)) {
-      return this.handleDeletionEvent(event);
-    }
-
-    if (isParameterizedReplaceableEvent(event)) {
-      return this.handleParameterizedReplaceableEvent(event);
-    }
-
-    return this.handleRegularEvent(event);
   }
 
   private async handleDeletionEvent(event: Event) {
@@ -87,11 +76,10 @@ export class EventService {
   }
 
   private async handleParameterizedReplaceableEvent(event: Event) {
-    const dTagValue = extractDTagValueFromEvent(event);
     const oldEvent = await this.eventRepository.findOne({
       authors: [event.pubkey],
       kinds: [event.kind],
-      dTagValues: [dTagValue],
+      dTagValues: [event.dTagValue ?? ''],
     });
     return await this.replaceEvent(event, oldEvent);
   }

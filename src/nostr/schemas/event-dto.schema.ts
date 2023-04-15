@@ -9,7 +9,7 @@ import {
   TimestampInSecSchema,
 } from './common.schema';
 
-export const EventSchema = z.object({
+export const EventDtoSchema = z.object({
   id: EventIdSchema,
   pubkey: PubkeySchema,
   created_at: TimestampInSecSchema,
@@ -18,4 +18,3 @@ export const EventSchema = z.object({
   content: EventContentSchema,
   sig: EventSigSchema,
 });
-export type Event = z.infer<typeof EventSchema>;
