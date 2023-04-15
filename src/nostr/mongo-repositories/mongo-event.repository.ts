@@ -1,24 +1,14 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { MongoServerError } from 'mongodb';
 import { FilterQuery, Model } from 'mongoose';
-import {
-  EventKind,
-  EVENT_ID_LENGTH,
-  MAX_TIMESTAMP,
-  PUBKEY_LENGTH,
-} from '../constants';
+import { EventKind, EVENT_ID_LENGTH, PUBKEY_LENGTH } from '../constants';
+import { Event } from '../entities';
 import {
   EventRepository,
   EventRepositoryFilter,
 } from '../repositories/event.repository';
-import { Event, EventId, Pubkey } from '../schemas';
-import {
-  extractDTagValueFromEvent,
-  extractExpirationTimestamp,
-  getTimestampInSeconds,
-  isGenericTagName,
-  isParameterizedReplaceableEvent,
-} from '../utils';
+import { EventId, Pubkey } from '../schemas';
+import { getTimestampInSeconds } from '../utils';
 import { DbEvent, DbEventDocument } from './db-event.schema';
 
 export class MongoEventRepository extends EventRepository {
@@ -95,7 +85,8 @@ export class MongoEventRepository extends EventRepository {
   }
 
   private toEvent(dbEvent: DbEventDocument): Event {
-    return {
+    return new Event({
+      type: Event.getEventType({ kind: dbEvent.kind }),
       id: dbEvent._id,
       pubkey: dbEvent.pubkey,
       created_at: dbEvent.created_at,
@@ -103,11 +94,13 @@ export class MongoEventRepository extends EventRepository {
       tags: dbEvent.tags,
       content: dbEvent.content,
       sig: dbEvent.sig,
-    };
+      expirationTimestamp: dbEvent.expirationTimestamp,
+      dTagValue: dbEvent.dTagValue,
+    });
   }
 
   private toDbEvent(event: Event): DbEvent {
-    const dbEvent: DbEvent = {
+    return {
       _id: event.id,
       pubkey: event.pubkey,
       created_at: event.created_at,
@@ -115,13 +108,10 @@ export class MongoEventRepository extends EventRepository {
       tags: event.tags,
       content: event.content,
       sig: event.sig,
-      expirationTimestamp: extractExpirationTimestamp(event) ?? MAX_TIMESTAMP,
+      expirationTimestamp: event.expirationTimestamp,
+      dTagValue: event.dTagValue,
       deleted: false,
     };
-    if (isParameterizedReplaceableEvent(event)) {
-      dbEvent.dTagValue = extractDTagValueFromEvent(event);
-    }
-    return dbEvent;
   }
 
   private buildMongoFilter(
@@ -164,16 +154,16 @@ export class MongoEventRepository extends EventRepository {
           filterQuery.created_at.$lte = filter.until;
         }
 
-        const tagFilters = Object.keys(filter)
-          .filter(isGenericTagName)
-          .map((key) => ({
-            tags: {
-              $elemMatch: {
-                '0': key[1],
-                '1': { $in: filter[key] },
+        const tagFilters = filter.tags
+          ? Object.entries(filter.tags).map(([tagName, tagValues]) => ({
+              tags: {
+                $elemMatch: {
+                  '0': tagName,
+                  '1': { $in: tagValues },
+                },
               },
-            },
-          }));
+            }))
+          : [];
         if (tagFilters.length > 0) {
           filterQuery.$and = tagFilters;
         }

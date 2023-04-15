@@ -3,8 +3,9 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
 import { E_EVENT_BROADCAST } from '../constants';
-import { Event, Filter, SubscriptionId } from '../schemas';
-import { createEventResponse, isEventMatchingFilter } from '../utils';
+import { Event, Filter } from '../entities';
+import { SubscriptionId } from '../schemas';
+import { createEventResponse } from '../utils';
 
 @Injectable()
 export class SubscriptionService {
@@ -63,7 +64,7 @@ export class SubscriptionService {
           return;
         }
         subscriptions.forEach((filters, subscriptionId) => {
-          if (!filters.some((filter) => isEventMatchingFilter(event, filter))) {
+          if (!filters.some((filter) => filter.isEventMatching(event))) {
             return;
           }
           client.send(

@@ -8,8 +8,8 @@ import {
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../../seeds';
+import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
-import { Event } from '../schemas';
 import { createCommandResultResponse } from '../utils';
 import { EventService } from './event.service';
 
@@ -91,10 +91,11 @@ describe('EventService', () => {
 
       it('should return duplicate when the event older than a similar event that already exists', async () => {
         const eventRepository = createMock<EventRepository>({
-          findOne: async () => ({
-            ...REPLACEABLE_EVENT,
-            created_at: REPLACEABLE_EVENT.created_at + 1,
-          }),
+          findOne: async () =>
+            Event.fromEventDto({
+              ...REPLACEABLE_EVENT,
+              created_at: REPLACEABLE_EVENT.created_at + 1,
+            }),
           replace: async () => true,
         });
         const eventService = new EventService(eventRepository, eventEmitter);
@@ -189,7 +190,9 @@ describe('EventService', () => {
 
         const eventService = new EventService(eventRepository, eventEmitter);
 
-        await expect(eventService.findByFilters([{}])).resolves.toEqual(events);
+        await expect(
+          eventService.findByFilters([{}].map(Filter.fromFilterDto)),
+        ).resolves.toEqual(events);
       });
     });
 
@@ -202,7 +205,9 @@ describe('EventService', () => {
 
         const eventService = new EventService(eventRepository, eventEmitter);
 
-        expect(await eventService.countByFilters([{}])).toBe(COUNT);
+        expect(
+          await eventService.countByFilters([{}].map(Filter.fromFilterDto)),
+        ).toBe(COUNT);
       });
     });
   });

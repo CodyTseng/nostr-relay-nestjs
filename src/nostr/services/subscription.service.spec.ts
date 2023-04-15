@@ -1,8 +1,8 @@
 import { createMock } from '@golevelup/ts-jest';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
-import { Filter } from '../schemas';
-import { REGULAR_EVENT } from './../../../seeds/event';
+import { REGULAR_EVENT } from '../../../seeds';
+import { Filter } from '../entities';
 import { SubscriptionService } from './subscription.service';
 
 describe('SubscriptionService', () => {
@@ -15,9 +15,9 @@ describe('SubscriptionService', () => {
   it('should subscribe successfully', () => {
     const client = createMock<WebSocket>();
     const subscriptionIdA = 'testA';
-    const filtersA: Filter[] = [{ kinds: [1] }];
+    const filtersA = [{ kinds: [1] }].map(Filter.fromFilterDto);
     const subscriptionIdB = 'testB';
-    const filtersB: Filter[] = [{ kinds: [2] }];
+    const filtersB = [{ kinds: [2] }].map(Filter.fromFilterDto);
 
     subscriptionService.subscribe(client, subscriptionIdA, filtersA);
     subscriptionService.subscribe(client, subscriptionIdB, filtersB);
@@ -33,7 +33,7 @@ describe('SubscriptionService', () => {
   it('should unsubscribe successfully', () => {
     const client = createMock<WebSocket>();
     const subscriptionId = 'test';
-    const filters: Filter[] = [{ kinds: [1] }];
+    const filters = [{ kinds: [1] }].map(Filter.fromFilterDto);
 
     expect(subscriptionService.unSubscribe(client, subscriptionId)).toBeFalsy();
 
@@ -51,7 +51,7 @@ describe('SubscriptionService', () => {
   it('should clear successfully', () => {
     const client = createMock<WebSocket>();
     const subscriptionId = 'test';
-    const filters: Filter[] = [{ kinds: [1] }];
+    const filters = [{ kinds: [1] }].map(Filter.fromFilterDto);
 
     subscriptionService.subscribe(client, subscriptionId, filters);
     subscriptionService.clear(client);
@@ -75,7 +75,7 @@ describe('SubscriptionService', () => {
         readyState: WebSocket.OPEN,
       });
       const subscriptionId = 'test';
-      const filters: Filter[] = [{ kinds: [1] }];
+      const filters = [{ kinds: [1] }].map(Filter.fromFilterDto);
 
       subscriptionService.setServer(
         createMock<WebSocketServer>({
@@ -98,7 +98,7 @@ describe('SubscriptionService', () => {
         send: mockClientSend,
       });
       const subscriptionId = 'test';
-      const filters: Filter[] = [{ kinds: [1] }];
+      const filters = [{ kinds: [1] }].map(Filter.fromFilterDto);
 
       subscriptionService.setServer(
         createMock<WebSocketServer>({ clients: new Set([client]) }),
@@ -116,7 +116,7 @@ describe('SubscriptionService', () => {
         send: mockClientSend,
       });
       const subscriptionId = 'test';
-      const filters: Filter[] = [{ kinds: [2] }];
+      const filters = [{ kinds: [2] }].map(Filter.fromFilterDto);
 
       subscriptionService.setServer(
         createMock<WebSocketServer>({ clients: new Set([client]) }),
