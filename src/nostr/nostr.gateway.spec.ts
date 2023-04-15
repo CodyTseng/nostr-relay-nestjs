@@ -4,9 +4,9 @@ import { PinoLogger } from 'nestjs-pino';
 import { lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  CAUSE_ERROR_EVENT_SCHEMA,
-  REGULAR_EVENT_SCHEMA,
-  REPLACEABLE_EVENT_SCHEMA,
+  CAUSE_ERROR_EVENT_DTO,
+  REGULAR_EVENT_DTO,
+  REPLACEABLE_EVENT_DTO,
 } from '../../seeds';
 import { MessageType } from './constants';
 import { Event } from './entities';
@@ -21,7 +21,7 @@ import {
 
 describe('NostrGateway', () => {
   const ERROR_MSG = 'test';
-  const FIND_EVENTS = [REGULAR_EVENT_SCHEMA, REPLACEABLE_EVENT_SCHEMA];
+  const FIND_EVENTS = [REGULAR_EVENT_DTO, REPLACEABLE_EVENT_DTO];
 
   let nostrGateway: NostrGateway;
   let mockSubscriptionServiceSetServer: jest.Mock;
@@ -39,7 +39,7 @@ describe('NostrGateway', () => {
     });
     const mockEventService = createMock<EventService>({
       handleEvent: async (event: Event) => {
-        if (event.id === CAUSE_ERROR_EVENT_SCHEMA.id) {
+        if (event.id === CAUSE_ERROR_EVENT_DTO.id) {
           throw new Error(ERROR_MSG);
         }
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
@@ -57,17 +57,20 @@ describe('NostrGateway', () => {
 
   describe('EVENT', () => {
     it('should handle event successfully', async () => {
-      await expect(nostrGateway.event([REGULAR_EVENT_SCHEMA])).resolves.toEqual(
-        [MessageType.OK, REGULAR_EVENT_SCHEMA.id, true, ''],
-      );
+      await expect(nostrGateway.event([REGULAR_EVENT_DTO])).resolves.toEqual([
+        MessageType.OK,
+        REGULAR_EVENT_DTO.id,
+        true,
+        '',
+      ]);
     });
 
     it('should return validate error', async () => {
       await expect(
-        nostrGateway.event([{ ...REGULAR_EVENT_SCHEMA, sig: 'fake-sig' }]),
+        nostrGateway.event([{ ...REGULAR_EVENT_DTO, sig: 'fake-sig' }]),
       ).resolves.toEqual([
         MessageType.OK,
-        REGULAR_EVENT_SCHEMA.id,
+        REGULAR_EVENT_DTO.id,
         false,
         'invalid: signature is wrong',
       ]);
@@ -75,10 +78,10 @@ describe('NostrGateway', () => {
 
     it('should return an error', async () => {
       await expect(
-        nostrGateway.event([CAUSE_ERROR_EVENT_SCHEMA]),
+        nostrGateway.event([CAUSE_ERROR_EVENT_DTO]),
       ).resolves.toEqual([
         MessageType.OK,
-        CAUSE_ERROR_EVENT_SCHEMA.id,
+        CAUSE_ERROR_EVENT_DTO.id,
         false,
         'error: ' + ERROR_MSG,
       ]);

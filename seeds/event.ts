@@ -1,6 +1,6 @@
 import { Event } from '../src/nostr/entities';
 
-export const REGULAR_EVENT_SCHEMA = {
+export const REGULAR_EVENT_DTO = {
   id: 'f2c611fb04e2586703ccc13a6ddcbfe7ac5026ace1e0cf2ab79337b3ff73ac70',
   pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
   created_at: 1679816105,
@@ -10,7 +10,7 @@ export const REGULAR_EVENT_SCHEMA = {
   sig: 'fa6418a8a9cc2ed336fad1ee971c5e352ad81f2fb642121705eb2a2053a410f6addb225e3684d6aa3a20f6b24731cc6f25fe191f7e937c6d580fe684df41ad8a',
 };
 
-export const REPLACEABLE_EVENT_SCHEMA = {
+export const REPLACEABLE_EVENT_DTO = {
   id: '475511d5d231fd0209ff1f03ec74695b05fef16b33206efe15280c69b953e769',
   pubkey: 'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7',
   created_at: 1679816038,
@@ -21,7 +21,7 @@ export const REPLACEABLE_EVENT_SCHEMA = {
   sig: '825a5e943b11ed85210cfcfef1894f51459391d7e531a502e4a1c53c2b6a523409063a4b2b15c226f3a0dd44dab93dea20aea2c46cac3464decb4ed617013d27',
 };
 
-export const CAUSE_ERROR_EVENT_SCHEMA = {
+export const CAUSE_ERROR_EVENT_DTO = {
   id: '7e8b1ecd5e1bd8e49e0a1f7b350b289ad4553c35e570e44c6a11d727ade74b19',
   pubkey: '601ac81a5bbd42cec83d8564ab6b1b145e61dd95689b11b6a67d37bf420c6268',
   created_at: 1679744985,

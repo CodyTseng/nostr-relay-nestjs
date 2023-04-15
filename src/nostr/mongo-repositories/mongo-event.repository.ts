@@ -155,10 +155,10 @@ export class MongoEventRepository extends EventRepository {
         }
 
         const tagFilters = filter.tags
-          ? Object.entries(filter.tags).map(([tagKey, tagValues]) => ({
+          ? Object.entries(filter.tags).map(([tagName, tagValues]) => ({
               tags: {
                 $elemMatch: {
-                  '0': tagKey,
+                  '0': tagName,
                   '1': { $in: tagValues },
                 },
               },
