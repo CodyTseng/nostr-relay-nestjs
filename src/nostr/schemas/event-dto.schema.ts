@@ -18,3 +18,5 @@ export const EventDtoSchema = z.object({
   content: EventContentSchema,
   sig: EventSigSchema,
 });
+
+export type EventDto = z.infer<typeof EventDtoSchema>;

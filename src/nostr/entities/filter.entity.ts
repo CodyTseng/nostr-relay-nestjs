@@ -4,7 +4,7 @@ import {
   FilterDto,
   Pubkey,
   TimestampInSeconds,
-} from '../interface';
+} from '../schemas';
 import { Event } from './event.entity';
 
 export class Filter {

@@ -4,7 +4,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
 import { E_EVENT_BROADCAST } from '../constants';
 import { Event, Filter } from '../entities';
-import { SubscriptionId } from '../interface';
+import { SubscriptionId } from '../schemas';
 import { createEventResponse } from '../utils';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { Event, Filter } from '../entities';
-import { EventId, Pubkey } from '../interface';
+import { EventId, Pubkey } from '../schemas';
 
 export type EventRepositoryFilter = Pick<
   Filter,

@@ -7,7 +7,7 @@ import {
   EventRepository,
   EventRepositoryFilter,
 } from '../repositories/event.repository';
-import { EventId, Pubkey } from '../interface';
+import { EventId, Pubkey } from '../schemas';
 import { getTimestampInSeconds } from '../utils';
 import { DbEvent, DbEventDocument } from './db-event.schema';
 

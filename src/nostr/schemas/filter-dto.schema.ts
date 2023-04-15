@@ -55,3 +55,4 @@ export const FilterDtoSchema = z.preprocess(
     })
     .partial(),
 );
+export type FilterDto = z.infer<typeof FilterDtoSchema>;

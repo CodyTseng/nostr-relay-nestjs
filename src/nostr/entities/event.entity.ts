@@ -9,7 +9,7 @@ import {
   EventTag,
   Pubkey,
   TimestampInSeconds,
-} from '../interface';
+} from '../schemas';
 import { countLeadingZeroBits, getTimestampInSeconds } from '../utils';
 
 export class Event {

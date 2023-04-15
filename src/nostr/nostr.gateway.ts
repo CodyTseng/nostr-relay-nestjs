@@ -18,14 +18,12 @@ import { MessageType } from './constants';
 import { Event, Filter } from './entities';
 import {
   CloseMessageDto,
-  CountMessageDto,
-  EventMessageDto,
-  ReqMessageDto,
-} from './interface';
-import {
   CloseMessageSchema,
+  CountMessageDto,
   CountMessageSchema,
+  EventMessageDto,
   EventMessageSchema,
+  ReqMessageDto,
   ReqMessageSchema,
 } from './schemas';
 import { EventService } from './services/event.service';
