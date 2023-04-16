@@ -6,9 +6,11 @@ import {
   EXPIRED_EVENT,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
+  REGULAR_EVENT_DTO,
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
+import { Event } from '../entities';
 import { EventRepository } from '../repositories';
 import { MongoRepositoriesModule } from './mongo-repositories.module';
 
@@ -49,6 +51,14 @@ describe('MongoEventRepository', () => {
       expect(
         await eventRepository.create(PARAMETERIZED_REPLACEABLE_EVENT),
       ).toBeFalsy();
+    });
+
+    it('should throw error', async () => {
+      await expect(
+        eventRepository.create(
+          Event.fromEventDto({ ...REGULAR_EVENT_DTO, id: undefined } as any),
+        ),
+      ).rejects.toThrowError();
     });
   });
 
