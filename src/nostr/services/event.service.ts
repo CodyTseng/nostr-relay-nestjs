@@ -6,12 +6,14 @@ import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventIdSchema } from '../schemas';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
+import { LockService } from './lock.service';
 
 @Injectable()
 export class EventService {
   constructor(
     private readonly eventRepository: EventRepository,
     private readonly eventEmitter: EventEmitter2,
+    private readonly lockService: LockService,
   ) {}
 
   async findByFilters(filters: Filter[]): Promise<Event[]> {
@@ -67,20 +69,50 @@ export class EventService {
   private async handleReplaceableEvent(
     event: Event,
   ): Promise<CommandResultResponse> {
-    const oldEvent = await this.eventRepository.findOne({
-      authors: [event.pubkey],
-      kinds: [event.kind],
-    });
-    return this.replaceEvent(event, oldEvent);
+    const key = this.lockService.getHandleReplaceableEventKey(event);
+    const lock = await this.lockService.acquireLock(key);
+    if (!lock) {
+      return createCommandResultResponse(
+        event.id,
+        false,
+        'rate-limited: slow down there chief',
+      );
+    }
+
+    try {
+      const oldEvent = await this.eventRepository.findOne({
+        authors: [event.pubkey],
+        kinds: [event.kind],
+      });
+      return await this.replaceEvent(event, oldEvent);
+    } finally {
+      await this.lockService.releaseLock(key);
+    }
   }
 
   private async handleParameterizedReplaceableEvent(event: Event) {
-    const oldEvent = await this.eventRepository.findOne({
-      authors: [event.pubkey],
-      kinds: [event.kind],
-      dTagValues: [event.dTagValue ?? ''],
-    });
-    return await this.replaceEvent(event, oldEvent);
+    const key =
+      this.lockService.getHandleParameterizedReplaceableEventKey(event);
+    const lock = await this.lockService.acquireLock(key);
+    if (!lock) {
+      return createCommandResultResponse(
+        event.id,
+        false,
+        'rate-limited: slow down there chief',
+      );
+    }
+
+    try {
+      const oldEvent = await this.eventRepository.findOne({
+        authors: [event.pubkey],
+        kinds: [event.kind],
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        dTagValues: [event.dTagValue!],
+      });
+      return await this.replaceEvent(event, oldEvent);
+    } finally {
+      await this.lockService.releaseLock(key);
+    }
   }
 
   private handleEphemeralEvent(event: Event): void {
