@@ -33,6 +33,7 @@ export enum TagName {
   D = 'd',
   NONCE = 'nonce',
   EXPIRATION = 'expiration',
+  DELEGATION = 'delegation',
 }
 
 export enum EventType {

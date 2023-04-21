@@ -23,6 +23,7 @@ export class Event {
   readonly sig: EventSig;
   readonly expirationTimestamp: TimestampInSeconds;
   readonly dTagValue?: string;
+  delegator?: Pubkey;
 
   constructor(
     event: Pick<
@@ -37,6 +38,7 @@ export class Event {
       | 'tags'
       | 'dTagValue'
       | 'expirationTimestamp'
+      | 'delegator'
     >,
   ) {
     this.type = event.type;
@@ -49,6 +51,7 @@ export class Event {
     this.sig = event.sig;
     this.expirationTimestamp = event.expirationTimestamp;
     this.dTagValue = event.dTagValue;
+    this.delegator = event.delegator;
   }
 
   static fromEventDto(eventDto: EventDto) {
@@ -169,6 +172,16 @@ export class Event {
         return `pow: difficulty ${targetPow} is less than ${options.eventIdMinLeadingZeroBits}`;
       }
     }
+
+    const delegationTag = this.tags.find(
+      ([tagName]) => tagName === TagName.DELEGATION,
+    );
+    if (delegationTag) {
+      if (!(await this.isDelegationTagValid(delegationTag))) {
+        return 'invalid: delegation tag verification failed';
+      }
+      this.delegator = delegationTag[1];
+    }
   }
 
   toEventDto(): EventDto {
@@ -198,5 +211,43 @@ export class Event {
 
   private async isEventSigValid() {
     return schnorr.verify(this.sig, this.id, this.pubkey);
+  }
+
+  private async isDelegationTagValid(delegationTag: string[]) {
+    if (delegationTag.length !== 4) {
+      return false;
+    }
+    const [, delegator, conditionsStr, token] = delegationTag;
+
+    const delegationStr = await utils.sha256(
+      Buffer.from(`nostr:delegation:${this.pubkey}:${conditionsStr}`),
+    );
+    if (!(await schnorr.verify(token, delegationStr, delegator))) {
+      return false;
+    }
+
+    return conditionsStr.split('&').every((conditionStr) => {
+      const operatorIndex = conditionStr.search(/[=><]/);
+      if (operatorIndex < 0) {
+        return false;
+      }
+
+      const operator = conditionStr[operatorIndex];
+      const attribute = conditionStr.slice(0, operatorIndex);
+      const value = parseInt(conditionStr.slice(operatorIndex + 1));
+
+      if (isNaN(value)) {
+        return false;
+      }
+      if (attribute === 'kind' && operator === '=') {
+        return this.kind === value;
+      }
+      if (attribute === 'created_at' && operator === '>') {
+        return this.created_at > value;
+      }
+      if (attribute === 'created_at' && operator === '<') {
+        return this.created_at < value;
+      }
+    });
   }
 }

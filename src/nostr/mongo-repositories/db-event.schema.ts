@@ -33,6 +33,9 @@ export class DbEvent {
   @Prop({})
   dTagValue?: string;
 
+  @Prop({})
+  delegator?: string;
+
   @Prop({ default: false })
   deleted: boolean;
 }
