@@ -1,4 +1,12 @@
 import {
+  DELEGATION_CREATED_AT_LESS_EVENT,
+  DELEGATION_CREATED_AT_MORE_EVENT,
+  DELEGATION_EVENT_DTO,
+  DELEGATION_KIND_ERROR_EVENT,
+  DELEGATION_MISSING_INFO_EVENT,
+  DELEGATION_MISSING_OPERATOR_EVENT,
+  DELEGATION_NAN_CONDITION_VALUE_EVENT,
+  DELEGATION_WRONG_SIG_EVENT,
   EXPIRED_EVENT,
   FUTURE_REGULAR_EVENT,
   LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT,
@@ -11,9 +19,15 @@ import { MAX_TIMESTAMP } from '../constants';
 import { Event } from './event.entity';
 
 describe('Event entity', () => {
-  describe('isEventValid', () => {
+  describe('validate', () => {
     it('should return undefined', async () => {
       expect(await NON_EXPIRED_EVENT.validate()).toBeUndefined();
+
+      const delegationEvent = Event.fromEventDto(DELEGATION_EVENT_DTO);
+      expect(await delegationEvent.validate()).toBeUndefined();
+      expect(delegationEvent.delegator).toBe(
+        'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac',
+      );
     });
 
     it('should return event id is wrong', async () => {
@@ -64,6 +78,31 @@ describe('Event entity', () => {
 
     it('should return event is expired', async () => {
       expect(await EXPIRED_EVENT.validate()).toBe('reject: event is expired');
+    });
+
+    it('should return delegation tag verification failed', async () => {
+      expect(await DELEGATION_KIND_ERROR_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
+      expect(await DELEGATION_CREATED_AT_LESS_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
+      expect(await DELEGATION_CREATED_AT_MORE_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
+
+      expect(await DELEGATION_MISSING_INFO_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
+      expect(await DELEGATION_WRONG_SIG_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
+      expect(await DELEGATION_MISSING_OPERATOR_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
+      expect(await DELEGATION_NAN_CONDITION_VALUE_EVENT.validate()).toBe(
+        'invalid: delegation tag verification failed',
+      );
     });
   });
 

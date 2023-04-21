@@ -96,6 +96,7 @@ export class MongoEventRepository extends EventRepository {
       sig: dbEvent.sig,
       expirationTimestamp: dbEvent.expirationTimestamp,
       dTagValue: dbEvent.dTagValue,
+      delegator: dbEvent.delegator,
     });
   }
 
@@ -110,6 +111,7 @@ export class MongoEventRepository extends EventRepository {
       sig: event.sig,
       expirationTimestamp: event.expirationTimestamp,
       dTagValue: event.dTagValue,
+      delegator: event.delegator,
       deleted: false,
     };
   }
@@ -130,13 +132,13 @@ export class MongoEventRepository extends EventRepository {
         }
 
         if (filter.authors?.length) {
-          filterQuery.pubkey = {
-            $in: filter.authors.map((author) =>
-              author.length === PUBKEY_LENGTH
-                ? author
-                : new RegExp(`^${author}`),
-            ),
-          };
+          const authors = filter.authors.map((author) =>
+            author.length === PUBKEY_LENGTH ? author : new RegExp(`^${author}`),
+          );
+          filterQuery.$or = [
+            { pubkey: { $in: authors } },
+            { delegator: { $in: authors } },
+          ];
         }
 
         if (filter.kinds?.length) {

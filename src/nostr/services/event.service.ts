@@ -53,7 +53,7 @@ export class EventService {
     if (eventIds.length > 0) {
       const events = await this.eventRepository.find({ ids: eventIds });
       const eventIdsNotBelongToPubkey = events
-        .filter((item) => item.pubkey !== event.pubkey)
+        .filter((item) => ![item.pubkey, item.delegator].includes(event.pubkey))
         .map((item) => item.id);
 
       const eventIdsToBeDeleted = difference(
