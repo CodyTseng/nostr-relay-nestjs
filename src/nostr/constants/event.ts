@@ -21,6 +21,7 @@ export enum EventKind {
   REPLACEABLE_LAST = 19999,
   // Ephemeral Events
   EPHEMERAL_FIRST = 20000,
+  AUTHENTICATION = 22242,
   EPHEMERAL_LAST = 29999,
   // Parameterized Replaceable Events
   PARAMETERIZED_REPLACEABLE_FIRST = 30000,
@@ -34,6 +35,8 @@ export enum TagName {
   NONCE = 'nonce',
   EXPIRATION = 'expiration',
   DELEGATION = 'delegation',
+  RELAY = 'relay',
+  CHALLENGE = 'challenge',
 }
 
 export enum EventType {

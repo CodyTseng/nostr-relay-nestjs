@@ -6,4 +6,5 @@ export enum MessageType {
   NOTICE = 'NOTICE',
   EOSE = 'EOSE',
   COUNT = 'COUNT',
+  AUTH = 'AUTH',
 }

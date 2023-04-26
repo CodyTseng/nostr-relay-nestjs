@@ -5,10 +5,13 @@ import { lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT_DTO,
+  createEncryptedDirectMessageEventMock,
+  createSignedEventMock,
   REGULAR_EVENT_DTO,
   REPLACEABLE_EVENT_DTO,
+  TEST_PUBKEY,
 } from '../../seeds';
-import { MessageType } from './constants';
+import { EventKind, MessageType } from './constants';
 import { Event } from './entities';
 import { NostrGateway } from './nostr.gateway';
 import { EventService } from './services/event.service';
@@ -106,6 +109,54 @@ describe('NostrGateway', () => {
         [MessageType.EOSE, subscriptionId],
       ]);
     });
+
+    it('should reject when unauthenticated and count DM events', async () => {
+      await expect(
+        nostrGateway.req({} as any, [
+          'test:req',
+          { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
+        ]),
+      ).rejects.toThrowError(
+        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+      );
+    });
+
+    it('should filter out unauthorized events', async () => {
+      const encryptedDirectMessageEvent =
+        await createEncryptedDirectMessageEventMock();
+      (nostrGateway as any).eventService = createMock<EventService>({
+        findByFilters: async () => [encryptedDirectMessageEvent],
+      });
+      const subscriptionId = 'test:req';
+      const responses: (EventResponse | EndOfStoredEventResponse)[] = [];
+
+      const response$ = await nostrGateway.req({} as any, [subscriptionId, {}]);
+      response$.subscribe((item) => responses.push(item));
+      await lastValueFrom(response$);
+
+      expect(responses).toEqual([[MessageType.EOSE, subscriptionId]]);
+
+      const responses2: (EventResponse | EndOfStoredEventResponse)[] = [];
+
+      const response2$ = await nostrGateway.req(
+        {
+          pubkey:
+            'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac',
+        } as any,
+        [subscriptionId, {}],
+      );
+      response2$.subscribe((item) => responses2.push(item));
+      await lastValueFrom(response2$);
+
+      expect(responses2).toEqual([
+        [
+          MessageType.EVENT,
+          subscriptionId,
+          encryptedDirectMessageEvent.toEventDto(),
+        ],
+        [MessageType.EOSE, subscriptionId],
+      ]);
+    });
   });
 
   describe('CLOSE', () => {
@@ -122,11 +173,52 @@ describe('NostrGateway', () => {
     it('should count successfully', async () => {
       const subscriptionId = 'test:count';
 
-      expect(await nostrGateway.count([subscriptionId, {}])).toEqual([
-        MessageType.COUNT,
-        subscriptionId,
-        { count: FIND_EVENTS.length },
+      expect(await nostrGateway.count({} as any, [subscriptionId, {}])).toEqual(
+        [MessageType.COUNT, subscriptionId, { count: FIND_EVENTS.length }],
+      );
+    });
+
+    it('should reject when unauthenticated and count DM events', async () => {
+      await expect(
+        nostrGateway.count({} as any, [
+          'test:req',
+          { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
+        ]),
+      ).rejects.toThrowError(
+        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+      );
+    });
+  });
+
+  describe('AUTH', () => {
+    it('should auth successfully', async () => {
+      (nostrGateway as any).eventService = createMock<EventService>({
+        handleSignedEvent: async (client) => {
+          client.pubkey = TEST_PUBKEY;
+        },
+      });
+      const challenge = 'challenge';
+      const client = { id: challenge } as any;
+      await nostrGateway.auth(client, [
+        await createSignedEventMock({ challenge }),
       ]);
+
+      expect(client.pubkey).toBe(TEST_PUBKEY);
+    });
+
+    it('should auth failed', async () => {
+      (nostrGateway as any).eventService = createMock<EventService>({
+        handleSignedEvent: async (client) => {
+          client.pubkey = TEST_PUBKEY;
+        },
+      });
+      const challenge = 'challenge';
+      const client = { id: challenge } as any;
+      await nostrGateway.auth(client, [
+        await createSignedEventMock({ pubkey: 'fake-pubkey', challenge }),
+      ]);
+
+      expect(client.pubkey).toBeUndefined();
     });
   });
 
@@ -136,6 +228,18 @@ describe('NostrGateway', () => {
       nostrGateway.afterInit(mockWebSocketServer);
       expect(mockSubscriptionServiceSetServer).toBeCalledWith(
         mockWebSocketServer,
+      );
+    });
+
+    it('should set an uuid and send AUTH message when it connects', () => {
+      const mockSend = jest.fn();
+      const mockClient = createMock<WebSocket>({
+        send: mockSend,
+      });
+      nostrGateway.handleConnection(mockClient);
+      expect(mockClient.id).toBeDefined();
+      expect(mockSend).toBeCalledWith(
+        JSON.stringify([MessageType.AUTH, mockClient.id]),
       );
     });
 

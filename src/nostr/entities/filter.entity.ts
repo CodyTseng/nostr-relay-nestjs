@@ -1,10 +1,5 @@
-import {
-  EventId,
-  EventKind,
-  FilterDto,
-  Pubkey,
-  TimestampInSeconds,
-} from '../schemas';
+import { EventKind } from '../constants';
+import { EventId, FilterDto, Pubkey, TimestampInSeconds } from '../schemas';
 import { Event } from './event.entity';
 
 export class Filter {
@@ -42,6 +37,12 @@ export class Filter {
 
   static fromFilterDto(filterDto: FilterDto) {
     return new Filter(filterDto);
+  }
+
+  hasEncryptedDirectMessageKind() {
+    return (
+      !!this.kinds && this.kinds.includes(EventKind.ENCRYPTED_DIRECT_MESSAGE)
+    );
   }
 
   isEventMatching(event: Event) {

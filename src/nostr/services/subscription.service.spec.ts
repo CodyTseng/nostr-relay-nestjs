@@ -1,7 +1,10 @@
 import { createMock } from '@golevelup/ts-jest';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
-import { REGULAR_EVENT } from '../../../seeds';
+import {
+  createEncryptedDirectMessageEventMock,
+  REGULAR_EVENT,
+} from '../../../seeds';
 import { Filter } from '../entities';
 import { SubscriptionService } from './subscription.service';
 
@@ -138,6 +141,26 @@ describe('SubscriptionService', () => {
       expect(mockErrorLog).toBeCalledWith(
         new Error('WebSocketServer not found'),
       );
+    });
+
+    it('should filter out unauthorized events', async () => {
+      const mockClientSend = jest.fn();
+      const client = createMock<WebSocket>({
+        readyState: WebSocket.OPEN,
+        send: mockClientSend,
+      });
+      const subscriptionId = 'test';
+      const filters = [{ kinds: [4] }].map(Filter.fromFilterDto);
+
+      subscriptionService.setServer(
+        createMock<WebSocketServer>({ clients: new Set([client]) }),
+      );
+      subscriptionService.subscribe(client, subscriptionId, filters);
+      subscriptionService.broadcast(
+        await createEncryptedDirectMessageEventMock(),
+      );
+
+      expect(mockClientSend).not.toBeCalled();
     });
   });
 });

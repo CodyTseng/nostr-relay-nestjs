@@ -15,6 +15,7 @@ describe('main', () => {
   beforeEach(async () => {
     mongoServer = await MongoMemoryServer.create();
     process.env.MONGO_URL = mongoServer.getUri();
+    process.env.DOMAIN = 'localhost';
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],

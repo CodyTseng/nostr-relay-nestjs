@@ -1,20 +1,33 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { difference, union } from 'lodash';
-import { EventType, E_EVENT_BROADCAST, TagName } from '../constants';
+import { URL } from 'url';
+import { WebSocket } from 'ws';
+import { Config } from '../../config';
+import { EventKind, EventType, E_EVENT_BROADCAST, TagName } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventIdSchema } from '../schemas';
-import { CommandResultResponse, createCommandResultResponse } from '../utils';
+import {
+  CommandResultResponse,
+  createCommandResultResponse,
+  getTimestampInSeconds,
+} from '../utils';
 import { LockService } from './lock.service';
 
 @Injectable()
 export class EventService {
+  private readonly domain: string;
+
   constructor(
     private readonly eventRepository: EventRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly lockService: LockService,
-  ) {}
+    configService: ConfigService<Config, true>,
+  ) {
+    this.domain = configService.get('domain', { infer: true });
+  }
 
   async findByFilters(filters: Filter[]): Promise<Event[]> {
     return await this.eventRepository.find(filters);
@@ -37,6 +50,32 @@ export class EventService {
       default:
         return this.handleRegularEvent(event);
     }
+  }
+
+  handleSignedEvent(client: WebSocket, event: Event): void {
+    if (event.kind !== EventKind.AUTHENTICATION) {
+      return;
+    }
+
+    let challenge = '',
+      relay = '';
+    event.tags.forEach(([tagName, tagValue]) => {
+      if (tagName === TagName.CHALLENGE) {
+        challenge = tagValue;
+      } else if (tagName === TagName.RELAY) {
+        relay = tagValue;
+      }
+    });
+
+    if (
+      challenge !== client.id ||
+      new URL(relay).hostname !== this.domain ||
+      Math.abs(event.created_at - getTimestampInSeconds()) > 10 * 60
+    ) {
+      return;
+    }
+
+    client.pubkey = event.pubkey;
   }
 
   private async handleDeletionEvent(event: Event) {
@@ -116,6 +155,9 @@ export class EventService {
   }
 
   private handleEphemeralEvent(event: Event): void {
+    if (event.kind === EventKind.AUTHENTICATION) {
+      return;
+    }
     this.broadcastEvent(event);
   }
 

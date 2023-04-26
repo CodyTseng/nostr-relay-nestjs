@@ -2,6 +2,7 @@ import {
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
 } from '../../../seeds/event';
+import { EventKind } from '../constants';
 import { Filter } from './filter.entity';
 
 describe('filter', () => {
@@ -61,6 +62,24 @@ describe('filter', () => {
         Filter.fromFilterDto({ dTagValues: ['fake'] }).isEventMatching(
           REGULAR_EVENT,
         ),
+      ).toBeFalsy();
+    });
+  });
+
+  describe('hasEncryptedDirectMessageKind', () => {
+    it('should return true', () => {
+      expect(
+        Filter.fromFilterDto({
+          kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE],
+        }).hasEncryptedDirectMessageKind(),
+      ).toBeTruthy();
+    });
+
+    it('should return false', () => {
+      expect(
+        Filter.fromFilterDto({
+          kinds: [EventKind.TEXT_NOTE],
+        }).hasEncryptedDirectMessageKind(),
       ).toBeFalsy();
     });
   });

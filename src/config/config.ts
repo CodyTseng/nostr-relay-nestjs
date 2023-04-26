@@ -6,6 +6,7 @@ import { relayInfoDocConfig } from './relay-info-doc.config';
 export function config() {
   const env = validateEnvironment(process.env);
   return {
+    domain: env.DOMAIN,
     port: env.PORT ?? 3000,
     limit: limitConfig(env),
     relayInfoDoc: relayInfoDocConfig(env),

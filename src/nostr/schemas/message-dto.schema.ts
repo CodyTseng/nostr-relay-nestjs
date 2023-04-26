@@ -18,3 +18,6 @@ export const CountMessageSchema = z
   .tuple([SubscriptionIdSchema])
   .rest(FilterDtoSchema);
 export type CountMessageDto = z.infer<typeof CountMessageSchema>;
+
+export const AuthMessageSchema = z.tuple([EventDtoSchema]);
+export type AuthMessageDto = z.infer<typeof AuthMessageSchema>;
