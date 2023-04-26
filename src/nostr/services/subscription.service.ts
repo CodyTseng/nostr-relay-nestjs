@@ -64,7 +64,10 @@ export class SubscriptionService {
           return;
         }
         subscriptions.forEach((filters, subscriptionId) => {
-          if (!filters.some((filter) => filter.isEventMatching(event))) {
+          if (
+            !filters.some((filter) => filter.isEventMatching(event)) ||
+            !event.checkPermission(client.pubkey)
+          ) {
             return;
           }
           client.send(

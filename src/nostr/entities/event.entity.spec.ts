@@ -1,4 +1,5 @@
 import {
+  createEncryptedDirectMessageEventMock,
   DELEGATION_CREATED_AT_LESS_EVENT,
   DELEGATION_CREATED_AT_MORE_EVENT,
   DELEGATION_EVENT_DTO,
@@ -135,6 +136,39 @@ describe('Event entity', () => {
       expect(Event.extractExpirationTimestamp({ tags: [['expiration']] })).toBe(
         MAX_TIMESTAMP,
       );
+    });
+  });
+
+  describe('checkPermission', () => {
+    it('should return true when pubkey is the sender or receiver of the encrypted DM event', async () => {
+      const receiver =
+        'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac';
+      const event = await createEncryptedDirectMessageEventMock({
+        to: receiver,
+      });
+
+      expect(event.checkPermission(event.pubkey)).toBeTruthy();
+      expect(event.checkPermission(receiver)).toBeTruthy();
+    });
+
+    it('should return true if it is not encrypted DM event', () => {
+      expect(REGULAR_EVENT.checkPermission()).toBeTruthy();
+    });
+
+    it('should return false when pubkey is undefined', async () => {
+      expect(
+        (await createEncryptedDirectMessageEventMock()).checkPermission(),
+      ).toBeFalsy();
+    });
+
+    it('should return false when the encrypted DM event has no receiver pubkey', async () => {
+      const event = await createEncryptedDirectMessageEventMock({
+        to: undefined,
+      });
+      expect(event.checkPermission('fake-pubkey')).toBeFalsy();
+
+      (event as any).tags = [];
+      expect(event.checkPermission('fake-pubkey')).toBeFalsy();
     });
   });
 });

@@ -42,3 +42,8 @@ export function createCountResponse(
 ): CountResponse {
   return [MessageType.COUNT, subscriptionId, { count }];
 }
+
+export type AuthResponse = [MessageType.AUTH, string];
+export function createAuthResponse(challenge: string) {
+  return [MessageType.AUTH, challenge];
+}

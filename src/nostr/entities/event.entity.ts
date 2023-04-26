@@ -124,6 +124,23 @@ export class Event {
     return isNaN(expirationTimestamp) ? MAX_TIMESTAMP : expirationTimestamp;
   }
 
+  checkPermission(pubkey?: Pubkey) {
+    if (this.kind !== EventKind.ENCRYPTED_DIRECT_MESSAGE) {
+      return true;
+    }
+
+    if (!pubkey) {
+      return false;
+    }
+
+    if ([this.pubkey, this.delegator].includes(pubkey)) {
+      return true;
+    }
+
+    const pubkeyTag = this.tags.find(([tagName]) => tagName === TagName.PUBKEY);
+    return pubkeyTag ? pubkey === pubkeyTag[1] : false;
+  }
+
   async validate(
     options: {
       createdAtUpperLimit?: number;

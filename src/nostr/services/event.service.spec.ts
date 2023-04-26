@@ -1,6 +1,9 @@
 import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { randomUUID } from 'crypto';
 import {
+  createSignedEventMock,
   DELETION_EVENT,
   EPHEMERAL_EVENT,
   EVENT_IDS_TO_BE_DELETED,
@@ -10,7 +13,7 @@ import {
 } from '../../../seeds';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
-import { createCommandResultResponse } from '../utils';
+import { createCommandResultResponse, getTimestampInSeconds } from '../utils';
 import { EventService } from './event.service';
 import { LockService } from './lock.service';
 
@@ -18,6 +21,7 @@ describe('EventService', () => {
   describe('handleEvent', () => {
     let eventEmitter: EventEmitter2, mockEmit: jest.Mock;
     let lockService: LockService;
+    let eventService: EventService;
 
     beforeEach(() => {
       mockEmit = jest.fn();
@@ -25,6 +29,51 @@ describe('EventService', () => {
         emit: mockEmit,
       });
       lockService = new LockService();
+      const configService = createMock<ConfigService>({
+        get: () => 'localhost',
+      });
+      const eventRepository = createMock<EventRepository>();
+      eventService = new EventService(
+        eventRepository,
+        eventEmitter,
+        lockService,
+        configService,
+      );
+    });
+
+    describe('handleSignedEvent', () => {
+      it('should authenticate successfully', async () => {
+        const client: any = { id: randomUUID() };
+        const event = await createSignedEventMock({ challenge: client.id });
+        eventService.handleSignedEvent(client, event);
+
+        expect(client.pubkey).toBe(event.pubkey);
+      });
+
+      it('should authenticate failed', async () => {
+        const client: any = { id: randomUUID() };
+
+        const wrongChallengeSignedEvent = await createSignedEventMock({
+          challenge: 'fake',
+        });
+        eventService.handleSignedEvent(client, wrongChallengeSignedEvent);
+        expect(client.pubkey).toBeUndefined();
+
+        const wrongRelaySignedEvent = await createSignedEventMock({
+          relay: 'fake',
+        });
+        eventService.handleSignedEvent(client, wrongRelaySignedEvent);
+        expect(client.pubkey).toBeUndefined();
+
+        const expiredSignedEvent = await createSignedEventMock({
+          created_at: getTimestampInSeconds() - 20 * 60,
+        });
+        eventService.handleSignedEvent(client, expiredSignedEvent);
+        expect(client.pubkey).toBeUndefined();
+
+        eventService.handleSignedEvent(client, REGULAR_EVENT);
+        expect(client.pubkey).toBeUndefined();
+      });
     });
 
     describe('handleRegularEvent', () => {
@@ -32,11 +81,7 @@ describe('EventService', () => {
         const eventRepository = createMock<EventRepository>({
           create: async () => true,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
           createCommandResultResponse(REGULAR_EVENT.id, true),
@@ -48,11 +93,7 @@ describe('EventService', () => {
         const eventRepository = createMock<EventRepository>({
           create: async () => false,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
           createCommandResultResponse(
@@ -71,11 +112,7 @@ describe('EventService', () => {
           findOne: async () => null,
           replace: async () => true,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -90,11 +127,7 @@ describe('EventService', () => {
           findOne: async () => REPLACEABLE_EVENT,
           replace: async () => false,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -117,11 +150,7 @@ describe('EventService', () => {
             }),
           replace: async () => true,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -136,14 +165,9 @@ describe('EventService', () => {
       });
 
       it('should return rate-limited when acquiring the lock fails', async () => {
-        const eventRepository = createMock<EventRepository>();
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          createMock<LockService>({
-            acquireLock: async () => false,
-          }),
-        );
+        (eventService as any).lockService = createMock<LockService>({
+          acquireLock: async () => false,
+        });
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -163,11 +187,7 @@ describe('EventService', () => {
           findOne: async () => null,
           replace: async () => true,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(
           eventService.handleEvent(PARAMETERIZED_REPLACEABLE_EVENT),
@@ -178,14 +198,9 @@ describe('EventService', () => {
       });
 
       it('should return rate-limited when acquiring the lock fails', async () => {
-        const eventRepository = createMock<EventRepository>();
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          createMock<LockService>({
-            acquireLock: async () => false,
-          }),
-        );
+        (eventService as any).lockService = createMock<LockService>({
+          acquireLock: async () => false,
+        });
 
         await expect(
           eventService.handleEvent(PARAMETERIZED_REPLACEABLE_EVENT),
@@ -201,17 +216,17 @@ describe('EventService', () => {
 
     describe('handleEphemeralEvent', () => {
       it('should broadcast the event', async () => {
-        const eventRepository = createMock<EventRepository>();
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
-
         await expect(
           eventService.handleEvent(EPHEMERAL_EVENT),
         ).resolves.toBeUndefined();
         expect(mockEmit).toBeCalled();
+      });
+
+      it('should discard signed event', async () => {
+        await expect(
+          eventService.handleEvent(await createSignedEventMock()),
+        ).resolves.toBeUndefined();
+        expect(mockEmit).not.toBeCalled();
       });
     });
 
@@ -226,11 +241,7 @@ describe('EventService', () => {
           create: async () => true,
           delete: mockDelete,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await eventService.handleEvent(DELETION_EVENT);
         expect(mockEmit).toBeCalled();
@@ -250,11 +261,7 @@ describe('EventService', () => {
           create: async () => true,
           delete: mockDelete,
         });
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await eventService.handleEvent(DELETION_EVENT);
         expect(mockEmit).toBeCalled();
@@ -268,12 +275,7 @@ describe('EventService', () => {
         const eventRepository = createMock<EventRepository>({
           find: async () => events,
         });
-
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         await expect(
           eventService.findByFilters([{}].map(Filter.fromFilterDto)),
@@ -287,12 +289,7 @@ describe('EventService', () => {
         const eventRepository = createMock<EventRepository>({
           count: async () => COUNT,
         });
-
-        const eventService = new EventService(
-          eventRepository,
-          eventEmitter,
-          lockService,
-        );
+        (eventService as any).eventRepository = eventRepository;
 
         expect(
           await eventService.countByFilters([{}].map(Filter.fromFilterDto)),

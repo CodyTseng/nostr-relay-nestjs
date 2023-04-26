@@ -1,4 +1,7 @@
+import { getSharedSecret, schnorr, utils } from '@noble/secp256k1';
+import { createCipheriv, randomFillSync } from 'crypto';
 import { Event } from '../src/nostr/entities';
+import { getTimestampInSeconds } from '../src/nostr/utils';
 
 export const REGULAR_EVENT_DTO = {
   id: 'f2c611fb04e2586703ccc13a6ddcbfe7ac5026ace1e0cf2ab79337b3ff73ac70',
@@ -302,3 +305,104 @@ export const DELEGATION_NAN_CONDITION_VALUE_EVENT = Event.fromEventDto({
   content: 'hello from a delegated key',
   sig: 'b7c4a5794c182816f145a3e3d6895288bc592b19bc0c936016f10070466a39fd6542d255199c9320c5c9f12641672fe36d6b9495c53e00c8db98b36ac4058760',
 });
+
+export const TEST_PRIVKEY =
+  '3689c9acc44041d38a44d0cb777e30f51f295a5e5565b4edb661e8f24eece569';
+export const TEST_PUBKEY =
+  'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7';
+
+async function getEventHash(
+  event: Pick<Event, 'pubkey' | 'created_at' | 'kind' | 'tags' | 'content'>,
+) {
+  const eventHash = await utils.sha256(
+    Buffer.from(
+      JSON.stringify([
+        0,
+        event.pubkey,
+        event.created_at,
+        event.kind,
+        event.tags,
+        event.content,
+      ]),
+    ),
+  );
+  return utils.bytesToHex(eventHash);
+}
+
+async function signEvent(eventId: string, key: string) {
+  return utils.bytesToHex(await schnorr.sign(eventId, key));
+}
+
+export async function createEncryptedDirectMessageEventMock(
+  params: {
+    to?: string;
+    text?: string;
+    created_at?: number;
+  } = {},
+) {
+  const {
+    to = 'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac',
+    text = 'hello',
+    created_at = getTimestampInSeconds(),
+  } = params;
+
+  const sharedPoint = getSharedSecret(TEST_PRIVKEY, '02' + to);
+  const sharedX = sharedPoint.slice(1, 33);
+
+  const iv = randomFillSync(new Uint8Array(16));
+  const cipher = createCipheriv('aes-256-cbc', Buffer.from(sharedX), iv);
+  let encryptedMessage = cipher.update(text, 'utf8', 'base64');
+  encryptedMessage += cipher.final('base64');
+  const ivBase64 = Buffer.from(iv.buffer).toString('base64');
+
+  const baseEvent = {
+    pubkey: TEST_PUBKEY,
+    created_at,
+    kind: 4,
+    tags: [['p', to]],
+    content: encryptedMessage + '?iv=' + ivBase64,
+  };
+  const id = await getEventHash(baseEvent);
+  const sig = await signEvent(id, TEST_PRIVKEY);
+
+  return Event.fromEventDto({
+    ...baseEvent,
+    id,
+    sig,
+  });
+}
+
+export async function createSignedEventMock(
+  params: {
+    pubkey?: string;
+    challenge?: string;
+    created_at?: number;
+    relay?: string;
+  } = {},
+) {
+  const {
+    pubkey = TEST_PUBKEY,
+    challenge = 'challenge',
+    created_at = getTimestampInSeconds(),
+    relay = 'wss://localhost:3000',
+  } = params;
+
+  const baseEvent = {
+    pubkey,
+    kind: 22242,
+    created_at,
+    tags: [
+      ['relay', relay],
+      ['challenge', challenge],
+    ],
+    content: '',
+  };
+  const id = await getEventHash(baseEvent);
+  const sig = await signEvent(id, TEST_PRIVKEY);
+
+  return Event.fromEventDto({
+    ...baseEvent,
+    id,
+    sig,
+  });
+}
