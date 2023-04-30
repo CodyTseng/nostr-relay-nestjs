@@ -166,6 +166,6 @@ export class NostrGateway
     const validateErrorMsg = await event.validate();
     if (validateErrorMsg) return;
 
-    this.eventService.handleSignedEvent(client, event);
+    return this.eventService.handleSignedEvent(client, event);
   }
 }

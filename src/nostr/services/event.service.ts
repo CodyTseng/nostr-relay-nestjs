@@ -52,9 +52,13 @@ export class EventService {
     }
   }
 
-  handleSignedEvent(client: WebSocket, event: Event): void {
+  handleSignedEvent(client: WebSocket, event: Event): CommandResultResponse {
     if (event.kind !== EventKind.AUTHENTICATION) {
-      return;
+      return createCommandResultResponse(
+        event.id,
+        false,
+        'invalid: the kind is not 22242',
+      );
     }
 
     let challenge = '',
@@ -67,15 +71,40 @@ export class EventService {
       }
     });
 
-    if (
-      challenge !== client.id ||
-      new URL(relay).hostname !== this.domain ||
-      Math.abs(event.created_at - getTimestampInSeconds()) > 10 * 60
-    ) {
-      return;
+    if (challenge !== client.id) {
+      return createCommandResultResponse(
+        event.id,
+        false,
+        'invalid: the challenge string is wrong',
+      );
+    }
+
+    try {
+      if (new URL(relay).hostname !== this.domain) {
+        return createCommandResultResponse(
+          event.id,
+          false,
+          'invalid: the relay url is wrong',
+        );
+      }
+    } catch {
+      return createCommandResultResponse(
+        event.id,
+        false,
+        'invalid: the relay url is wrong',
+      );
+    }
+
+    if (Math.abs(event.created_at - getTimestampInSeconds()) > 10 * 60) {
+      return createCommandResultResponse(
+        event.id,
+        false,
+        'invalid: the created_at should be within 10 minutes',
+      );
     }
 
     client.pubkey = event.pubkey;
+    return createCommandResultResponse(event.id, true);
   }
 
   private async handleDeletionEvent(event: Event) {

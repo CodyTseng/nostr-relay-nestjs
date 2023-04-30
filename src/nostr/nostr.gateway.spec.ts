@@ -18,6 +18,7 @@ import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
 import {
   CommandResultResponse,
+  createCommandResultResponse,
   EndOfStoredEventResponse,
   EventResponse,
 } from './utils';
@@ -193,8 +194,9 @@ describe('NostrGateway', () => {
   describe('AUTH', () => {
     it('should auth successfully', async () => {
       (nostrGateway as any).eventService = createMock<EventService>({
-        handleSignedEvent: async (client) => {
+        handleSignedEvent: (client, event) => {
           client.pubkey = TEST_PUBKEY;
+          return createCommandResultResponse(event.id, true);
         },
       });
       const challenge = 'challenge';
@@ -208,8 +210,9 @@ describe('NostrGateway', () => {
 
     it('should auth failed', async () => {
       (nostrGateway as any).eventService = createMock<EventService>({
-        handleSignedEvent: async (client) => {
+        handleSignedEvent: (client, event) => {
           client.pubkey = TEST_PUBKEY;
+          return createCommandResultResponse(event.id, true);
         },
       });
       const challenge = 'challenge';

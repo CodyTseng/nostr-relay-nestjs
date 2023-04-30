@@ -11,6 +11,7 @@ import {
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
 } from '../../../seeds';
+import { MessageType } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { createCommandResultResponse, getTimestampInSeconds } from '../utils';
@@ -56,22 +57,64 @@ describe('EventService', () => {
         const wrongChallengeSignedEvent = await createSignedEventMock({
           challenge: 'fake',
         });
-        eventService.handleSignedEvent(client, wrongChallengeSignedEvent);
+        expect(
+          eventService.handleSignedEvent(client, wrongChallengeSignedEvent),
+        ).toEqual([
+          MessageType.OK,
+          wrongChallengeSignedEvent.id,
+          false,
+          'invalid: the challenge string is wrong',
+        ]);
         expect(client.pubkey).toBeUndefined();
 
         const wrongRelaySignedEvent = await createSignedEventMock({
+          challenge: client.id,
+          relay: 'wss://fake',
+        });
+        expect(
+          eventService.handleSignedEvent(client, wrongRelaySignedEvent),
+        ).toEqual([
+          MessageType.OK,
+          wrongRelaySignedEvent.id,
+          false,
+          'invalid: the relay url is wrong',
+        ]);
+        expect(client.pubkey).toBeUndefined();
+
+        const wrongRelayUrlSignedEvent = await createSignedEventMock({
+          challenge: client.id,
           relay: 'fake',
         });
-        eventService.handleSignedEvent(client, wrongRelaySignedEvent);
+        expect(
+          eventService.handleSignedEvent(client, wrongRelayUrlSignedEvent),
+        ).toEqual([
+          MessageType.OK,
+          wrongRelayUrlSignedEvent.id,
+          false,
+          'invalid: the relay url is wrong',
+        ]);
         expect(client.pubkey).toBeUndefined();
 
         const expiredSignedEvent = await createSignedEventMock({
+          challenge: client.id,
           created_at: getTimestampInSeconds() - 20 * 60,
         });
-        eventService.handleSignedEvent(client, expiredSignedEvent);
+        expect(
+          eventService.handleSignedEvent(client, expiredSignedEvent),
+        ).toEqual([
+          MessageType.OK,
+          expiredSignedEvent.id,
+          false,
+          'invalid: the created_at should be within 10 minutes',
+        ]);
         expect(client.pubkey).toBeUndefined();
 
-        eventService.handleSignedEvent(client, REGULAR_EVENT);
+        expect(eventService.handleSignedEvent(client, REGULAR_EVENT)).toEqual([
+          MessageType.OK,
+          REGULAR_EVENT.id,
+          false,
+          'invalid: the kind is not 22242',
+        ]);
         expect(client.pubkey).toBeUndefined();
       });
     });
