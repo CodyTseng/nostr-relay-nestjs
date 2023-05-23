@@ -43,13 +43,13 @@ export class EventRepository {
   async find(filters: EventRepositoryFilter[] | EventRepositoryFilter) {
     return await this.createQueryBuilder(filters)
       .take(this.getLimitFrom(filters))
-      .orderBy('event.createdAt', 'DESC')
+      .orderBy('event.createdAtStr', 'DESC')
       .getMany();
   }
 
   async findOne(filters: EventRepositoryFilter[] | EventRepositoryFilter) {
     return await this.createQueryBuilder(filters)
-      .orderBy('event.createdAt', 'DESC')
+      .orderBy('event.createdAtStr', 'DESC')
       .getOne();
   }
 

@@ -26,7 +26,7 @@ export class Event {
 
   @Index('create_at-idx')
   @Column({ type: 'bigint', name: 'created_at' })
-  createdAt: number;
+  createdAtStr: string;
 
   @Index('kind-idx')
   @Column()
@@ -144,6 +144,14 @@ export class Event {
       this[EVENT_TYPE_SYMBOL] = Event.getEventType(this);
     }
     return this[EVENT_TYPE_SYMBOL];
+  }
+
+  get createdAt() {
+    return parseInt(this.createdAtStr);
+  }
+
+  set createdAt(created_at: number) {
+    this.createdAtStr = created_at.toString();
   }
 
   static fromEventDto(eventDto: EventDto) {
