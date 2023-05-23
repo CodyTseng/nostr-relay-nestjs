@@ -45,12 +45,12 @@ describe('filter', () => {
       ).toBeFalsy();
       expect(
         Filter.fromFilterDto({
-          since: REGULAR_EVENT.created_at + 1,
+          since: REGULAR_EVENT.createdAt + 1,
         }).isEventMatching(REGULAR_EVENT),
       ).toBeFalsy();
       expect(
         Filter.fromFilterDto({
-          until: REGULAR_EVENT.created_at - 1,
+          until: REGULAR_EVENT.createdAt - 1,
         }).isEventMatching(REGULAR_EVENT),
       ).toBeFalsy();
       expect(

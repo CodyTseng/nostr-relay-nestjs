@@ -1,42 +1,30 @@
+import { intersection } from 'lodash';
 import { EventKind } from '../constants';
-import { EventId, FilterDto, Pubkey, TimestampInSeconds } from '../schemas';
+import { FilterDto } from '../schemas';
 import { Event } from './event.entity';
 
 export class Filter {
-  readonly ids?: EventId[];
-  readonly authors?: Pubkey[];
-  readonly kinds?: EventKind[];
-  readonly since?: TimestampInSeconds;
-  readonly until?: TimestampInSeconds;
-  readonly limit?: number;
-  readonly tags?: { [key: string]: string[] };
-  readonly dTagValues?: string[];
-
-  constructor(
-    filter: Pick<
-      Filter,
-      | 'ids'
-      | 'authors'
-      | 'kinds'
-      | 'since'
-      | 'until'
-      | 'limit'
-      | 'tags'
-      | 'dTagValues'
-    >,
-  ) {
-    this.ids = filter.ids;
-    this.authors = filter.authors;
-    this.kinds = filter.kinds;
-    this.since = filter.since;
-    this.until = filter.until;
-    this.limit = filter.limit;
-    this.tags = filter.tags;
-    this.dTagValues = filter.dTagValues;
-  }
+  ids?: string[];
+  authors?: string[];
+  kinds?: EventKind[];
+  since?: number;
+  until?: number;
+  limit?: number;
+  tags?: { [key: string]: string[] };
+  dTagValues?: string[];
 
   static fromFilterDto(filterDto: FilterDto) {
-    return new Filter(filterDto);
+    const filter = new Filter();
+    filter.ids = filterDto.ids;
+    filter.authors = filterDto.authors;
+    filter.kinds = filterDto.kinds;
+    filter.since = filterDto.since;
+    filter.until = filterDto.until;
+    filter.limit = filterDto.limit;
+    filter.tags = filterDto.tags;
+    filter.dTagValues = filterDto.dTagValues;
+
+    return filter;
   }
 
   hasEncryptedDirectMessageKind() {
@@ -61,11 +49,11 @@ export class Filter {
       return false;
     }
 
-    if (this.since && event.created_at < this.since) {
+    if (this.since && event.createdAt < this.since) {
       return false;
     }
 
-    if (this.until && event.created_at > this.until) {
+    if (this.until && event.createdAt > this.until) {
       return false;
     }
 
@@ -77,10 +65,9 @@ export class Filter {
 
     return this.tags
       ? Object.entries(this.tags).every(([filterTagKey, filterTagValues]) =>
-          event.tags.some(
-            ([tagName, tagValue]) =>
-              tagName === filterTagKey && filterTagValues.includes(tagValue),
-          ),
+          event[filterTagKey]?.length
+            ? intersection(event[filterTagKey], filterTagValues).length > 0
+            : false,
         )
       : true;
   }

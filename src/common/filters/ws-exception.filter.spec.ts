@@ -1,5 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ArgumentsHost } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { WsExceptionFilter } from '.';
 import { createNoticeResponse } from '../../nostr/utils';
 
@@ -7,7 +8,7 @@ describe('WsExceptionFilter', () => {
   let wsExceptionFilter: WsExceptionFilter;
 
   beforeEach(() => {
-    wsExceptionFilter = new WsExceptionFilter();
+    wsExceptionFilter = new WsExceptionFilter(createMock<PinoLogger>());
   });
 
   it('should send notice response to client when catch error', () => {

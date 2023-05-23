@@ -1,76 +1,200 @@
 import { schnorr, utils } from '@noble/secp256k1';
 import { isNil } from 'lodash';
-import { EventKind, EventType, MAX_TIMESTAMP, TagName } from '../constants';
 import {
-  EventContent,
-  EventDto,
-  EventId,
-  EventSig,
-  EventTag,
-  Pubkey,
-  TimestampInSeconds,
-} from '../schemas';
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  Index,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { EventKind, EventType, MAX_TIMESTAMP, TagName } from '../constants';
+import { EventDto } from '../schemas';
 import { countLeadingZeroBits, getTimestampInSeconds } from '../utils';
 
-export class Event {
-  readonly type: EventType;
-  readonly id: EventId;
-  readonly pubkey: Pubkey;
-  readonly created_at: TimestampInSeconds;
-  readonly kind: EventKind;
-  readonly tags: EventTag[];
-  readonly content: EventContent;
-  readonly sig: EventSig;
-  readonly expirationTimestamp: TimestampInSeconds;
-  readonly dTagValue?: string;
-  delegator?: Pubkey;
+const EVENT_TYPE_SYMBOL = Symbol('event:type');
 
-  constructor(
-    event: Pick<
-      Event,
-      | 'type'
-      | 'id'
-      | 'content'
-      | 'created_at'
-      | 'kind'
-      | 'pubkey'
-      | 'sig'
-      | 'tags'
-      | 'dTagValue'
-      | 'expirationTimestamp'
-      | 'delegator'
-    >,
-  ) {
-    this.type = event.type;
-    this.id = event.id;
-    this.pubkey = event.pubkey;
-    this.created_at = event.created_at;
-    this.kind = event.kind;
-    this.tags = event.tags;
-    this.content = event.content;
-    this.sig = event.sig;
-    this.expirationTimestamp = event.expirationTimestamp;
-    this.dTagValue = event.dTagValue;
-    this.delegator = event.delegator;
+@Entity({ name: 'event' })
+export class Event {
+  @PrimaryColumn({ type: 'char', length: 64 })
+  id: string;
+
+  @Index('pubkey-idx')
+  @Column({ type: 'char', length: 64 })
+  pubkey: string;
+
+  @Index('create_at-idx')
+  @Column({ type: 'bigint', name: 'created_at' })
+  createdAt: number;
+
+  @Index('kind-idx')
+  @Column()
+  kind: number;
+
+  @Column({ type: 'jsonb', default: [] })
+  tags: string[][];
+
+  @Column({ type: 'text', default: '' })
+  content: string;
+
+  @Column({ type: 'char', length: 128 })
+  sig: string;
+
+  @Column({ type: 'bigint', default: MAX_TIMESTAMP, name: 'expired_at' })
+  expiredAt: number;
+
+  @Index('d_tag_value-idx')
+  @Column({ type: 'text', nullable: true, name: 'd_tag_value' })
+  dTagValue?: string;
+
+  @Index('delegator-idx')
+  @Column({ type: 'char', length: 64, nullable: true })
+  delegator?: string;
+
+  @Index('a-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  a?: string[];
+
+  @Index('b-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  b?: string[];
+
+  @Index('c-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  c?: string[];
+
+  @Index('d-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  d?: string[];
+
+  @Index('e-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  e?: string[];
+
+  @Index('f-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  f?: string[];
+
+  @Index('g-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  g?: string[];
+
+  @Index('h-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  h?: string[];
+
+  @Index('i-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  i?: string[];
+
+  @Index('j-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  j?: string[];
+
+  @Index('k-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  k?: string[];
+
+  @Index('l-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  l?: string[];
+
+  @Index('m-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  m?: string[];
+
+  @Index('n-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  n?: string[];
+
+  @Index('o-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  o?: string[];
+
+  @Index('p-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  p?: string[];
+
+  @Index('q-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  q?: string[];
+
+  @Index('r-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  r?: string[];
+
+  @Index('s-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  s?: string[];
+
+  @Index('t-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  t?: string[];
+
+  @Index('u-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  u?: string[];
+
+  @Index('v-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  v?: string[];
+
+  @Index('w-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  w?: string[];
+
+  @Index('x-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  x?: string[];
+
+  @Index('y-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  y?: string[];
+
+  @Index('z-idx')
+  @Column({ type: 'text', array: true, default: [] })
+  z?: string[];
+
+  @CreateDateColumn({ name: 'create_date', select: false })
+  createDate: Date;
+
+  @UpdateDateColumn({ name: 'update_date', select: false })
+  updateDate: Date;
+
+  @DeleteDateColumn({ name: 'delete_date', nullable: true, select: false })
+  deleteDate?: Date;
+
+  get type() {
+    if (!this[EVENT_TYPE_SYMBOL]) {
+      this[EVENT_TYPE_SYMBOL] = Event.getEventType(this);
+    }
+    return this[EVENT_TYPE_SYMBOL];
   }
 
   static fromEventDto(eventDto: EventDto) {
-    const type = Event.getEventType(eventDto);
-    return new Event({
-      type,
-      id: eventDto.id,
-      pubkey: eventDto.pubkey,
-      created_at: eventDto.created_at,
-      kind: eventDto.kind,
-      tags: eventDto.tags,
-      content: eventDto.content,
-      sig: eventDto.sig,
-      expirationTimestamp: Event.extractExpirationTimestamp(eventDto),
-      dTagValue:
-        type === EventType.PARAMETERIZED_REPLACEABLE
-          ? Event.extractDTagValueFromEvent(eventDto)
-          : undefined,
+    const event = new Event();
+    event.id = eventDto.id;
+    event.pubkey = eventDto.pubkey;
+    event.createdAt = eventDto.created_at;
+    event.kind = eventDto.kind;
+    event.tags = eventDto.tags;
+    event.content = eventDto.content;
+    event.sig = eventDto.sig;
+    event.expiredAt = Event.extractExpirationTimestamp(eventDto);
+    event.dTagValue =
+      event.type === EventType.PARAMETERIZED_REPLACEABLE
+        ? Event.extractDTagValueFromEvent(eventDto)
+        : undefined;
+
+    eventDto.tags.forEach(([tagName, tagValue]) => {
+      if (/^[a-z]$/.test(tagName)) {
+        event[tagName]
+          ? event[tagName].push(tagValue)
+          : (event[tagName] = [tagValue]);
+      }
     });
+    return event;
   }
 
   static getEventType({ kind }: Pick<Event, 'kind'>) {
@@ -124,7 +248,7 @@ export class Event {
     return isNaN(expirationTimestamp) ? MAX_TIMESTAMP : expirationTimestamp;
   }
 
-  checkPermission(pubkey?: Pubkey) {
+  checkPermission(pubkey?: string) {
     if (this.kind !== EventKind.ENCRYPTED_DIRECT_MESSAGE) {
       return true;
     }
@@ -157,13 +281,13 @@ export class Event {
 
     const now = getTimestampInSeconds();
 
-    if (this.expirationTimestamp < now) {
+    if (this.expiredAt < now) {
       return 'reject: event is expired';
     }
 
     if (
       !isNil(options.createdAtUpperLimit) &&
-      this.created_at - now > options.createdAtUpperLimit
+      this.createdAt - now > options.createdAtUpperLimit
     ) {
       return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time`;
     }
@@ -205,7 +329,7 @@ export class Event {
     return {
       id: this.id,
       pubkey: this.pubkey,
-      created_at: this.created_at,
+      created_at: this.createdAt,
       kind: this.kind,
       tags: this.tags,
       content: this.content,
@@ -217,7 +341,7 @@ export class Event {
     const arr = [
       0,
       this.pubkey,
-      this.created_at,
+      this.createdAt,
       this.kind,
       this.tags,
       this.content,
@@ -260,10 +384,10 @@ export class Event {
         return this.kind === value;
       }
       if (attribute === 'created_at' && operator === '>') {
-        return this.created_at > value;
+        return this.createdAt > value;
       }
       if (attribute === 'created_at' && operator === '<') {
-        return this.created_at < value;
+        return this.createdAt < value;
       }
     });
   }

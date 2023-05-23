@@ -1,3 +1,4 @@
+import { databaseConfig } from './database.config';
 import { validateEnvironment } from './environment';
 import { limitConfig } from './limit.config';
 import { loggerConfig } from './logger.config';
@@ -8,6 +9,7 @@ export function config() {
   return {
     domain: env.DOMAIN,
     port: env.PORT ?? 3000,
+    database: databaseConfig(env),
     limit: limitConfig(env),
     relayInfoDoc: relayInfoDocConfig(env),
     logger: loggerConfig(env),
