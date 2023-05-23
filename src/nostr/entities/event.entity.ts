@@ -52,107 +52,81 @@ export class Event {
   @Column({ type: 'char', length: 64, nullable: true })
   delegator?: string;
 
-  @Index('a-idx')
   @Column({ type: 'text', array: true, default: [] })
   a?: string[];
 
-  @Index('b-idx')
   @Column({ type: 'text', array: true, default: [] })
   b?: string[];
 
-  @Index('c-idx')
   @Column({ type: 'text', array: true, default: [] })
   c?: string[];
 
-  @Index('d-idx')
   @Column({ type: 'text', array: true, default: [] })
   d?: string[];
 
-  @Index('e-idx')
   @Column({ type: 'text', array: true, default: [] })
   e?: string[];
 
-  @Index('f-idx')
   @Column({ type: 'text', array: true, default: [] })
   f?: string[];
 
-  @Index('g-idx')
   @Column({ type: 'text', array: true, default: [] })
   g?: string[];
 
-  @Index('h-idx')
   @Column({ type: 'text', array: true, default: [] })
   h?: string[];
 
-  @Index('i-idx')
   @Column({ type: 'text', array: true, default: [] })
   i?: string[];
 
-  @Index('j-idx')
   @Column({ type: 'text', array: true, default: [] })
   j?: string[];
 
-  @Index('k-idx')
   @Column({ type: 'text', array: true, default: [] })
   k?: string[];
 
-  @Index('l-idx')
   @Column({ type: 'text', array: true, default: [] })
   l?: string[];
 
-  @Index('m-idx')
   @Column({ type: 'text', array: true, default: [] })
   m?: string[];
 
-  @Index('n-idx')
   @Column({ type: 'text', array: true, default: [] })
   n?: string[];
 
-  @Index('o-idx')
   @Column({ type: 'text', array: true, default: [] })
   o?: string[];
 
-  @Index('p-idx')
   @Column({ type: 'text', array: true, default: [] })
   p?: string[];
 
-  @Index('q-idx')
   @Column({ type: 'text', array: true, default: [] })
   q?: string[];
 
-  @Index('r-idx')
   @Column({ type: 'text', array: true, default: [] })
   r?: string[];
 
-  @Index('s-idx')
   @Column({ type: 'text', array: true, default: [] })
   s?: string[];
 
-  @Index('t-idx')
   @Column({ type: 'text', array: true, default: [] })
   t?: string[];
 
-  @Index('u-idx')
   @Column({ type: 'text', array: true, default: [] })
   u?: string[];
 
-  @Index('v-idx')
   @Column({ type: 'text', array: true, default: [] })
   v?: string[];
 
-  @Index('w-idx')
   @Column({ type: 'text', array: true, default: [] })
   w?: string[];
 
-  @Index('x-idx')
   @Column({ type: 'text', array: true, default: [] })
   x?: string[];
 
-  @Index('y-idx')
   @Column({ type: 'text', array: true, default: [] })
   y?: string[];
 
-  @Index('z-idx')
   @Column({ type: 'text', array: true, default: [] })
   z?: string[];
 
