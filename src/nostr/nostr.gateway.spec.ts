@@ -6,7 +6,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT_DTO,
   createEncryptedDirectMessageEventMock,
-  createSignedEventMock,
+  createSignedEventDtoMock,
   REGULAR_EVENT_DTO,
   REPLACEABLE_EVENT_DTO,
   TEST_PUBKEY,
@@ -202,7 +202,7 @@ describe('NostrGateway', () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
       await nostrGateway.auth(client, [
-        await createSignedEventMock({ challenge }),
+        await createSignedEventDtoMock({ challenge }),
       ]);
 
       expect(client.pubkey).toBe(TEST_PUBKEY);
@@ -218,7 +218,7 @@ describe('NostrGateway', () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
       await nostrGateway.auth(client, [
-        await createSignedEventMock({ pubkey: 'fake-pubkey', challenge }),
+        await createSignedEventDtoMock({ pubkey: 'fake-pubkey', challenge }),
       ]);
 
       expect(client.pubkey).toBeUndefined();

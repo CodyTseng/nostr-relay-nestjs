@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import * as path from 'path';
 import { TransportTargetOptions } from 'pino';
@@ -19,6 +20,17 @@ import { NostrModule } from './nostr/nostr.module';
       inject: [ConfigService],
     }),
     EventEmitterModule.forRoot(),
+    TypeOrmModule.forRootAsync({
+      useFactory: (configService: ConfigService<Config, true>) => {
+        const { url } = configService.get('database', { infer: true });
+        return {
+          type: 'postgres',
+          url,
+          autoLoadEntities: true,
+        };
+      },
+      inject: [ConfigService],
+    }),
     NostrModule,
   ],
 })

@@ -1,27 +1,27 @@
 import { MessageType } from '../constants';
 import { Event } from '../entities';
-import { EventDto, EventId, SubscriptionId } from '../schemas';
+import { EventDto } from '../schemas';
 
-export type CommandResultResponse = [MessageType.OK, EventId, boolean, string];
+export type CommandResultResponse = [MessageType.OK, string, boolean, string];
 export function createCommandResultResponse(
-  eventId: EventId,
+  eventId: string,
   success: boolean,
   message = '',
 ): CommandResultResponse {
   return [MessageType.OK, eventId, success, message];
 }
 
-export type EventResponse = [MessageType.EVENT, SubscriptionId, EventDto];
+export type EventResponse = [MessageType.EVENT, string, EventDto];
 export function createEventResponse(
-  subscriptionId: SubscriptionId,
+  subscriptionId: string,
   event: Event,
 ): EventResponse {
   return [MessageType.EVENT, subscriptionId, event.toEventDto()];
 }
 
-export type EndOfStoredEventResponse = [MessageType.EOSE, SubscriptionId];
+export type EndOfStoredEventResponse = [MessageType.EOSE, string];
 export function createEndOfStoredEventResponse(
-  subscriptionId: SubscriptionId,
+  subscriptionId: string,
 ): EndOfStoredEventResponse {
   return [MessageType.EOSE, subscriptionId];
 }
@@ -31,13 +31,9 @@ export function createNoticeResponse(message: string): NoticeResponse {
   return [MessageType.NOTICE, message];
 }
 
-export type CountResponse = [
-  MessageType.COUNT,
-  SubscriptionId,
-  { count: number },
-];
+export type CountResponse = [MessageType.COUNT, string, { count: number }];
 export function createCountResponse(
-  subscriptionId: SubscriptionId,
+  subscriptionId: string,
   count: number,
 ): CountResponse {
   return [MessageType.COUNT, subscriptionId, { count }];

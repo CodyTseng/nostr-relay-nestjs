@@ -3,6 +3,7 @@ import { config, validateEnvironment } from '.';
 describe('config', () => {
   it('should load config successfully', () => {
     process.env.DOMAIN = 'localhost';
+    process.env.DATABASE_URL = 'postgresql://xxx:xxx/xxx';
     expect(config()).toBeDefined();
   });
 
@@ -10,6 +11,7 @@ describe('config', () => {
     expect(
       validateEnvironment({
         DOMAIN: 'localhost',
+        DATABASE_URL: 'postgresql://xxx:xxx/xxx',
         PORT: '3000',
         LOG_DIR: 'logs',
         LOG_LEVEL: 'info',
@@ -18,6 +20,7 @@ describe('config', () => {
       }),
     ).toEqual({
       DOMAIN: 'localhost',
+      DATABASE_URL: 'postgresql://xxx:xxx/xxx',
       PORT: 3000,
       LOG_DIR: 'logs',
       LOG_LEVEL: 'info',

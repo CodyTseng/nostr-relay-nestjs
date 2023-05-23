@@ -1,5 +1,6 @@
 import { getSharedSecret, schnorr, utils } from '@noble/secp256k1';
 import { createCipheriv, randomFillSync } from 'crypto';
+import { EventDto } from '../src/nostr/schemas';
 import { Event } from '../src/nostr/entities';
 import { getTimestampInSeconds } from '../src/nostr/utils';
 
@@ -312,7 +313,7 @@ export const TEST_PUBKEY =
   'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7';
 
 async function getEventHash(
-  event: Pick<Event, 'pubkey' | 'created_at' | 'kind' | 'tags' | 'content'>,
+  event: Pick<EventDto, 'pubkey' | 'kind' | 'tags' | 'content' | 'created_at'>,
 ) {
   const eventHash = await utils.sha256(
     Buffer.from(
@@ -372,14 +373,14 @@ export async function createEncryptedDirectMessageEventMock(
   });
 }
 
-export async function createSignedEventMock(
+export async function createSignedEventDtoMock(
   params: {
     pubkey?: string;
     challenge?: string;
     created_at?: number;
     relay?: string;
   } = {},
-) {
+): Promise<EventDto> {
   const {
     pubkey = TEST_PUBKEY,
     challenge = 'challenge',
@@ -400,9 +401,20 @@ export async function createSignedEventMock(
   const id = await getEventHash(baseEvent);
   const sig = await signEvent(id, TEST_PRIVKEY);
 
-  return Event.fromEventDto({
+  return {
     ...baseEvent,
     id,
     sig,
-  });
+  };
+}
+
+export async function createSignedEventMock(
+  params: {
+    pubkey?: string;
+    challenge?: string;
+    created_at?: number;
+    relay?: string;
+  } = {},
+) {
+  return Event.fromEventDto(await createSignedEventDtoMock(params));
 }

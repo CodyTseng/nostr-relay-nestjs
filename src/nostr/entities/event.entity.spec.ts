@@ -15,6 +15,7 @@ import {
   LEADING_8_ZERO_BITS_REGULAR_EVENT,
   NON_EXPIRED_EVENT,
   REGULAR_EVENT,
+  REGULAR_EVENT_DTO,
 } from '../../../seeds';
 import { MAX_TIMESTAMP } from '../constants';
 import { Event } from './event.entity';
@@ -32,12 +33,15 @@ describe('Event entity', () => {
     });
 
     it('should return event id is wrong', async () => {
-      const event = Event.fromEventDto({ ...REGULAR_EVENT, id: 'fake-id' });
+      const event = Event.fromEventDto({ ...REGULAR_EVENT_DTO, id: 'fake-id' });
       expect(await event.validate()).toBe('invalid: id is wrong');
     });
 
     it('should return signature is wrong', async () => {
-      const event = Event.fromEventDto({ ...REGULAR_EVENT, sig: 'fake-sig' });
+      const event = Event.fromEventDto({
+        ...REGULAR_EVENT_DTO,
+        sig: 'fake-sig',
+      });
       expect(await event.validate()).toBe('invalid: signature is wrong');
     });
 

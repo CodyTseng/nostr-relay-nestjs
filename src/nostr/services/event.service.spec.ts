@@ -10,6 +10,7 @@ import {
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
+  REPLACEABLE_EVENT_DTO,
 } from '../../../seeds';
 import { MessageType } from '../constants';
 import { Event, Filter } from '../entities';
@@ -188,8 +189,8 @@ describe('EventService', () => {
         const eventRepository = createMock<EventRepository>({
           findOne: async () =>
             Event.fromEventDto({
-              ...REPLACEABLE_EVENT,
-              created_at: REPLACEABLE_EVENT.created_at + 1,
+              ...REPLACEABLE_EVENT_DTO,
+              created_at: REPLACEABLE_EVENT.createdAt + 1,
             }),
           replace: async () => true,
         });
@@ -288,10 +289,7 @@ describe('EventService', () => {
 
         await eventService.handleEvent(DELETION_EVENT);
         expect(mockEmit).toBeCalled();
-        expect(mockDelete).toHaveBeenCalledWith(
-          DELETION_EVENT.pubkey,
-          EVENT_IDS_TO_BE_DELETED,
-        );
+        expect(mockDelete).toHaveBeenCalledWith(EVENT_IDS_TO_BE_DELETED);
       });
 
       it('should ignore events with different pubkey', async () => {
@@ -308,7 +306,7 @@ describe('EventService', () => {
 
         await eventService.handleEvent(DELETION_EVENT);
         expect(mockEmit).toBeCalled();
-        expect(mockDelete).toHaveBeenCalledWith(DELETION_EVENT.pubkey, []);
+        expect(mockDelete).toHaveBeenCalledWith([]);
       });
     });
 

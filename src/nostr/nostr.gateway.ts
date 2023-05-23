@@ -19,6 +19,7 @@ import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
 import { Event, Filter } from './entities';
 import {
+  AuthMessageDto,
   AuthMessageSchema,
   CloseMessageDto,
   CloseMessageSchema,
@@ -29,7 +30,6 @@ import {
   ReqMessageDto,
   ReqMessageSchema,
 } from './schemas';
-import { AuthMessageDto } from './schemas/message-dto.schema';
 import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
 import {

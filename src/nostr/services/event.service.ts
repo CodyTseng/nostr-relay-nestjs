@@ -95,7 +95,7 @@ export class EventService {
       );
     }
 
-    if (Math.abs(event.created_at - getTimestampInSeconds()) > 10 * 60) {
+    if (Math.abs(event.createdAt - getTimestampInSeconds()) > 10 * 60) {
       return createCommandResultResponse(
         event.id,
         false,
@@ -128,7 +128,7 @@ export class EventService {
         eventIds,
         eventIdsNotBelongToPubkey,
       );
-      await this.eventRepository.delete(event.pubkey, eventIdsToBeDeleted);
+      await this.eventRepository.delete(eventIdsToBeDeleted);
     }
 
     return this.handleRegularEvent(event);
@@ -209,7 +209,7 @@ export class EventService {
     event: Event,
     oldEvent: Event | null,
   ): Promise<CommandResultResponse> {
-    if (oldEvent && oldEvent.created_at > event.created_at) {
+    if (oldEvent && oldEvent.createdAt > event.createdAt) {
       return createCommandResultResponse(
         event.id,
         true,
