@@ -1,5 +1,7 @@
+import { randomUUID } from 'crypto';
 import {
   createEncryptedDirectMessageEventMock,
+  createSignedEventMock,
   DELEGATION_CREATED_AT_LESS_EVENT,
   DELEGATION_CREATED_AT_MORE_EVENT,
   DELEGATION_EVENT_DTO,
@@ -18,6 +20,7 @@ import {
   REGULAR_EVENT_DTO,
 } from '../../../seeds';
 import { MAX_TIMESTAMP } from '../constants';
+import { getTimestampInSeconds } from '../utils';
 import { Event } from './event.entity';
 
 describe('Event entity', () => {
@@ -173,6 +176,61 @@ describe('Event entity', () => {
 
       (event as any).tags = [];
       expect(event.checkPermission('fake-pubkey')).toBeFalsy();
+    });
+  });
+
+  describe('handleSignedEvent', () => {
+    it('should authenticate successfully', async () => {
+      const challenge = randomUUID();
+      const event = await createSignedEventMock({ challenge });
+      expect(
+        await event.validateSignedEvent(challenge, 'localhost'),
+      ).toBeUndefined();
+    });
+
+    it('should authenticate failed', async () => {
+      const challenge = randomUUID();
+
+      const wrongChallengeSignedEvent = await createSignedEventMock({
+        challenge: 'fake',
+      });
+      expect(
+        await wrongChallengeSignedEvent.validateSignedEvent(
+          challenge,
+          'localhost',
+        ),
+      ).toEqual('invalid: the challenge string is wrong');
+
+      const wrongRelaySignedEvent = await createSignedEventMock({
+        challenge,
+        relay: 'wss://fake',
+      });
+      expect(
+        await wrongRelaySignedEvent.validateSignedEvent(challenge, 'localhost'),
+      ).toEqual('invalid: the relay url is wrong');
+
+      const wrongRelayUrlSignedEvent = await createSignedEventMock({
+        challenge,
+        relay: 'fake',
+      });
+      expect(
+        await wrongRelayUrlSignedEvent.validateSignedEvent(
+          challenge,
+          'localhost',
+        ),
+      ).toEqual('invalid: the relay url is wrong');
+
+      const expiredSignedEvent = await createSignedEventMock({
+        challenge,
+        created_at: getTimestampInSeconds() - 20 * 60,
+      });
+      expect(
+        await expiredSignedEvent.validateSignedEvent(challenge, 'localhost'),
+      ).toEqual('invalid: the created_at should be within 10 minutes');
+
+      expect(
+        await REGULAR_EVENT.validateSignedEvent(challenge, 'localhost'),
+      ).toEqual('invalid: the kind is not 22242');
     });
   });
 });

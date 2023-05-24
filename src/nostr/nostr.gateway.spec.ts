@@ -192,29 +192,22 @@ describe('NostrGateway', () => {
   });
 
   describe('AUTH', () => {
+    beforeEach(() => {
+      (nostrGateway as any).domain = 'localhost';
+    });
+
     it('should auth successfully', async () => {
-      (nostrGateway as any).eventService = createMock<EventService>({
-        handleSignedEvent: (client, event) => {
-          client.pubkey = TEST_PUBKEY;
-          return createCommandResultResponse(event.id, true);
-        },
-      });
       const challenge = 'challenge';
       const client = { id: challenge } as any;
-      await nostrGateway.auth(client, [
-        await createSignedEventDtoMock({ challenge }),
-      ]);
+      const event = await createSignedEventDtoMock({ challenge });
+      expect(await nostrGateway.auth(client, [event])).toEqual(
+        createCommandResultResponse(event.id, true),
+      );
 
       expect(client.pubkey).toBe(TEST_PUBKEY);
     });
 
     it('should auth failed', async () => {
-      (nostrGateway as any).eventService = createMock<EventService>({
-        handleSignedEvent: (client, event) => {
-          client.pubkey = TEST_PUBKEY;
-          return createCommandResultResponse(event.id, true);
-        },
-      });
       const challenge = 'challenge';
       const client = { id: challenge } as any;
       await nostrGateway.auth(client, [

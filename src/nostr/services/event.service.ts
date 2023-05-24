@@ -1,33 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { difference, union } from 'lodash';
-import { URL } from 'url';
-import { WebSocket } from 'ws';
-import { Config } from '../../config';
 import { EventKind, EventType, E_EVENT_BROADCAST, TagName } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventIdSchema } from '../schemas';
-import {
-  CommandResultResponse,
-  createCommandResultResponse,
-  getTimestampInSeconds,
-} from '../utils';
+import { CommandResultResponse, createCommandResultResponse } from '../utils';
 import { LockService } from './lock.service';
 
 @Injectable()
 export class EventService {
-  private readonly domain: string;
-
   constructor(
     private readonly eventRepository: EventRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly lockService: LockService,
-    configService: ConfigService<Config, true>,
-  ) {
-    this.domain = configService.get('domain', { infer: true });
-  }
+  ) {}
 
   async findByFilters(filters: Filter[]): Promise<Event[]> {
     return await this.eventRepository.find(filters);
@@ -50,61 +37,6 @@ export class EventService {
       default:
         return this.handleRegularEvent(event);
     }
-  }
-
-  handleSignedEvent(client: WebSocket, event: Event): CommandResultResponse {
-    if (event.kind !== EventKind.AUTHENTICATION) {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'invalid: the kind is not 22242',
-      );
-    }
-
-    let challenge = '',
-      relay = '';
-    event.tags.forEach(([tagName, tagValue]) => {
-      if (tagName === TagName.CHALLENGE) {
-        challenge = tagValue;
-      } else if (tagName === TagName.RELAY) {
-        relay = tagValue;
-      }
-    });
-
-    if (challenge !== client.id) {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'invalid: the challenge string is wrong',
-      );
-    }
-
-    try {
-      if (new URL(relay).hostname !== this.domain) {
-        return createCommandResultResponse(
-          event.id,
-          false,
-          'invalid: the relay url is wrong',
-        );
-      }
-    } catch {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'invalid: the relay url is wrong',
-      );
-    }
-
-    if (Math.abs(event.createdAt - getTimestampInSeconds()) > 10 * 60) {
-      return createCommandResultResponse(
-        event.id,
-        false,
-        'invalid: the created_at should be within 10 minutes',
-      );
-    }
-
-    client.pubkey = event.pubkey;
-    return createCommandResultResponse(event.id, true);
   }
 
   private async handleDeletionEvent(event: Event) {
