@@ -1,7 +1,5 @@
 import { createMock } from '@golevelup/ts-jest';
-import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { randomUUID } from 'crypto';
 import {
   createSignedEventMock,
   DELETION_EVENT,
@@ -12,10 +10,9 @@ import {
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_DTO,
 } from '../../../seeds';
-import { MessageType } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
-import { createCommandResultResponse, getTimestampInSeconds } from '../utils';
+import { createCommandResultResponse } from '../utils';
 import { EventService } from './event.service';
 import { LockService } from './lock.service';
 
@@ -31,93 +28,12 @@ describe('EventService', () => {
         emit: mockEmit,
       });
       lockService = new LockService();
-      const configService = createMock<ConfigService>({
-        get: () => 'localhost',
-      });
       const eventRepository = createMock<EventRepository>();
       eventService = new EventService(
         eventRepository,
         eventEmitter,
         lockService,
-        configService,
       );
-    });
-
-    describe('handleSignedEvent', () => {
-      it('should authenticate successfully', async () => {
-        const client: any = { id: randomUUID() };
-        const event = await createSignedEventMock({ challenge: client.id });
-        eventService.handleSignedEvent(client, event);
-
-        expect(client.pubkey).toBe(event.pubkey);
-      });
-
-      it('should authenticate failed', async () => {
-        const client: any = { id: randomUUID() };
-
-        const wrongChallengeSignedEvent = await createSignedEventMock({
-          challenge: 'fake',
-        });
-        expect(
-          eventService.handleSignedEvent(client, wrongChallengeSignedEvent),
-        ).toEqual([
-          MessageType.OK,
-          wrongChallengeSignedEvent.id,
-          false,
-          'invalid: the challenge string is wrong',
-        ]);
-        expect(client.pubkey).toBeUndefined();
-
-        const wrongRelaySignedEvent = await createSignedEventMock({
-          challenge: client.id,
-          relay: 'wss://fake',
-        });
-        expect(
-          eventService.handleSignedEvent(client, wrongRelaySignedEvent),
-        ).toEqual([
-          MessageType.OK,
-          wrongRelaySignedEvent.id,
-          false,
-          'invalid: the relay url is wrong',
-        ]);
-        expect(client.pubkey).toBeUndefined();
-
-        const wrongRelayUrlSignedEvent = await createSignedEventMock({
-          challenge: client.id,
-          relay: 'fake',
-        });
-        expect(
-          eventService.handleSignedEvent(client, wrongRelayUrlSignedEvent),
-        ).toEqual([
-          MessageType.OK,
-          wrongRelayUrlSignedEvent.id,
-          false,
-          'invalid: the relay url is wrong',
-        ]);
-        expect(client.pubkey).toBeUndefined();
-
-        const expiredSignedEvent = await createSignedEventMock({
-          challenge: client.id,
-          created_at: getTimestampInSeconds() - 20 * 60,
-        });
-        expect(
-          eventService.handleSignedEvent(client, expiredSignedEvent),
-        ).toEqual([
-          MessageType.OK,
-          expiredSignedEvent.id,
-          false,
-          'invalid: the created_at should be within 10 minutes',
-        ]);
-        expect(client.pubkey).toBeUndefined();
-
-        expect(eventService.handleSignedEvent(client, REGULAR_EVENT)).toEqual([
-          MessageType.OK,
-          REGULAR_EVENT.id,
-          false,
-          'invalid: the kind is not 22242',
-        ]);
-        expect(client.pubkey).toBeUndefined();
-      });
     });
 
     describe('handleRegularEvent', () => {

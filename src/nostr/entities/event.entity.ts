@@ -307,6 +307,46 @@ export class Event {
     }
   }
 
+  async validateSignedEvent(
+    clientId: string,
+    domain: string,
+  ): Promise<string | void> {
+    const validateErrorMsg = await this.validate();
+    if (validateErrorMsg) {
+      return validateErrorMsg;
+    }
+
+    if (this.kind !== EventKind.AUTHENTICATION) {
+      return 'invalid: the kind is not 22242';
+    }
+
+    let challenge = '',
+      relay = '';
+    this.tags.forEach(([tagName, tagValue]) => {
+      if (tagName === TagName.CHALLENGE) {
+        challenge = tagValue;
+      } else if (tagName === TagName.RELAY) {
+        relay = tagValue;
+      }
+    });
+
+    if (challenge !== clientId) {
+      return 'invalid: the challenge string is wrong';
+    }
+
+    try {
+      if (new URL(relay).hostname !== domain) {
+        return 'invalid: the relay url is wrong';
+      }
+    } catch {
+      return 'invalid: the relay url is wrong';
+    }
+
+    if (Math.abs(this.createdAt - getTimestampInSeconds()) > 10 * 60) {
+      return 'invalid: the created_at should be within 10 minutes';
+    }
+  }
+
   toEventDto(): EventDto {
     return {
       id: this.id,

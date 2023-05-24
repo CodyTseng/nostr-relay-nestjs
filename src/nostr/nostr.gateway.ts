@@ -46,6 +46,7 @@ export class NostrGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly limitConfig: LimitConfig;
+  private readonly domain: string;
 
   constructor(
     @InjectPinoLogger(NostrGateway.name)
@@ -54,9 +55,8 @@ export class NostrGateway
     private readonly eventService: EventService,
     configService: ConfigService<Config, true>,
   ) {
-    this.limitConfig = configService.get('limit', {
-      infer: true,
-    });
+    this.limitConfig = configService.get('limit');
+    this.domain = configService.get('domain');
   }
 
   afterInit(server: WebSocketServer) {
@@ -163,9 +163,15 @@ export class NostrGateway
     [signedEvent]: AuthMessageDto,
   ) {
     const event = Event.fromEventDto(signedEvent);
-    const validateErrorMsg = await event.validate();
-    if (validateErrorMsg) return;
+    const validateErrorMsg = await event.validateSignedEvent(
+      client.id,
+      this.domain,
+    );
+    if (validateErrorMsg) {
+      return createCommandResultResponse(event.id, false, validateErrorMsg);
+    }
 
-    return this.eventService.handleSignedEvent(client, event);
+    client.pubkey = event.pubkey;
+    return createCommandResultResponse(event.id, true);
   }
 }
