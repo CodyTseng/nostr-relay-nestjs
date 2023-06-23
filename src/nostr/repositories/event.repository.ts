@@ -84,14 +84,28 @@ export class EventRepository {
 
     (Array.isArray(filters) ? filters : [filters]).forEach((filter, index) => {
       const brackets = new Brackets((qb) => {
-        qb.where('event.expired_at > :expiredAt', {
-          expiredAt: getTimestampInSeconds(),
-        });
+        qb.where('1 = 1');
 
         if (filter.ids?.length) {
           qb.andWhere('event.id ILIKE ANY (:ids)', {
             ids: filter.ids.map((id) => `${id}%`),
           });
+        }
+
+        if (filter.tags) {
+          Object.entries(filter.tags).forEach(([key, values]) => {
+            qb.andWhere(`event.${key} && (:${key})`, {
+              [key]: values,
+            });
+          });
+        }
+
+        if (filter.since) {
+          qb.andWhere('event.created_at >= :since', { since: filter.since });
+        }
+
+        if (filter.until) {
+          qb.andWhere('event.created_at <= :until', { until: filter.until });
         }
 
         if (filter.authors?.length) {
@@ -111,27 +125,15 @@ export class EventRepository {
           qb.andWhere('event.kind IN (:...kinds)', { kinds: filter.kinds });
         }
 
-        if (filter.since) {
-          qb.andWhere('event.created_at >= :since', { since: filter.since });
-        }
-
-        if (filter.until) {
-          qb.andWhere('event.created_at <= :until', { until: filter.until });
-        }
-
-        if (filter.tags) {
-          Object.entries(filter.tags).forEach(([key, values]) => {
-            qb.andWhere(`event.${key} && (:${key})`, {
-              [key]: values,
-            });
-          });
-        }
-
         if (filter.dTagValues) {
           qb.andWhere('event.d_tag_value IN (:...dTagValues)', {
             dTagValues: filter.dTagValues,
           });
         }
+
+        qb.andWhere('event.expired_at > :expiredAt', {
+          expiredAt: getTimestampInSeconds(),
+        });
       });
 
       queryBuilder[index === 0 ? 'where' : 'orWhere'](brackets);

@@ -27,6 +27,7 @@ import { NostrModule } from './nostr/nostr.module';
           type: 'postgres',
           url,
           autoLoadEntities: true,
+          migrations: ['./migrations/*.ts'],
         };
       },
       inject: [ConfigService],

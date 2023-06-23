@@ -21,9 +21,9 @@ describe('FilterSchema', () => {
         '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
       ],
       tags: {
+        d: ['test'],
         p: ['096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0'],
       },
-      dTagValues: ['test'],
     });
   });
 
