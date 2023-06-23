@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  Index,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -20,15 +19,12 @@ export class Event {
   @PrimaryColumn({ type: 'char', length: 64 })
   id: string;
 
-  @Index('pubkey-idx')
   @Column({ type: 'char', length: 64 })
   pubkey: string;
 
-  @Index('create_at-idx')
   @Column({ type: 'bigint', name: 'created_at' })
   createdAtStr: string;
 
-  @Index('kind-idx')
   @Column()
   kind: number;
 
@@ -44,11 +40,9 @@ export class Event {
   @Column({ type: 'bigint', default: MAX_TIMESTAMP, name: 'expired_at' })
   expiredAt: number;
 
-  @Index('d_tag_value-idx')
   @Column({ type: 'text', nullable: true, name: 'd_tag_value' })
   dTagValue?: string;
 
-  @Index('delegator-idx')
   @Column({ type: 'char', length: 64, nullable: true })
   delegator?: string;
 

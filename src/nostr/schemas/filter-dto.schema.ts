@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { TagName } from '../constants';
 import {
   EventIdPrefixSchema,
   EventKindSchema,
@@ -19,27 +18,18 @@ export const FilterDtoSchema = z.preprocess(
     const filter = {};
     const tags = {};
 
-    let dTagValues = undefined;
-
     Object.entries(obj).forEach(([key, value]) => {
       if (!key.startsWith('#')) {
         filter[key] = value;
         return;
       }
 
-      const tagName = key[1];
-      if (tagName === TagName.D) {
-        dTagValues = value;
-        return;
-      }
-
-      tags[tagName] = value;
+      tags[key[1]] = value;
     });
 
     return {
       ...filter,
       tags,
-      dTagValues,
     };
   },
   z
