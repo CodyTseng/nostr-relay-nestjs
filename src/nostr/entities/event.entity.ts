@@ -8,7 +8,13 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EventKind, EventType, MAX_TIMESTAMP, TagName } from '../constants';
+import {
+  EventKind,
+  EventType,
+  MAX_TIMESTAMP,
+  STANDARD_SINGLE_LETTER_TAG_NAMES,
+  TagName,
+} from '../constants';
 import { EventDto } from '../schemas';
 import { countLeadingZeroBits, getTimestampInSeconds } from '../utils';
 
@@ -50,79 +56,31 @@ export class Event {
   a?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
-  b?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  c?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
   d?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
   e?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
-  f?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
   g?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  h?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
   i?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
-  j?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  k?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
   l?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
-  m?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  n?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  o?: string[];
+  L?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
   p?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
-  q?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
   r?: string[];
 
   @Column({ type: 'text', array: true, default: [] })
-  s?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
   t?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  u?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  v?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  w?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  x?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  y?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  z?: string[];
 
   @CreateDateColumn({ name: 'create_date', select: false })
   createDate: Date;
@@ -164,7 +122,7 @@ export class Event {
         : undefined;
 
     eventDto.tags.forEach(([tagName, tagValue]) => {
-      if (/^[a-z]$/.test(tagName)) {
+      if (STANDARD_SINGLE_LETTER_TAG_NAMES.includes(tagName)) {
         event[tagName]
           ? event[tagName].push(tagValue)
           : (event[tagName] = [tagValue]);

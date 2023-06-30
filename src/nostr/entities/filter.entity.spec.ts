@@ -1,13 +1,15 @@
 import {
+  createEventDtoMock,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
 } from '../../../seeds/event';
 import { EventKind } from '../constants';
+import { Event } from './event.entity';
 import { Filter } from './filter.entity';
 
 describe('filter', () => {
   describe('isEventMatchingFilter', () => {
-    it('should return true', () => {
+    it('should return true', async () => {
       expect(
         Filter.fromFilterDto({ ids: [REGULAR_EVENT.id] }).isEventMatching(
           REGULAR_EVENT,
@@ -22,10 +24,16 @@ describe('filter', () => {
           },
         }).isEventMatching(PARAMETERIZED_REPLACEABLE_EVENT),
       ).toBeTruthy();
+
+      const unStandardTagEvent = await createEventDtoMock({
+        tags: [['z', 'test1']],
+      });
       expect(
-        Filter.fromFilterDto({ dTagValues: ['test'] }).isEventMatching(
-          PARAMETERIZED_REPLACEABLE_EVENT,
-        ),
+        Filter.fromFilterDto({
+          tags: {
+            z: ['test1', 'test2'],
+          },
+        }).isEventMatching(Event.fromEventDto(unStandardTagEvent)),
       ).toBeTruthy();
     });
 
@@ -56,11 +64,6 @@ describe('filter', () => {
       expect(
         Filter.fromFilterDto({ tags: { p: ['fake'] } }).isEventMatching(
           PARAMETERIZED_REPLACEABLE_EVENT,
-        ),
-      ).toBeFalsy();
-      expect(
-        Filter.fromFilterDto({ dTagValues: ['fake'] }).isEventMatching(
-          REGULAR_EVENT,
         ),
       ).toBeFalsy();
     });

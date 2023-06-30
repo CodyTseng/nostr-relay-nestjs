@@ -1,5 +1,5 @@
 import { intersection } from 'lodash';
-import { EventKind } from '../constants';
+import { EventKind, STANDARD_SINGLE_LETTER_TAG_NAMES } from '../constants';
 import { FilterDto } from '../schemas';
 import { Event } from './event.entity';
 
@@ -22,7 +22,6 @@ export class Filter {
     filter.until = filterDto.until;
     filter.limit = filterDto.limit;
     filter.tags = filterDto.tags;
-    filter.dTagValues = filterDto.dTagValues;
 
     return filter;
   }
@@ -57,18 +56,18 @@ export class Filter {
       return false;
     }
 
-    if (this.dTagValues) {
-      return event.dTagValue
-        ? this.dTagValues.includes(event.dTagValue)
-        : false;
-    }
-
     return this.tags
-      ? Object.entries(this.tags).every(([filterTagKey, filterTagValues]) =>
-          event[filterTagKey]?.length
-            ? intersection(event[filterTagKey], filterTagValues).length > 0
-            : false,
-        )
+      ? Object.entries(this.tags).every(([filterTagKey, filterTagValues]) => {
+          if (STANDARD_SINGLE_LETTER_TAG_NAMES.includes(filterTagKey)) {
+            return event[filterTagKey]?.length
+              ? intersection(event[filterTagKey], filterTagValues).length > 0
+              : false;
+          }
+          return !!event.tags.find(
+            ([tagName, tagValue]) =>
+              tagName === filterTagKey && filterTagValues.includes(tagValue),
+          );
+        })
       : true;
   }
 }
