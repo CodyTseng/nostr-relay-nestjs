@@ -1,6 +1,7 @@
 import { newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
 import {
+  createEventDtoMock,
   EXPIRED_EVENT,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
@@ -238,6 +239,16 @@ describe('EventRepository', () => {
           })
         )?.toEventDto(),
       ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
+
+      const unStandardTagEventDto = await createEventDtoMock({
+        tags: [['z', 'test2']],
+      });
+      await eventRepository.create(Event.fromEventDto(unStandardTagEventDto));
+      expect(
+        (
+          await eventRepository.findOne({ tags: { z: ['test1', 'test2'] } })
+        )?.toEventDto(),
+      ).toEqual(unStandardTagEventDto);
     });
 
     it('should find by multi filters successfully', async () => {

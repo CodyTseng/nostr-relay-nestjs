@@ -9,7 +9,7 @@ import {
 const TagFilterValuesSchema = z.array(z.string().max(1024)).max(256);
 
 const TagsFilterSchema = z.record(
-  z.string().regex(/^[a-z]$/),
+  z.string().regex(/^[a-zA-Z]$/),
   TagFilterValuesSchema,
 );
 
@@ -41,7 +41,6 @@ export const FilterDtoSchema = z.preprocess(
       until: TimestampInSecSchema,
       limit: z.number().int().min(0).max(1000),
       tags: TagsFilterSchema,
-      dTagValues: TagFilterValuesSchema,
     })
     .partial(),
 );

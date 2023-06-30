@@ -418,3 +418,27 @@ export async function createSignedEventMock(
 ) {
   return Event.fromEventDto(await createSignedEventDtoMock(params));
 }
+
+export async function createEventDtoMock(params: {
+  pubkey?: string;
+  kind?: number;
+  created_at?: number;
+  tags?: string[][];
+  content?: string;
+}) {
+  const baseEvent = {
+    pubkey: params.pubkey ?? TEST_PUBKEY,
+    kind: params.kind ?? 1,
+    created_at: params.created_at ?? getTimestampInSeconds(),
+    tags: params.tags ?? [],
+    content: params.content ?? '',
+  };
+  const id = await getEventHash(baseEvent);
+  const sig = await signEvent(id, TEST_PRIVKEY);
+
+  return {
+    ...baseEvent,
+    id,
+    sig,
+  };
+}

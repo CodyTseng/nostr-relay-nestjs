@@ -39,6 +39,19 @@ export enum TagName {
   CHALLENGE = 'challenge',
 }
 
+export const STANDARD_SINGLE_LETTER_TAG_NAMES = [
+  'a', // coordinates to an event
+  'd', // identifier
+  'e', // event id (hex)
+  'g', // geohash
+  'i', // identity
+  'l', // label, label namespace
+  'L', // label namespace
+  'p', // pubkey (hex)
+  'r', // a reference (URL, etc)
+  't', // hashtag
+];
+
 export enum EventType {
   REGULAR = 'REGULAR',
   REPLACEABLE = 'REPLACEABLE',
