@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { sumBy } from 'lodash';
 import { Brackets, In, QueryFailedError, Repository } from 'typeorm';
-import { STANDARD_SINGLE_LETTER_TAG_NAMES } from '../constants';
 import { Event, Filter } from '../entities';
 import { getTimestampInSeconds } from '../utils';
 
@@ -14,7 +13,7 @@ export type EventRepositoryFilter = Pick<
   | 'limit'
   | 'since'
   | 'until'
-  | 'tags'
+  | 'genericTagsCollection'
   | 'dTagValues'
 >;
 
@@ -93,26 +92,11 @@ export class EventRepository {
           });
         }
 
-        if (filter.tags) {
-          Object.entries(filter.tags).forEach(([key, values]) => {
-            if (STANDARD_SINGLE_LETTER_TAG_NAMES.includes(key)) {
-              qb.andWhere(`event.${key} && (:values)`, {
-                values,
-              });
-            } else {
-              qb.andWhere(
-                new Brackets((subQb) =>
-                  values.forEach((value, index) => {
-                    subQb[index === 0 ? 'where' : 'orWhere'](
-                      `event.tags @> :condition`,
-                      {
-                        condition: JSON.stringify([[key, value]]),
-                      },
-                    );
-                  }),
-                ),
-              );
-            }
+        if (filter.genericTagsCollection) {
+          filter.genericTagsCollection.forEach((genericTags) => {
+            qb.andWhere('event.generic_tags && (:genericTags)', {
+              genericTags,
+            });
           });
         }
 

@@ -1,6 +1,7 @@
 import { intersection } from 'lodash';
-import { EventKind, STANDARD_SINGLE_LETTER_TAG_NAMES } from '../constants';
+import { EventKind } from '../constants';
 import { FilterDto } from '../schemas';
+import { toGenericTag } from '../utils';
 import { Event } from './event.entity';
 
 export class Filter {
@@ -10,7 +11,7 @@ export class Filter {
   since?: number;
   until?: number;
   limit?: number;
-  tags?: { [key: string]: string[] };
+  genericTagsCollection?: string[][];
   dTagValues?: string[];
 
   static fromFilterDto(filterDto: FilterDto) {
@@ -21,7 +22,11 @@ export class Filter {
     filter.since = filterDto.since;
     filter.until = filterDto.until;
     filter.limit = filterDto.limit;
-    filter.tags = filterDto.tags;
+    filter.genericTagsCollection = filterDto.tags
+      ? Object.entries(filterDto.tags).map(([key, values]) =>
+          values.map((value) => toGenericTag(key, value)),
+        )
+      : undefined;
 
     return filter;
   }
@@ -56,18 +61,11 @@ export class Filter {
       return false;
     }
 
-    return this.tags
-      ? Object.entries(this.tags).every(([filterTagKey, filterTagValues]) => {
-          if (STANDARD_SINGLE_LETTER_TAG_NAMES.includes(filterTagKey)) {
-            return event[filterTagKey]?.length
-              ? intersection(event[filterTagKey], filterTagValues).length > 0
-              : false;
-          }
-          return !!event.tags.find(
-            ([tagName, tagValue]) =>
-              tagName === filterTagKey && filterTagValues.includes(tagValue),
-          );
-        })
+    return this.genericTagsCollection
+      ? this.genericTagsCollection.every(
+          (genericTags) =>
+            intersection(genericTags, event.genericTags).length > 0,
+        )
       : true;
   }
 }

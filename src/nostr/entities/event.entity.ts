@@ -8,15 +8,14 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import {
-  EventKind,
-  EventType,
-  MAX_TIMESTAMP,
-  STANDARD_SINGLE_LETTER_TAG_NAMES,
-  TagName,
-} from '../constants';
+import { EventKind, EventType, MAX_TIMESTAMP, TagName } from '../constants';
 import { EventDto } from '../schemas';
-import { countLeadingZeroBits, getTimestampInSeconds } from '../utils';
+import {
+  countLeadingZeroBits,
+  getTimestampInSeconds,
+  isGenericTagName,
+  toGenericTag,
+} from '../utils';
 
 const EVENT_TYPE_SYMBOL = Symbol('event:type');
 
@@ -37,6 +36,9 @@ export class Event {
   @Column({ type: 'jsonb', default: [] })
   tags: string[][];
 
+  @Column({ type: 'text', array: true, default: [], name: 'generic_tags' })
+  genericTags: string[];
+
   @Column({ type: 'text', default: '' })
   content: string;
 
@@ -51,36 +53,6 @@ export class Event {
 
   @Column({ type: 'char', length: 64, nullable: true })
   delegator?: string;
-
-  @Column({ type: 'text', array: true, default: [] })
-  a?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  d?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  e?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  g?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  i?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  l?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  L?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  p?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  r?: string[];
-
-  @Column({ type: 'text', array: true, default: [] })
-  t?: string[];
 
   @CreateDateColumn({ name: 'create_date', select: false })
   createDate: Date;
@@ -121,13 +93,14 @@ export class Event {
         ? Event.extractDTagValueFromEvent(eventDto)
         : undefined;
 
+    const genericTagSet = new Set<string>();
     eventDto.tags.forEach(([tagName, tagValue]) => {
-      if (STANDARD_SINGLE_LETTER_TAG_NAMES.includes(tagName)) {
-        event[tagName]
-          ? event[tagName].push(tagValue)
-          : (event[tagName] = [tagValue]);
+      if (isGenericTagName(tagName)) {
+        genericTagSet.add(toGenericTag(tagName, tagValue));
       }
     });
+    event.genericTags = [...genericTagSet];
+
     return event;
   }
 
