@@ -9,7 +9,7 @@ import {
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
-import { Event } from '../entities';
+import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 
 describe('EventRepository', () => {
@@ -216,13 +216,15 @@ describe('EventRepository', () => {
     it('should filter by tag successfully', async () => {
       expect(
         (
-          await eventRepository.find({
-            tags: {
-              p: [
-                '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-              ],
-            },
-          })
+          await eventRepository.find(
+            Filter.fromFilterDto({
+              tags: {
+                p: [
+                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+                ],
+              },
+            }),
+          )
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEventDto()),
@@ -230,13 +232,15 @@ describe('EventRepository', () => {
 
       expect(
         (
-          await eventRepository.findOne({
-            tags: {
-              p: [
-                '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-              ],
-            },
-          })
+          await eventRepository.findOne(
+            Filter.fromFilterDto({
+              tags: {
+                p: [
+                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+                ],
+              },
+            }),
+          )
         )?.toEventDto(),
       ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
 
@@ -246,7 +250,9 @@ describe('EventRepository', () => {
       await eventRepository.create(Event.fromEventDto(unStandardTagEventDto));
       expect(
         (
-          await eventRepository.findOne({ tags: { z: ['test1', 'test2'] } })
+          await eventRepository.findOne(
+            Filter.fromFilterDto({ tags: { z: ['test1', 'test2'] } }),
+          )
         )?.toEventDto(),
       ).toEqual(unStandardTagEventDto);
     });
