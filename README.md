@@ -2,6 +2,8 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master)
 
+> WARNING: This project is still in development and is not ready for production use.
+
 A Nostr relay implemented using the NestJS framework
 
 Try here: wss://nostr-relay.app
@@ -27,10 +29,12 @@ Try here: wss://nostr-relay.app
 - [x] [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)
 - [x] [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md)
 - [x] [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)
+- [ ] [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)
 
 ## ToDo
 
-- [x] test
+- [x] unit test
+- [ ] Metrics, Monitoring and Alerting
 - [ ] support multi nodes
 - [ ] support for Bitcoin Lightning Network payments
 
@@ -39,6 +43,10 @@ Try here: wss://nostr-relay.app
 ![structure light](https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png#gh-light-mode-only)
 
 ![structure dark](https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-dark.png#gh-dark-mode-only)
+
+## Donate
+
+If you like this project, you can buy me a coffee :) ⚡️ codytseng@getalby.com ⚡️
 
 ## License
 
