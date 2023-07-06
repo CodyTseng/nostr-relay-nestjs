@@ -19,7 +19,7 @@ import {
 
 const EVENT_TYPE_SYMBOL = Symbol('event:type');
 
-@Entity({ name: 'event' })
+@Entity({ name: 'events' })
 export class Event {
   @PrimaryColumn({ type: 'char', length: 64 })
   id: string;
