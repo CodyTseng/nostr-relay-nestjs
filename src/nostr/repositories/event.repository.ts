@@ -131,9 +131,15 @@ export class EventRepository {
           });
         }
 
-        qb.andWhere('event.expired_at > :expiredAt', {
-          expiredAt: getTimestampInSeconds(),
-        });
+        qb.andWhere(
+          new Brackets((subQb) => {
+            subQb
+              .where('event.expired_at IS NULL')
+              .orWhere('event.expired_at > :expiredAt', {
+                expiredAt: getTimestampInSeconds(),
+              });
+          }),
+        );
       });
 
       queryBuilder[index === 0 ? 'where' : 'orWhere'](brackets);
