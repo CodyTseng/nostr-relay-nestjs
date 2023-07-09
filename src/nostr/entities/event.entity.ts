@@ -8,7 +8,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EventKind, EventType, MAX_TIMESTAMP, TagName } from '../constants';
+import { EventKind, EventType, TagName } from '../constants';
 import { EventDto } from '../schemas';
 import {
   countLeadingZeroBits,
@@ -45,8 +45,8 @@ export class Event {
   @Column({ type: 'char', length: 128 })
   sig: string;
 
-  @Column({ type: 'bigint', default: MAX_TIMESTAMP, name: 'expired_at' })
-  expiredAt: number;
+  @Column({ type: 'bigint', nullable: true, name: 'expired_at' })
+  expiredAtStr?: string;
 
   @Column({ type: 'text', nullable: true, name: 'd_tag_value' })
   dTagValue?: string;
@@ -74,8 +74,16 @@ export class Event {
     return parseInt(this.createdAtStr);
   }
 
-  set createdAt(created_at: number) {
-    this.createdAtStr = created_at.toString();
+  set createdAt(createdAt: number) {
+    this.createdAtStr = createdAt.toString();
+  }
+
+  get expiredAt() {
+    return isNil(this.expiredAtStr) ? undefined : parseInt(this.expiredAtStr);
+  }
+
+  set expiredAt(expiredAt: number | undefined) {
+    this.expiredAtStr = expiredAt?.toString();
   }
 
   static fromEventDto(eventDto: EventDto) {
@@ -143,16 +151,18 @@ export class Event {
     return dTagValue;
   }
 
-  static extractExpirationTimestamp(event: Pick<Event, 'tags'>): number {
+  static extractExpirationTimestamp(
+    event: Pick<Event, 'tags'>,
+  ): number | undefined {
     const expirationTag = event.tags.find(
       ([tagName]) => tagName === TagName.EXPIRATION,
     );
     if (!expirationTag) {
-      return MAX_TIMESTAMP;
+      return undefined;
     }
 
     const expirationTimestamp = parseInt(expirationTag[1]);
-    return isNaN(expirationTimestamp) ? MAX_TIMESTAMP : expirationTimestamp;
+    return isNaN(expirationTimestamp) ? undefined : expirationTimestamp;
   }
 
   checkPermission(pubkey?: string) {
@@ -188,7 +198,7 @@ export class Event {
 
     const now = getTimestampInSeconds();
 
-    if (this.expiredAt < now) {
+    if (this.expiredAt && this.expiredAt < now) {
       return 'reject: event is expired';
     }
 

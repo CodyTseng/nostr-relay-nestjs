@@ -19,7 +19,6 @@ import {
   REGULAR_EVENT,
   REGULAR_EVENT_DTO,
 } from '../../../seeds';
-import { MAX_TIMESTAMP } from '../constants';
 import { getTimestampInSeconds } from '../utils';
 import { Event } from './event.entity';
 
@@ -136,13 +135,11 @@ describe('Event entity', () => {
     });
 
     it('should return MAX_TIMESTAMP', () => {
-      expect(Event.extractExpirationTimestamp({ tags: [] })).toBe(
-        MAX_TIMESTAMP,
-      );
+      expect(Event.extractExpirationTimestamp({ tags: [] })).toBeUndefined();
 
-      expect(Event.extractExpirationTimestamp({ tags: [['expiration']] })).toBe(
-        MAX_TIMESTAMP,
-      );
+      expect(
+        Event.extractExpirationTimestamp({ tags: [['expiration']] }),
+      ).toBeUndefined();
     });
   });
 
