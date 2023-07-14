@@ -14,6 +14,9 @@ export const EnvironmentSchema = z.object({
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
 
+  MEILI_SEARCH_HOST: z.string().optional(),
+  MEILI_SEARCH_API_KEY: z.string().optional(),
+
   RELAY_NAME: z.string().optional(),
   RELAY_DESCRIPTION: z.string().optional(),
   RELAY_PUBKEY: z
