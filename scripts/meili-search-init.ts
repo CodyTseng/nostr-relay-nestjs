@@ -40,9 +40,11 @@ async function run() {
   });
   logger.info('Updated settings');
 
+  const limit = 1000;
   let until = Math.floor(Date.now() / 1000),
     rowCount = 0,
-    totalCount = 0;
+    totalCount = 0,
+    lastEventId: string | undefined;
   do {
     const result = await pg.query<{
       id: string;
@@ -56,30 +58,35 @@ async function run() {
       expired_at?: string;
       delegator?: string;
     }>(
-      `SELECT * FROM events WHERE kind IN (0, 1, 30023) AND created_at <= ${until} ORDER BY created_at DESC LIMIT 1000`,
+      `SELECT * FROM events WHERE kind IN (0, 1, 30023) AND created_at <= ${until} ORDER BY created_at DESC LIMIT ${limit}`,
     );
     rowCount = result.rowCount;
     logger.info(`Fetched ${rowCount} events`);
 
-    await eventIndex.addDocuments(
-      result.rows.map((row) => ({
-        id: row.id,
-        pubkey: row.pubkey,
-        createdAt: parseInt(row.created_at),
-        kind: row.kind,
-        tags: row.tags,
-        genericTags: row.generic_tags,
-        content: row.content,
-        sig: row.sig,
-        expiredAt: row.expired_at ? parseInt(row.expired_at) : undefined,
-        delegator: row.delegator,
-      })),
-    );
-    until = parseInt(result.rows[result.rows.length - 1].created_at);
+    const startIndex = lastEventId
+      ? result.rows.findIndex((row) => row.id === lastEventId) + 1
+      : 0;
 
-    totalCount += rowCount;
-    logger.info(`Added ${rowCount} events, total ${totalCount}`);
-  } while (rowCount >= 1000);
+    const eventDocuments = result.rows.slice(startIndex).map((row) => ({
+      id: row.id,
+      pubkey: row.pubkey,
+      createdAt: parseInt(row.created_at),
+      kind: row.kind,
+      tags: row.tags,
+      genericTags: row.generic_tags,
+      content: row.content,
+      sig: row.sig,
+      expiredAt: row.expired_at ? parseInt(row.expired_at) : undefined,
+      delegator: row.delegator,
+    }));
+
+    await eventIndex.addDocuments(eventDocuments);
+    until = parseInt(result.rows[result.rows.length - 1].created_at);
+    lastEventId = result.rows[result.rows.length - 1].id;
+
+    totalCount += eventDocuments.length;
+    logger.info(`Added ${eventDocuments.length} events, total ${totalCount}`);
+  } while (rowCount >= limit);
   logger.info('Done');
 }
 run();
