@@ -56,7 +56,7 @@ async function run() {
       expired_at?: string;
       delegator?: string;
     }>(
-      `SELECT * FROM events WHERE kind IN (0, 1, 30023) AND created_at < ${until} ORDER BY created_at DESC LIMIT 100`,
+      `SELECT * FROM events WHERE kind IN (0, 1, 30023) AND created_at <= ${until} ORDER BY created_at DESC LIMIT 1000`,
     );
     rowCount = result.rowCount;
     logger.info(`Fetched ${rowCount} events`);
@@ -76,11 +76,10 @@ async function run() {
       })),
     );
     until = parseInt(result.rows[result.rows.length - 1].created_at);
-    console.log(JSON.stringify(result.rows[0], null, 2));
-    console.log(typeof result.rows[0].kind, result.rows[0].kind);
 
     totalCount += rowCount;
     logger.info(`Added ${rowCount} events, total ${totalCount}`);
   } while (rowCount >= 1000);
+  logger.info('Done');
 }
 run();
