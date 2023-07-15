@@ -2,6 +2,7 @@ import { databaseConfig } from './database.config';
 import { validateEnvironment } from './environment';
 import { limitConfig } from './limit.config';
 import { loggerConfig } from './logger.config';
+import { meiliSearchConfig } from './meili-search';
 import { relayInfoDocConfig } from './relay-info-doc.config';
 
 export function config() {
@@ -10,6 +11,7 @@ export function config() {
     domain: env.DOMAIN,
     port: env.PORT ?? 3000,
     database: databaseConfig(env),
+    meiliSearch: meiliSearchConfig(env),
     limit: limitConfig(env),
     relayInfoDoc: relayInfoDocConfig(env),
     logger: loggerConfig(env),
