@@ -45,7 +45,7 @@ describe('filter', () => {
       ).toBeTruthy();
     });
 
-    it('should return false', () => {
+    it('should return false', async () => {
       expect(
         Filter.fromFilterDto({ ids: ['fake-id'] }).isEventMatching(
           REGULAR_EVENT,
@@ -72,6 +72,11 @@ describe('filter', () => {
       expect(
         Filter.fromFilterDto({ tags: { p: ['fake'] } }).isEventMatching(
           PARAMETERIZED_REPLACEABLE_EVENT,
+        ),
+      ).toBeFalsy();
+      expect(
+        Filter.fromFilterDto({ search: 'test' }).isEventMatching(
+          Event.fromEventDto(await createEventDtoMock({ content: 'abandon' })),
         ),
       ).toBeFalsy();
     });
