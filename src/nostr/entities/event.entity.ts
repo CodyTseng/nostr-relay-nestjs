@@ -46,13 +46,13 @@ export class Event {
   sig: string;
 
   @Column({ type: 'bigint', nullable: true, name: 'expired_at' })
-  expiredAtStr?: string;
+  expiredAtStr: string | null;
 
   @Column({ type: 'text', nullable: true, name: 'd_tag_value' })
-  dTagValue?: string;
+  dTagValue: string | null;
 
   @Column({ type: 'char', length: 64, nullable: true })
-  delegator?: string;
+  delegator: string | null;
 
   @CreateDateColumn({ name: 'create_date', select: false })
   createDate: Date;
@@ -61,7 +61,7 @@ export class Event {
   updateDate: Date;
 
   @DeleteDateColumn({ name: 'delete_date', nullable: true, select: false })
-  deleteDate?: Date;
+  deleteDate: Date | null;
 
   get type() {
     if (!this[EVENT_TYPE_SYMBOL]) {
@@ -79,11 +79,11 @@ export class Event {
   }
 
   get expiredAt() {
-    return isNil(this.expiredAtStr) ? undefined : parseInt(this.expiredAtStr);
+    return isNil(this.expiredAtStr) ? null : parseInt(this.expiredAtStr);
   }
 
-  set expiredAt(expiredAt: number | undefined) {
-    this.expiredAtStr = expiredAt?.toString();
+  set expiredAt(expiredAt: number | null) {
+    this.expiredAtStr = expiredAt?.toString() ?? null;
   }
 
   static fromEventDto(eventDto: EventDto) {
@@ -99,7 +99,7 @@ export class Event {
     event.dTagValue =
       event.type === EventType.PARAMETERIZED_REPLACEABLE
         ? Event.extractDTagValueFromEvent(eventDto)
-        : undefined;
+        : null;
 
     const genericTagSet = new Set<string>();
     eventDto.tags.forEach(([tagName, tagValue]) => {
@@ -151,18 +151,16 @@ export class Event {
     return dTagValue;
   }
 
-  static extractExpirationTimestamp(
-    event: Pick<Event, 'tags'>,
-  ): number | undefined {
+  static extractExpirationTimestamp(event: Pick<Event, 'tags'>): number | null {
     const expirationTag = event.tags.find(
       ([tagName]) => tagName === TagName.EXPIRATION,
     );
     if (!expirationTag) {
-      return undefined;
+      return null;
     }
 
     const expirationTimestamp = parseInt(expirationTag[1]);
-    return isNaN(expirationTimestamp) ? undefined : expirationTimestamp;
+    return isNaN(expirationTimestamp) ? null : expirationTimestamp;
   }
 
   checkPermission(pubkey?: string) {

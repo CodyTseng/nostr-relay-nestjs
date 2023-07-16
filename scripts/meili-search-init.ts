@@ -10,15 +10,6 @@ async function run() {
   const eventIndex = meiliSearch.index('events');
 
   eventIndex.updateSettings({
-    displayedAttributes: [
-      'id',
-      'pubkey',
-      'createdAt',
-      'kind',
-      'tags',
-      'content',
-      'sig',
-    ],
     searchableAttributes: ['content'],
     filterableAttributes: [
       'pubkey',
@@ -55,8 +46,9 @@ async function run() {
       generic_tags: string[];
       content: string;
       sig: string;
-      expired_at?: string;
-      delegator?: string;
+      expired_at: string | null;
+      delegator: string | null;
+      d_tag_value: string | null;
     }>(
       `SELECT * FROM events WHERE kind IN (0, 1, 30023) AND created_at <= ${until} ORDER BY created_at DESC LIMIT ${limit}`,
     );
@@ -76,8 +68,9 @@ async function run() {
       genericTags: row.generic_tags,
       content: row.content,
       sig: row.sig,
-      expiredAt: row.expired_at ? parseInt(row.expired_at) : undefined,
+      expiredAt: row.expired_at ? parseInt(row.expired_at) : null,
       delegator: row.delegator,
+      dTagValue: row.d_tag_value,
     }));
 
     await eventIndex.addDocuments(eventDocuments);
