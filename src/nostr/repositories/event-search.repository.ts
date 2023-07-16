@@ -3,7 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
-import { Event } from '../entities';
+import { SEARCHABLE_EVENT_KINDS } from '../constants';
+import { Event, SearchFilter } from '../entities';
+import { getTimestampInSeconds } from '../utils';
 
 type EventDocument = {
   id: string;
@@ -18,6 +20,19 @@ type EventDocument = {
   delegator: string | null;
   dTagValue: string | null;
 };
+
+type EventRepositoryFilter = Pick<
+  SearchFilter,
+  | 'authors'
+  | 'dTagValues'
+  | 'genericTagsCollection'
+  | 'kinds'
+  | 'limit'
+  | 'search'
+  | 'searchOptions'
+  | 'since'
+  | 'until'
+>;
 
 @Injectable()
 export class EventSearchRepository implements OnApplicationBootstrap {
@@ -64,8 +79,48 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     });
   }
 
+  async find(filter: EventRepositoryFilter) {
+    const searchFilters: string[] = [
+      `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
+    ];
+
+    if (filter.kinds?.length) {
+      searchFilters.push(`kind IN [${filter.kinds.join(', ')}]`);
+    }
+
+    if (filter.since) {
+      searchFilters.push(`createdAt >= ${filter.since}`);
+    }
+
+    if (filter.until) {
+      searchFilters.push(`createdAt <= ${filter.until}`);
+    }
+
+    if (filter.authors?.length) {
+      const authorsStr = filter.authors.join(', ');
+      searchFilters.push(
+        `pubkey IN [${authorsStr}] OR delegator IN [${authorsStr}]`,
+      );
+    }
+
+    if (filter.genericTagsCollection?.length) {
+      filter.genericTagsCollection.forEach((genericTags) => {
+        searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
+      });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await this.index!.search(filter.search, {
+      limit: filter.limit,
+      filter: searchFilters,
+      sort: ['createdAt:desc'],
+    });
+
+    return result.hits.map(this.toEvent);
+  }
+
   async add(event: Event) {
-    if (!this.index) {
+    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) {
       return;
     }
     try {
@@ -75,11 +130,24 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
+  async replace(event: Event, oldEventId?: string) {
+    if (!this.index) {
+      return;
+    }
+    try {
+      await Promise.all([
+        this.add(event),
+        oldEventId ? this.deleteMany([oldEventId]) : undefined,
+      ]);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
   async deleteMany(eventIds: string[]) {
     if (!this.index) {
       return;
     }
-
     try {
       await this.index.deleteDocuments(eventIds);
     } catch (error) {
@@ -87,7 +155,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
-  private toEventDocument(event: Event) {
+  private toEventDocument(event: Event): EventDocument {
     return {
       id: event.id,
       pubkey: event.pubkey,
@@ -101,5 +169,26 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       delegator: event.delegator,
       dTagValue: event.dTagValue,
     };
+  }
+
+  private toEvent(eventDocument: EventDocument): Event {
+    const event = new Event();
+    event.id = eventDocument.id;
+    event.pubkey = eventDocument.pubkey;
+    event.createdAt = eventDocument.createdAt;
+    event.kind = eventDocument.kind;
+    event.tags = eventDocument.tags;
+    event.content = eventDocument.content;
+    event.sig = eventDocument.sig;
+    event.expiredAt = eventDocument.expiredAt;
+    event.genericTags = eventDocument.genericTags;
+    event.dTagValue = eventDocument.dTagValue;
+    event.delegator = eventDocument.delegator;
+
+    event.createDate = new Date(eventDocument.createdAt);
+    event.updateDate = new Date(eventDocument.createdAt);
+    event.deleteDate = null;
+
+    return event;
   }
 }

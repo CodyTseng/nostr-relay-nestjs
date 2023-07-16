@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { difference, union } from 'lodash';
+import { difference, union, uniqBy } from 'lodash';
 import { EventKind, EventType, E_EVENT_BROADCAST, TagName } from '../constants';
-import { Event, Filter } from '../entities';
+import { Event, Filter, SearchFilter } from '../entities';
 import { EventRepository } from '../repositories';
+import { EventSearchRepository } from '../repositories/event-search.repository';
 import { EventIdSchema } from '../schemas';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
 import { LockService } from './lock.service';
@@ -12,12 +13,31 @@ import { LockService } from './lock.service';
 export class EventService {
   constructor(
     private readonly eventRepository: EventRepository,
+    private readonly eventSearchRepository: EventSearchRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly lockService: LockService,
   ) {}
 
   async findByFilters(filters: Filter[]): Promise<Event[]> {
-    return await this.eventRepository.find(filters);
+    const searchFilters: SearchFilter[] = [],
+      normalFilters: Filter[] = [];
+
+    filters.forEach((filter) => {
+      if (Filter.isSearchFilter(filter)) {
+        searchFilters.push(filter);
+      } else {
+        normalFilters.push(filter);
+      }
+    });
+
+    const eventsCollection = await Promise.all([
+      this.eventRepository.find(normalFilters),
+      ...searchFilters.map((searchFilter) =>
+        this.eventSearchRepository.find(searchFilter),
+      ),
+    ]);
+
+    return uniqBy(eventsCollection.flat(), 'id');
   }
 
   async countByFilters(filters: Filter[]): Promise<number> {
@@ -60,7 +80,10 @@ export class EventService {
         eventIds,
         eventIdsNotBelongToPubkey,
       );
-      await this.eventRepository.delete(eventIdsToBeDeleted);
+      await Promise.all([
+        this.eventRepository.delete(eventIdsToBeDeleted),
+        this.eventSearchRepository.deleteMany(eventIdsToBeDeleted),
+      ]);
     }
 
     return this.handleRegularEvent(event);
@@ -125,7 +148,10 @@ export class EventService {
   private async handleRegularEvent(
     event: Event,
   ): Promise<CommandResultResponse> {
-    const success = await this.eventRepository.create(event);
+    const [success] = await Promise.all([
+      this.eventRepository.create(event),
+      this.eventSearchRepository.add(event),
+    ]);
 
     if (success) {
       this.broadcastEvent(event);
@@ -149,7 +175,10 @@ export class EventService {
       );
     }
 
-    const success = await this.eventRepository.replace(event, oldEvent?.id);
+    const [success] = await Promise.all([
+      this.eventRepository.replace(event, oldEvent?.id),
+      this.eventSearchRepository.replace(event, oldEvent?.id),
+    ]);
     if (success) {
       this.broadcastEvent(event);
     }

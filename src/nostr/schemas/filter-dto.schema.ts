@@ -41,6 +41,7 @@ export const FilterDtoSchema = z.preprocess(
       until: TimestampInSecSchema,
       limit: z.number().int().min(0).max(1000),
       tags: TagsFilterSchema,
+      search: z.string().max(256),
     })
     .partial(),
 );

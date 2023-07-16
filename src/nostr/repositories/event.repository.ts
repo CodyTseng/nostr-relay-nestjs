@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { sumBy } from 'lodash';
 import { Brackets, In, QueryFailedError, Repository } from 'typeorm';
-import { SEARCHABLE_EVENT_KINDS } from '../constants';
 import { Event, Filter } from '../entities';
 import { getTimestampInSeconds } from '../utils';
-import { EventSearchRepository } from './event-search.repository';
 
 export type EventRepositoryFilter = Pick<
   Filter,
@@ -24,7 +22,6 @@ export class EventRepository {
   constructor(
     @InjectRepository(Event)
     private readonly repository: Repository<Event>,
-    private readonly searchRepository: EventSearchRepository,
   ) {}
 
   async create(event: Event) {
@@ -41,14 +38,12 @@ export class EventRepository {
       throw error;
     }
 
-    if (SEARCHABLE_EVENT_KINDS.includes(event.kind)) {
-      await this.searchRepository.add(event);
-    }
-
     return true;
   }
 
   async find(filters: EventRepositoryFilter[] | EventRepositoryFilter) {
+    if (Array.isArray(filters) && filters.length === 0) return [];
+
     return await this.createQueryBuilder(filters)
       .take(this.getLimitFrom(filters))
       .orderBy('event.createdAtStr', 'DESC')
@@ -71,22 +66,16 @@ export class EventRepository {
     }
 
     if (oldEventId) {
-      await Promise.all([
-        this.repository.delete({ id: oldEventId }),
-        this.searchRepository.deleteMany([oldEventId]),
-      ]);
+      await this.repository.delete({ id: oldEventId });
     }
 
     return this.create(event);
   }
 
   async delete(eventIds: string[]) {
-    const [{ affected }] = await Promise.all([
-      this.repository.softDelete({
-        id: In(eventIds),
-      }),
-      this.searchRepository.deleteMany(eventIds),
-    ]);
+    const { affected } = await this.repository.softDelete({
+      id: In(eventIds),
+    });
 
     return affected ?? 0;
   }
