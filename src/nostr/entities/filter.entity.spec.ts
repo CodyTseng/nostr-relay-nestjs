@@ -35,6 +35,14 @@ describe('filter', () => {
           },
         }).isEventMatching(Event.fromEventDto(unStandardTagEvent)),
       ).toBeTruthy();
+
+      expect(
+        Filter.fromFilterDto({ search: 'test' }).isEventMatching(
+          Event.fromEventDto(
+            await createEventDtoMock({ content: 'abandon test' }),
+          ),
+        ),
+      ).toBeTruthy();
     });
 
     it('should return false', () => {

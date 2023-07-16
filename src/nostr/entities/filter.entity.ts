@@ -71,11 +71,6 @@ export class Filter {
   }
 
   isEventMatching(event: Event) {
-    if (this.search) {
-      // TODO: Implement search
-      return false;
-    }
-
     if (this.ids && !this.ids.some((id) => event.id.startsWith(id))) {
       return false;
     }
@@ -99,11 +94,25 @@ export class Filter {
       return false;
     }
 
-    return this.genericTagsCollection
-      ? this.genericTagsCollection.every(
-          (genericTags) =>
-            intersection(genericTags, event.genericTags).length > 0,
-        )
-      : true;
+    if (
+      this.genericTagsCollection &&
+      this.genericTagsCollection.some(
+        (genericTags) =>
+          intersection(genericTags, event.genericTags).length === 0,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      this.search &&
+      this.search
+        .split(' ')
+        .some((searchWord) => !new RegExp(searchWord, 'i').test(event.content))
+    ) {
+      return false;
+    }
+
+    return true;
   }
 }
