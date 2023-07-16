@@ -14,8 +14,9 @@ type EventDocument = {
   genericTags: string[];
   content: string;
   sig: string;
-  expiredAt?: number;
-  delegator?: string;
+  expiredAt: number | null;
+  delegator: string | null;
+  dTagValue: string | null;
 };
 
 @Injectable()
@@ -42,15 +43,6 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
 
     this.client.index(this.indexUid).updateSettings({
-      displayedAttributes: [
-        'id',
-        'pubkey',
-        'createdAt',
-        'kind',
-        'tags',
-        'content',
-        'sig',
-      ],
       searchableAttributes: ['content'],
       filterableAttributes: [
         'pubkey',
@@ -107,6 +99,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       sig: event.sig,
       expiredAt: event.expiredAt,
       delegator: event.delegator,
+      dTagValue: event.dTagValue,
     };
   }
 }

@@ -135,11 +135,11 @@ describe('Event entity', () => {
     });
 
     it('should return MAX_TIMESTAMP', () => {
-      expect(Event.extractExpirationTimestamp({ tags: [] })).toBeUndefined();
+      expect(Event.extractExpirationTimestamp({ tags: [] })).toBeNull();
 
       expect(
         Event.extractExpirationTimestamp({ tags: [['expiration']] }),
-      ).toBeUndefined();
+      ).toBeNull();
     });
   });
 
