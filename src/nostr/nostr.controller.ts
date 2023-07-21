@@ -13,10 +13,20 @@ import { Config, RelayInfoDoc } from '../config';
 
 @Controller()
 export class NostrController {
-  private readonly relayInfoDoc: RelayInfoDoc;
+  private readonly relayInfoDoc: RelayInfoDoc & { supported_nips: number[] };
 
   constructor(configService: ConfigService<Config, true>) {
     this.relayInfoDoc = configService.get('relayInfoDoc', { infer: true });
+    const supported_nips = [
+      1, 2, 9, 11, 12, 13, 16, 20, 22, 26, 28, 33, 40, 42, 45,
+    ];
+
+    const meiliSearchConfig = configService.get('meiliSearch', { infer: true });
+    if (meiliSearchConfig.apiKey && meiliSearchConfig.host) {
+      supported_nips.push(50);
+    }
+
+    this.relayInfoDoc.supported_nips = supported_nips.sort((a, b) => a - b);
   }
 
   @Get()
