@@ -36,9 +36,7 @@ type EventRepositoryFilter = Pick<
 
 @Injectable()
 export class EventSearchRepository implements OnApplicationBootstrap {
-  private readonly client?: MeiliSearch;
   private readonly index?: Index<EventDocument>;
-  private readonly indexUid = 'events';
 
   constructor(
     @InjectPinoLogger(EventSearchRepository.name)
@@ -48,16 +46,13 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     const { host, apiKey } = configService.get('meiliSearch', { infer: true });
     if (!host || !apiKey) return;
 
-    this.client = new MeiliSearch({ host, apiKey });
-    this.index = this.client?.index(this.indexUid);
+    this.index = new MeiliSearch({ host, apiKey }).index('events');
   }
 
   async onApplicationBootstrap() {
-    if (!this.client) {
-      return;
-    }
+    if (!this.index) return;
 
-    this.client.index(this.indexUid).updateSettings({
+    this.index.updateSettings({
       searchableAttributes: ['content'],
       filterableAttributes: [
         'pubkey',
@@ -80,6 +75,8 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async find(filter: EventRepositoryFilter) {
+    if (!this.index) return [];
+
     const searchFilters: string[] = [
       `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
     ];
@@ -109,8 +106,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const result = await this.index!.search(filter.search, {
+    const result = await this.index.search(filter.search, {
       limit: filter.limit,
       filter: searchFilters,
       sort: ['createdAt:desc'],
@@ -120,9 +116,8 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async add(event: Event) {
-    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) {
-      return;
-    }
+    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) return;
+
     try {
       await this.index.addDocuments([this.toEventDocument(event)]);
     } catch (error) {
@@ -131,9 +126,8 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async replace(event: Event, oldEventId?: string) {
-    if (!this.index) {
-      return;
-    }
+    if (!this.index) return;
+
     try {
       await Promise.all([
         this.add(event),
@@ -145,9 +139,8 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async deleteMany(eventIds: string[]) {
-    if (!this.index) {
-      return;
-    }
+    if (!this.index) return;
+
     try {
       await this.index.deleteDocuments(eventIds);
     } catch (error) {
