@@ -52,7 +52,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     if (!this.index) return;
 
-    this.index.updateSettings({
+    await this.index.updateSettings({
       searchableAttributes: ['content'],
       filterableAttributes: [
         'pubkey',
@@ -125,19 +125,6 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
-  async replace(event: Event, oldEventId?: string) {
-    if (!this.index) return;
-
-    try {
-      await Promise.all([
-        this.add(event),
-        oldEventId ? this.deleteMany([oldEventId]) : undefined,
-      ]);
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
   async deleteMany(eventIds: string[]) {
     if (!this.index) return;
 
@@ -146,6 +133,15 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     } catch (error) {
       this.logger.error(error);
     }
+  }
+
+  async replace(event: Event, oldEventId?: string) {
+    if (!this.index) return;
+
+    await Promise.all([
+      this.add(event),
+      oldEventId ? this.deleteMany([oldEventId]) : undefined,
+    ]);
   }
 
   private toEventDocument(event: Event): EventDocument {
