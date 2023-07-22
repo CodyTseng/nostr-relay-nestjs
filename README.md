@@ -2,7 +2,7 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master)
 
-> **WARNING:** This project is still in development and is not ready for production use.
+> **Warning** This project is still in development and is not ready for production use.
 
 A Nostr relay implemented using the NestJS framework
 
