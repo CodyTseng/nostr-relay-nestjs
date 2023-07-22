@@ -22,6 +22,32 @@ describe('EventSearchRepository', () => {
     deleteDocumentsInput: any;
   let logError: Error | undefined;
 
+  const REGULAR_EVENT_DOCUMENT = {
+    id: REGULAR_EVENT.id,
+    pubkey: REGULAR_EVENT.pubkey,
+    createdAt: REGULAR_EVENT.createdAt,
+    kind: REGULAR_EVENT.kind,
+    tags: REGULAR_EVENT.tags,
+    genericTags: REGULAR_EVENT.genericTags,
+    content: REGULAR_EVENT.content,
+    sig: REGULAR_EVENT.sig,
+    expiredAt: REGULAR_EVENT.expiredAt,
+    delegator: REGULAR_EVENT.delegator,
+    dTagValue: REGULAR_EVENT.dTagValue,
+  };
+  const REPLACEABLE_EVENT_DOCUMENT = {
+    id: REPLACEABLE_EVENT.id,
+    pubkey: REPLACEABLE_EVENT.pubkey,
+    createdAt: REPLACEABLE_EVENT.createdAt,
+    kind: REPLACEABLE_EVENT.kind,
+    tags: REPLACEABLE_EVENT.tags,
+    genericTags: REPLACEABLE_EVENT.genericTags,
+    content: REPLACEABLE_EVENT.content,
+    sig: REPLACEABLE_EVENT.sig,
+    expiredAt: REPLACEABLE_EVENT.expiredAt,
+    delegator: REPLACEABLE_EVENT.delegator,
+    dTagValue: REPLACEABLE_EVENT.dTagValue,
+  };
   const addDocumentsFailError = new Error('addDocuments fail');
   const deleteDocumentsFailError = new Error('deleteDocuments fail');
   const loggerMock = createMock<PinoLogger>({
@@ -34,7 +60,7 @@ describe('EventSearchRepository', () => {
         query,
         options,
       };
-      return { hits: [] };
+      return { hits: [REGULAR_EVENT_DOCUMENT] };
     },
     addDocuments: (eventDocuments) => {
       if (eventDocuments[0]?.id === CAUSE_ERROR_EVENT_DTO.id) {
@@ -110,11 +136,32 @@ describe('EventSearchRepository', () => {
     });
 
     it('only has search filter', async () => {
-      await eventSearchRepositoryWithIndex.find({ search: 'search' });
+      const events = await eventSearchRepositoryWithIndex.find({
+        search: 'search',
+      });
       expect(searchInput).toEqual({
         query: 'search',
         options: {
           filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
+          sort: ['createdAt:desc'],
+          limit: undefined,
+        },
+      });
+      expect(events[0].id).toEqual(REGULAR_EVENT.id);
+    });
+
+    it('has ids filter', async () => {
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        ids: ['id1', 'id2'],
+      });
+      expect(searchInput).toEqual({
+        query: '',
+        options: {
+          filter: [
+            `expiredAt IS NULL OR expiredAt >= 1620000000`,
+            `id IN [id1, id2]`,
+          ],
           sort: ['createdAt:desc'],
           limit: undefined,
         },
@@ -175,14 +222,14 @@ describe('EventSearchRepository', () => {
     it('has authors filter', async () => {
       await eventSearchRepositoryWithIndex.find({
         search: '',
-        authors: ['pubkey'],
+        authors: ['pubkey1', 'pubkey2'],
       });
       expect(searchInput).toEqual({
         query: '',
         options: {
           filter: [
             `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `pubkey IN [pubkey] OR delegator IN [pubkey]`,
+            `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
           ],
           sort: ['createdAt:desc'],
           limit: undefined,
@@ -224,10 +271,11 @@ describe('EventSearchRepository', () => {
     it('has all filters', async () => {
       await eventSearchRepositoryWithIndex.find({
         search: 'search',
+        ids: ['id1', 'id2'],
         kinds: [1, 2],
         since: 1620000000,
         until: 1630000000,
-        authors: ['pubkey'],
+        authors: ['pubkey1', 'pubkey2'],
         genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
         limit: 10,
       });
@@ -236,10 +284,11 @@ describe('EventSearchRepository', () => {
         options: {
           filter: [
             `expiredAt IS NULL OR expiredAt >= 1620000000`,
+            `id IN [id1, id2]`,
             `kind IN [1, 2]`,
             `createdAt >= 1620000000`,
             `createdAt <= 1630000000`,
-            `pubkey IN [pubkey] OR delegator IN [pubkey]`,
+            `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
             `genericTags IN [a:genericTags]`,
             `genericTags IN [b:genericTags]`,
           ],
@@ -258,21 +307,7 @@ describe('EventSearchRepository', () => {
 
     it('should add documents if has index', async () => {
       await eventSearchRepositoryWithIndex.add(REGULAR_EVENT);
-      expect(addDocumentsInput).toEqual([
-        {
-          id: REGULAR_EVENT.id,
-          pubkey: REGULAR_EVENT.pubkey,
-          createdAt: REGULAR_EVENT.createdAt,
-          kind: REGULAR_EVENT.kind,
-          tags: REGULAR_EVENT.tags,
-          genericTags: REGULAR_EVENT.genericTags,
-          content: REGULAR_EVENT.content,
-          sig: REGULAR_EVENT.sig,
-          expiredAt: REGULAR_EVENT.expiredAt,
-          delegator: REGULAR_EVENT.delegator,
-          dTagValue: REGULAR_EVENT.dTagValue,
-        },
-      ]);
+      expect(addDocumentsInput).toEqual([REGULAR_EVENT_DOCUMENT]);
     });
 
     it('should throw error if addDocuments failed', async () => {
@@ -313,41 +348,13 @@ describe('EventSearchRepository', () => {
         'oldEventId',
       );
       expect(deleteDocumentsInput).toEqual(['oldEventId']);
-      expect(addDocumentsInput).toEqual([
-        {
-          id: REPLACEABLE_EVENT.id,
-          pubkey: REPLACEABLE_EVENT.pubkey,
-          createdAt: REPLACEABLE_EVENT.createdAt,
-          kind: REPLACEABLE_EVENT.kind,
-          tags: REPLACEABLE_EVENT.tags,
-          genericTags: REPLACEABLE_EVENT.genericTags,
-          content: REPLACEABLE_EVENT.content,
-          sig: REPLACEABLE_EVENT.sig,
-          expiredAt: REPLACEABLE_EVENT.expiredAt,
-          delegator: REPLACEABLE_EVENT.delegator,
-          dTagValue: REPLACEABLE_EVENT.dTagValue,
-        },
-      ]);
+      expect(addDocumentsInput).toEqual([REPLACEABLE_EVENT_DOCUMENT]);
     });
 
     it('should not delete if no oldEventId', async () => {
       await eventSearchRepositoryWithIndex.replace(REPLACEABLE_EVENT);
       expect(deleteDocumentsInput).toBeUndefined();
-      expect(addDocumentsInput).toEqual([
-        {
-          id: REPLACEABLE_EVENT.id,
-          pubkey: REPLACEABLE_EVENT.pubkey,
-          createdAt: REPLACEABLE_EVENT.createdAt,
-          kind: REPLACEABLE_EVENT.kind,
-          tags: REPLACEABLE_EVENT.tags,
-          genericTags: REPLACEABLE_EVENT.genericTags,
-          content: REPLACEABLE_EVENT.content,
-          sig: REPLACEABLE_EVENT.sig,
-          expiredAt: REPLACEABLE_EVENT.expiredAt,
-          delegator: REPLACEABLE_EVENT.delegator,
-          dTagValue: REPLACEABLE_EVENT.dTagValue,
-        },
-      ]);
+      expect(addDocumentsInput).toEqual([REPLACEABLE_EVENT_DOCUMENT]);
     });
   });
 });

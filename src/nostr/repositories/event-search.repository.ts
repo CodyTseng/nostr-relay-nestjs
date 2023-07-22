@@ -23,6 +23,7 @@ type EventDocument = {
 
 type EventRepositoryFilter = Pick<
   SearchFilter,
+  | 'ids'
   | 'authors'
   | 'dTagValues'
   | 'genericTagsCollection'
@@ -80,6 +81,10 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     const searchFilters: string[] = [
       `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
     ];
+
+    if (filter.ids?.length) {
+      searchFilters.push(`id IN [${filter.ids.join(', ')}]`);
+    }
 
     if (filter.kinds?.length) {
       searchFilters.push(`kind IN [${filter.kinds.join(', ')}]`);
