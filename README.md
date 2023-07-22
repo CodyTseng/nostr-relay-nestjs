@@ -2,7 +2,7 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master)
 
-> WARNING: This project is still in development and is not ready for production use.
+> **WARNING:** This project is still in development and is not ready for production use.
 
 A Nostr relay implemented using the NestJS framework
 
@@ -14,29 +14,34 @@ Try here: wss://nostr-relay.app
 
 ## Features
 
-- [x] [NIP-01: Basic protocol flow description](https://github.com/nostr-protocol/nips/blob/master/01.md)
-- [x] [NIP-02: Contact List and Petnames](https://github.com/nostr-protocol/nips/blob/master/02.md)
-- [x] [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)
-- [x] [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)
-- [x] [NIP-12: Generic Tag Queries](https://github.com/nostr-protocol/nips/blob/master/12.md)
-- [x] [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)
-- [x] [NIP-16: Event Treatment](https://github.com/nostr-protocol/nips/blob/master/16.md)
-- [x] [NIP-20: Command Results](https://github.com/nostr-protocol/nips/blob/master/20.md)
-- [x] [NIP-22: Event created_at Limits (Restrict future events only)](https://github.com/nostr-protocol/nips/blob/master/22.md)
-- [x] [NIP-26: Delegated Event Signing](https://github.com/nostr-protocol/nips/blob/master/26.md)
-- [x] [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)
-- [x] [NIP-33: Parameterized Replaceable Events](https://github.com/nostr-protocol/nips/blob/master/33.md)
-- [x] [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)
-- [x] [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md)
-- [x] [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)
-- [ ] [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)
+🟢 Full implemented 🟡 Partially implemented 🔴 Not implemented
 
-## ToDo
+| Feature                                                                                                 | Status | Note                        |
+| ------------------------------------------------------------------------------------------------------- | ------ | --------------------------- |
+| [NIP-01: Basic protocol flow description](https://github.com/nostr-protocol/nips/blob/master/01.md)     | 🟢     |                             |
+| [NIP-02: Contact List and Petnames](https://github.com/nostr-protocol/nips/blob/master/02.md)           | 🟢     |                             |
+| [NIP-04: Encrypted Direct Message](https://github.com/nostr-protocol/nips/blob/master/04.md)            | 🟢     |                             |
+| [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                      | 🟡     | Not support `a` tag         |
+| [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)          | 🟢     |                             |
+| [NIP-12: Generic Tag Queries](https://github.com/nostr-protocol/nips/blob/master/12.md)                 | 🟢     |                             |
+| [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)                       | 🟢     |                             |
+| [NIP-16: Event Treatment](https://github.com/nostr-protocol/nips/blob/master/16.md)                     | 🟢     |                             |
+| [NIP-20: Command Results](https://github.com/nostr-protocol/nips/blob/master/20.md)                     | 🟢     |                             |
+| [NIP-22: Event created_at Limits](https://github.com/nostr-protocol/nips/blob/master/22.md)             | 🟡     | Restrict future events only |
+| [NIP-26: Delegated Event Signing](https://github.com/nostr-protocol/nips/blob/master/26.md)             | 🟢     |                             |
+| [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)                         | 🟢     |                             |
+| [NIP-33: Parameterized Replaceable Events](https://github.com/nostr-protocol/nips/blob/master/33.md)    | 🟢     |                             |
+| [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)                | 🟢     |                             |
+| [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md) | 🟢     |                             |
+| [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)                    | 🟢     |                             |
+| [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                     | 🟡     | Not support prefixes        |
 
-- [x] unit test
+## TODO
+
+- [x] Unit test
 - [ ] Metrics, Monitoring and Alerting
-- [ ] support multi nodes
-- [ ] support for Bitcoin Lightning Network payments
+- [ ] Support multi nodes
+- [ ] Support for Bitcoin Lightning Network payments
 
 ## Architecture
 
