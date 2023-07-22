@@ -1,4 +1,3 @@
-import { createMock } from '@golevelup/ts-jest';
 import { newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
 import {
@@ -12,11 +11,9 @@ import {
 } from '../../../seeds';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
-import { EventSearchRepository } from './event-search.repository';
 
 describe('EventRepository', () => {
   let eventRepository: EventRepository;
-  let eventSearchCache: Event[] = [];
 
   beforeEach(async () => {
     const db = newDb();
@@ -35,20 +32,7 @@ describe('EventRepository', () => {
     await ds.initialize();
     await ds.synchronize();
     const repository = ds.getRepository(Event);
-    eventSearchCache = [];
-    eventRepository = new EventRepository(
-      repository,
-      createMock<EventSearchRepository>({
-        async add(event: Event) {
-          eventSearchCache.push(event);
-        },
-        async deleteMany(eventIds: string[]) {
-          eventSearchCache = eventSearchCache.filter(
-            (event) => !eventIds.includes(event.id),
-          );
-        },
-      }),
-    );
+    eventRepository = new EventRepository(repository);
   });
 
   describe('create', () => {
@@ -60,7 +44,6 @@ describe('EventRepository', () => {
           await eventRepository.findOne({ ids: [REGULAR_EVENT.id] })
         )?.toEventDto(),
       ).toEqual(REGULAR_EVENT.toEventDto());
-      expect(eventSearchCache).toEqual([REGULAR_EVENT]);
     });
 
     it('should return false when the event already exists', async () => {
@@ -121,6 +104,8 @@ describe('EventRepository', () => {
           })
         )?.toEventDto(),
       ).toEqual(REGULAR_EVENT.toEventDto());
+
+      expect(await eventRepository.find([])).toEqual([]);
     });
 
     it('should filter by kind successfully', async () => {
@@ -316,7 +301,6 @@ describe('EventRepository', () => {
           })
         )?.toEventDto(),
       ).toEqual(REPLACEABLE_EVENT.toEventDto());
-      expect(eventSearchCache).toEqual([REPLACEABLE_EVENT]);
 
       expect(
         await eventRepository.replace(
@@ -334,7 +318,6 @@ describe('EventRepository', () => {
       expect(
         await eventRepository.findOne({ ids: [REPLACEABLE_EVENT.id] }),
       ).toBeNull();
-      expect(eventSearchCache).toEqual([REPLACEABLE_EVENT_NEW]);
     });
 
     it('should return false when the id of the old and new events are the same', async () => {
@@ -358,7 +341,6 @@ describe('EventRepository', () => {
       ).toEqual(
         [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
       );
-      expect(eventSearchCache).toEqual([REGULAR_EVENT, REPLACEABLE_EVENT]);
 
       expect(
         await eventRepository.delete([REGULAR_EVENT.id, REPLACEABLE_EVENT.id]),
@@ -368,7 +350,6 @@ describe('EventRepository', () => {
           ids: [REGULAR_EVENT.id, REPLACEABLE_EVENT.id],
         }),
       ).toEqual([]);
-      expect(eventSearchCache).toEqual([]);
     });
   });
 

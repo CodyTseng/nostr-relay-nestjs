@@ -5,23 +5,6 @@
   "author": "codytseng",
   "private": true,
   "license": "MIT",
-  "supportedNips": [
-    1,
-    2,
-    9,
-    11,
-    12,
-    13,
-    16,
-    20,
-    22,
-    26,
-    28,
-    33,
-    40,
-    42,
-    45
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CodyTseng/nostr-relay-nestjs"

@@ -12,6 +12,7 @@ import {
 } from '../../../seeds';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
+import { EventSearchRepository } from '../repositories/event-search.repository';
 import { createCommandResultResponse } from '../utils';
 import { EventService } from './event.service';
 import { LockService } from './lock.service';
@@ -29,8 +30,10 @@ describe('EventService', () => {
       });
       lockService = new LockService();
       const eventRepository = createMock<EventRepository>();
+      const eventSearchRepository = createMock<EventSearchRepository>();
       eventService = new EventService(
         eventRepository,
+        eventSearchRepository,
         eventEmitter,
         lockService,
       );
@@ -232,10 +235,26 @@ describe('EventService', () => {
         const eventRepository = createMock<EventRepository>({
           find: async () => events,
         });
+        const eventSearchRepository = createMock<EventSearchRepository>({
+          find: async () => events,
+        });
         (eventService as any).eventRepository = eventRepository;
+        (eventService as any).eventSearchRepository = eventSearchRepository;
 
         await expect(
           eventService.findByFilters([{}].map(Filter.fromFilterDto)),
+        ).resolves.toEqual(events);
+
+        await expect(
+          eventService.findByFilters(
+            [{ search: 'test' }].map(Filter.fromFilterDto),
+          ),
+        ).resolves.toEqual(events);
+
+        await expect(
+          eventService.findByFilters(
+            [{}, { search: 'test' }].map(Filter.fromFilterDto),
+          ),
         ).resolves.toEqual(events);
       });
     });

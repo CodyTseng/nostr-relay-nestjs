@@ -3,7 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
-import { Event } from '../entities';
+import { SEARCHABLE_EVENT_KINDS } from '../constants';
+import { Event, SearchFilter } from '../entities';
+import { getTimestampInSeconds } from '../utils';
 
 type EventDocument = {
   id: string;
@@ -19,11 +21,23 @@ type EventDocument = {
   dTagValue: string | null;
 };
 
+type EventRepositoryFilter = Pick<
+  SearchFilter,
+  | 'ids'
+  | 'authors'
+  | 'dTagValues'
+  | 'genericTagsCollection'
+  | 'kinds'
+  | 'limit'
+  | 'search'
+  | 'searchOptions'
+  | 'since'
+  | 'until'
+>;
+
 @Injectable()
 export class EventSearchRepository implements OnApplicationBootstrap {
-  private readonly client?: MeiliSearch;
   private readonly index?: Index<EventDocument>;
-  private readonly indexUid = 'events';
 
   constructor(
     @InjectPinoLogger(EventSearchRepository.name)
@@ -33,16 +47,13 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     const { host, apiKey } = configService.get('meiliSearch', { infer: true });
     if (!host || !apiKey) return;
 
-    this.client = new MeiliSearch({ host, apiKey });
-    this.index = this.client?.index(this.indexUid);
+    this.index = new MeiliSearch({ host, apiKey }).index('events');
   }
 
   async onApplicationBootstrap() {
-    if (!this.client) {
-      return;
-    }
+    if (!this.index) return;
 
-    this.client.index(this.indexUid).updateSettings({
+    await this.index.updateSettings({
       searchableAttributes: ['content'],
       filterableAttributes: [
         'pubkey',
@@ -64,10 +75,54 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     });
   }
 
-  async add(event: Event) {
-    if (!this.index) {
-      return;
+  async find(filter: EventRepositoryFilter) {
+    if (!this.index) return [];
+
+    const searchFilters: string[] = [
+      `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
+    ];
+
+    if (filter.ids?.length) {
+      searchFilters.push(`id IN [${filter.ids.join(', ')}]`);
     }
+
+    if (filter.kinds?.length) {
+      searchFilters.push(`kind IN [${filter.kinds.join(', ')}]`);
+    }
+
+    if (filter.since) {
+      searchFilters.push(`createdAt >= ${filter.since}`);
+    }
+
+    if (filter.until) {
+      searchFilters.push(`createdAt <= ${filter.until}`);
+    }
+
+    if (filter.authors?.length) {
+      const authorsStr = filter.authors.join(', ');
+      searchFilters.push(
+        `pubkey IN [${authorsStr}] OR delegator IN [${authorsStr}]`,
+      );
+    }
+
+    if (filter.genericTagsCollection?.length) {
+      filter.genericTagsCollection.forEach((genericTags) => {
+        searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
+      });
+    }
+
+    const result = await this.index.search(filter.search, {
+      limit: filter.limit,
+      filter: searchFilters,
+      sort: ['createdAt:desc'],
+    });
+
+    return result.hits.map(this.toEvent);
+  }
+
+  async add(event: Event) {
+    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) return;
+
     try {
       await this.index.addDocuments([this.toEventDocument(event)]);
     } catch (error) {
@@ -76,9 +131,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async deleteMany(eventIds: string[]) {
-    if (!this.index) {
-      return;
-    }
+    if (!this.index) return;
 
     try {
       await this.index.deleteDocuments(eventIds);
@@ -87,7 +140,16 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
-  private toEventDocument(event: Event) {
+  async replace(event: Event, oldEventId?: string) {
+    if (!this.index) return;
+
+    await Promise.all([
+      this.add(event),
+      oldEventId ? this.deleteMany([oldEventId]) : undefined,
+    ]);
+  }
+
+  private toEventDocument(event: Event): EventDocument {
     return {
       id: event.id,
       pubkey: event.pubkey,
@@ -101,5 +163,26 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       delegator: event.delegator,
       dTagValue: event.dTagValue,
     };
+  }
+
+  private toEvent(eventDocument: EventDocument): Event {
+    const event = new Event();
+    event.id = eventDocument.id;
+    event.pubkey = eventDocument.pubkey;
+    event.createdAt = eventDocument.createdAt;
+    event.kind = eventDocument.kind;
+    event.tags = eventDocument.tags;
+    event.content = eventDocument.content;
+    event.sig = eventDocument.sig;
+    event.expiredAt = eventDocument.expiredAt;
+    event.genericTags = eventDocument.genericTags;
+    event.dTagValue = eventDocument.dTagValue;
+    event.delegator = eventDocument.delegator;
+
+    event.createDate = new Date(eventDocument.createdAt);
+    event.updateDate = new Date(eventDocument.createdAt);
+    event.deleteDate = null;
+
+    return event;
   }
 }

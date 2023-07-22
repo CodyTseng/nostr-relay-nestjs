@@ -7,7 +7,6 @@ export function relayInfoDocConfig(env: Environment) {
     description: env.RELAY_DESCRIPTION ?? packageJson.description,
     pubkey: env.RELAY_PUBKEY,
     contact: env.RELAY_CONTACT,
-    supported_nips: packageJson.supportedNips,
     software: packageJson.repository.url,
     version: packageJson.version,
   };

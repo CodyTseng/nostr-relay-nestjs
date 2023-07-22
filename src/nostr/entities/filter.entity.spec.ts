@@ -35,9 +35,17 @@ describe('filter', () => {
           },
         }).isEventMatching(Event.fromEventDto(unStandardTagEvent)),
       ).toBeTruthy();
+
+      expect(
+        Filter.fromFilterDto({ search: 'test' }).isEventMatching(
+          Event.fromEventDto(
+            await createEventDtoMock({ content: 'abandon test' }),
+          ),
+        ),
+      ).toBeTruthy();
     });
 
-    it('should return false', () => {
+    it('should return false', async () => {
       expect(
         Filter.fromFilterDto({ ids: ['fake-id'] }).isEventMatching(
           REGULAR_EVENT,
@@ -66,6 +74,30 @@ describe('filter', () => {
           PARAMETERIZED_REPLACEABLE_EVENT,
         ),
       ).toBeFalsy();
+      expect(
+        Filter.fromFilterDto({ search: 'test' }).isEventMatching(
+          Event.fromEventDto(await createEventDtoMock({ content: 'abandon' })),
+        ),
+      ).toBeFalsy();
+    });
+  });
+
+  describe('fromFilterDto', () => {
+    it('should create filter successfully', () => {
+      const filter = Filter.fromFilterDto({
+        search: 'test1 test2 test3:test4 test5:test6',
+        tags: { a: ['test1', 'test2'], b: ['test3', 'test4'] },
+      });
+
+      expect(filter.search).toEqual('test1 test2');
+      expect(filter.searchOptions).toEqual({
+        test3: 'test4',
+        test5: 'test6',
+      });
+      expect(filter.genericTagsCollection).toEqual([
+        ['a:test1', 'a:test2'],
+        ['b:test3', 'b:test4'],
+      ]);
     });
   });
 
@@ -84,6 +116,43 @@ describe('filter', () => {
           kinds: [EventKind.TEXT_NOTE],
         }).hasEncryptedDirectMessageKind(),
       ).toBeFalsy();
+    });
+  });
+
+  describe('isSearchFilter', () => {
+    it('should return true', () => {
+      expect(
+        Filter.isSearchFilter(Filter.fromFilterDto({ search: 'test' })),
+      ).toBeTruthy();
+    });
+
+    it('should return false', () => {
+      expect(
+        Filter.isSearchFilter(Filter.fromFilterDto({ ids: ['test'] })),
+      ).toBeFalsy();
+    });
+  });
+
+  describe('parseSearch', () => {
+    it('should return search and searchOptions', () => {
+      expect(Filter.parseSearch('test')).toEqual({
+        search: 'test',
+        searchOptions: {},
+      });
+      expect(Filter.parseSearch('test1 test2')).toEqual({
+        search: 'test1 test2',
+        searchOptions: {},
+      });
+      expect(Filter.parseSearch('test1 test2 test3:test4')).toEqual({
+        search: 'test1 test2',
+        searchOptions: { test3: 'test4' },
+      });
+      expect(Filter.parseSearch('test1 test2 test3:test4 test5:test6')).toEqual(
+        {
+          search: 'test1 test2',
+          searchOptions: { test3: 'test4', test5: 'test6' },
+        },
+      );
     });
   });
 });

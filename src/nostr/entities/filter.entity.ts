@@ -4,6 +4,8 @@ import { FilterDto } from '../schemas';
 import { toGenericTag } from '../utils';
 import { Event } from './event.entity';
 
+export type SearchFilter = Filter & { search: string };
+
 export class Filter {
   ids?: string[];
   authors?: string[];
@@ -13,6 +15,8 @@ export class Filter {
   limit?: number;
   genericTagsCollection?: string[][];
   dTagValues?: string[];
+  search?: string;
+  searchOptions?: Record<string, string>;
 
   static fromFilterDto(filterDto: FilterDto) {
     const filter = new Filter();
@@ -28,7 +32,36 @@ export class Filter {
         )
       : undefined;
 
+    if (filterDto.search) {
+      const { search, searchOptions } = Filter.parseSearch(filterDto.search);
+      filter.search = search;
+      filter.searchOptions = searchOptions;
+    }
+
     return filter;
+  }
+
+  static parseSearch(search: string) {
+    const searchWords: string[] = [];
+    const searchOptions: Record<string, string> = {};
+
+    search.split(' ').forEach((item) => {
+      if (/.+:.+/.test(item)) {
+        const [key, value] = item.split(':');
+        searchOptions[key] = value;
+      } else {
+        searchWords.push(item);
+      }
+    });
+
+    return {
+      search: searchWords.join(' '),
+      searchOptions,
+    };
+  }
+
+  static isSearchFilter(filter: Filter): filter is SearchFilter {
+    return !!filter.search;
   }
 
   hasEncryptedDirectMessageKind() {
@@ -61,11 +94,25 @@ export class Filter {
       return false;
     }
 
-    return this.genericTagsCollection
-      ? this.genericTagsCollection.every(
-          (genericTags) =>
-            intersection(genericTags, event.genericTags).length > 0,
-        )
-      : true;
+    if (
+      this.genericTagsCollection &&
+      this.genericTagsCollection.some(
+        (genericTags) =>
+          intersection(genericTags, event.genericTags).length === 0,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      this.search &&
+      this.search
+        .split(' ')
+        .some((searchWord) => !new RegExp(searchWord, 'i').test(event.content))
+    ) {
+      return false;
+    }
+
+    return true;
   }
 }
