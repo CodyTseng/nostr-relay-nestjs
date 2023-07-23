@@ -87,9 +87,26 @@ describe('EventRepository', () => {
 
       expect(
         (
-          await eventRepository.find({ ids: [REGULAR_EVENT.id.slice(0, 10)] })
+          await eventRepository.find({
+            ids: [
+              REGULAR_EVENT.id.slice(0, 10),
+              REPLACEABLE_EVENT.id.slice(0, 13),
+            ],
+          })
         ).map((event) => event.toEventDto()),
-      ).toEqual([REGULAR_EVENT].map((event) => event.toEventDto()));
+      ).toEqual(
+        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
+      );
+
+      expect(
+        (
+          await eventRepository.find({
+            ids: [REGULAR_EVENT.id.slice(0, 10), REPLACEABLE_EVENT.id],
+          })
+        ).map((event) => event.toEventDto()),
+      ).toEqual(
+        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
+      );
 
       expect(
         (
