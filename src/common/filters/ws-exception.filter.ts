@@ -5,7 +5,10 @@ import { createNoticeResponse } from '../../nostr/utils';
 
 @Catch(Error)
 export class WsExceptionFilter implements ExceptionFilter {
-  constructor(@InjectPinoLogger() private readonly logger: PinoLogger) {}
+  constructor(
+    @InjectPinoLogger(WsExceptionFilter.name)
+    private readonly logger: PinoLogger,
+  ) {}
 
   catch(error: Error, host: ArgumentsHost) {
     if (host.getType() === 'ws') {
