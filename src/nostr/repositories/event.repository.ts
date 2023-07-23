@@ -90,9 +90,36 @@ export class EventRepository {
         qb.where('1 = 1');
 
         if (filter.ids?.length) {
-          qb.andWhere('event.id ILIKE ANY (:ids)', {
-            ids: filter.ids.map((id) => `${id}%`),
+          const ids: string[] = [];
+          const prefixes: string[] = [];
+          filter.ids.forEach((id) => {
+            if (id.length === 64) {
+              ids.push(id);
+            } else {
+              prefixes.push(id);
+            }
           });
+
+          qb.andWhere(
+            new Brackets((subQb) => {
+              if (ids.length > 0) {
+                subQb.where('event.id IN (:...ids)', { ids });
+              } else {
+                subQb.where('1 = 0');
+              }
+              prefixes.forEach((prefix, index) => {
+                const lowPrefixKey = `lowIdPrefix${index}`;
+                const highPrefixKey = `highIdPrefix${index}`;
+                subQb.orWhere(
+                  `event.id BETWEEN :${lowPrefixKey} AND :${highPrefixKey}`,
+                  {
+                    [lowPrefixKey]: prefix.padEnd(64, '0'),
+                    [highPrefixKey]: prefix.padEnd(64, 'f'),
+                  },
+                );
+              });
+            }),
+          );
         }
 
         if (filter.genericTagsCollection) {
@@ -112,13 +139,42 @@ export class EventRepository {
         }
 
         if (filter.authors?.length) {
-          const authors = filter.authors.map((author) => `${author}%`);
+          const authors: string[] = [];
+          const prefixes: string[] = [];
+          filter.authors.forEach((author) => {
+            if (author.length === 64) {
+              authors.push(author);
+            } else {
+              prefixes.push(author);
+            }
+          });
+
           qb.andWhere(
-            new Brackets((qb) => {
-              qb.where('event.pubkey ILIKE ANY (:authors)', {
-                authors,
-              }).orWhere('event.delegator ILIKE ANY (:authors)', {
-                authors,
+            new Brackets((subQb) => {
+              if (authors.length > 0) {
+                subQb
+                  .where('event.pubkey IN (:...authors)', { authors })
+                  .orWhere('event.delegator IN (:...authors)', { authors });
+              } else {
+                subQb.where('1 = 0');
+              }
+              prefixes.forEach((prefix, index) => {
+                const lowPrefixKey = `lowAuthorPrefix${index}`;
+                const highPrefixKey = `highAuthorPrefix${index}`;
+                subQb.orWhere(
+                  `event.pubkey BETWEEN :${lowPrefixKey} AND :${highPrefixKey}`,
+                  {
+                    [lowPrefixKey]: prefix.padEnd(64, '0'),
+                    [highPrefixKey]: prefix.padEnd(64, 'f'),
+                  },
+                );
+                subQb.orWhere(
+                  `event.delegator BETWEEN :${lowPrefixKey} AND :${highPrefixKey}`,
+                  {
+                    [lowPrefixKey]: prefix.padEnd(64, '0'),
+                    [highPrefixKey]: prefix.padEnd(64, 'f'),
+                  },
+                );
               });
             }),
           );
