@@ -107,6 +107,7 @@ describe('EventSearchRepository', () => {
       expect(updateSettingsInput).toEqual({
         searchableAttributes: ['content'],
         filterableAttributes: [
+          'id',
           'pubkey',
           'createdAt',
           'kind',

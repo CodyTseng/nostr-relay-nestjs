@@ -56,6 +56,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     await this.index.updateSettings({
       searchableAttributes: ['content'],
       filterableAttributes: [
+        'id',
         'pubkey',
         'createdAt',
         'kind',
