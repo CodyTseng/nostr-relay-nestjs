@@ -145,7 +145,7 @@ describe('EventSearchRepository', () => {
         options: {
           filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
       expect(events[0].id).toEqual(REGULAR_EVENT.id);
@@ -164,7 +164,7 @@ describe('EventSearchRepository', () => {
             `id IN [id1, id2]`,
           ],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
     });
@@ -179,7 +179,7 @@ describe('EventSearchRepository', () => {
             `kind IN [1, 2]`,
           ],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
     });
@@ -197,7 +197,7 @@ describe('EventSearchRepository', () => {
             `createdAt >= 1620000000`,
           ],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
     });
@@ -215,7 +215,7 @@ describe('EventSearchRepository', () => {
             `createdAt <= 1620000000`,
           ],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
     });
@@ -233,7 +233,7 @@ describe('EventSearchRepository', () => {
             `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
           ],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
     });
@@ -252,7 +252,7 @@ describe('EventSearchRepository', () => {
             `genericTags IN [b:genericTags]`,
           ],
           sort: ['createdAt:desc'],
-          limit: undefined,
+          limit: 100,
         },
       });
     });
