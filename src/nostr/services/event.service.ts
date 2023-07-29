@@ -102,8 +102,7 @@ export class EventService {
         });
       });
     }
-    const eventsToBeDeleted =
-      filters.length > 0 ? await this.eventRepository.find(filters) : [];
+    const eventsToBeDeleted = await this.eventRepository.find(filters);
 
     const eventIdsToBeDeleted = eventsToBeDeleted.map((item) => item.id);
 
