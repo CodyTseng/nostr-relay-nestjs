@@ -30,6 +30,7 @@ export enum EventKind {
 }
 
 export enum TagName {
+  EVENT_COORDINATES = 'a',
   EVENT = 'e',
   PUBKEY = 'p',
   D = 'd',

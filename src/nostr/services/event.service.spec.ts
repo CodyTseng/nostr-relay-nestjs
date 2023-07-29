@@ -1,15 +1,17 @@
 import { createMock } from '@golevelup/ts-jest';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
+  createEventDtoMock,
   createSignedEventMock,
   DELETION_EVENT,
   EPHEMERAL_EVENT,
-  EVENT_IDS_TO_BE_DELETED,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_DTO,
+  TEST_PUBKEY,
 } from '../../../seeds';
+import { EventKind } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
@@ -195,37 +197,55 @@ describe('EventService', () => {
 
     describe('handleDeletionEvent', () => {
       it('should delete specified events', async () => {
+        const EVENT_IDS_TO_BE_DELETED = [
+          '1c7c87a5e52e6c4e94a6c018920f31f256db83f8560b26a493f059caaf730f56',
+          '9cca98e4f6814e4efacec09d04f32dadeaba2cda9c492e63372fa171ca31012d',
+          '3af892aeb1dee9a711891d03d31f27ed11fb97fc965e5586022dfde254ada8ac',
+        ];
         const mockDelete = jest.fn();
         const eventRepository = createMock<EventRepository>({
-          find: async () =>
-            EVENT_IDS_TO_BE_DELETED.map(
-              (id) => ({ id, pubkey: DELETION_EVENT.pubkey } as Event),
-            ),
+          find: async (filters) => {
+            if (Array.isArray(filters)) {
+              return filters
+                .map((filter) => {
+                  if (filter.ids?.length) {
+                    return filter.ids.map((id) => ({ id } as Event));
+                  }
+                  return filter.dTagValues?.map((id) => ({ id } as Event));
+                })
+                .flat() as Event[];
+            }
+            return [];
+          },
           create: async () => true,
           delete: mockDelete,
         });
         (eventService as any).eventRepository = eventRepository;
 
-        await eventService.handleEvent(DELETION_EVENT);
+        const eventDto = await createEventDtoMock({
+          pubkey: TEST_PUBKEY,
+          kind: EventKind.DELETION,
+          tags: [
+            [
+              'e',
+              '1c7c87a5e52e6c4e94a6c018920f31f256db83f8560b26a493f059caaf730f56',
+            ],
+            [
+              'e',
+              '9cca98e4f6814e4efacec09d04f32dadeaba2cda9c492e63372fa171ca31012d',
+            ],
+            [
+              'a',
+              `${EventKind.LONG_FORM_CONTENT}:${TEST_PUBKEY}:3af892aeb1dee9a711891d03d31f27ed11fb97fc965e5586022dfde254ada8ac`,
+            ],
+            ['a', `${EventKind.TEXT_NOTE}:${TEST_PUBKEY}:test`],
+            ['a', `${EventKind.LONG_FORM_CONTENT}:test:test`],
+            ['a', ''],
+          ],
+        });
+        await eventService.handleEvent(Event.fromEventDto(eventDto));
         expect(mockEmit).toBeCalled();
         expect(mockDelete).toHaveBeenCalledWith(EVENT_IDS_TO_BE_DELETED);
-      });
-
-      it('should ignore events with different pubkey', async () => {
-        const mockDelete = jest.fn();
-        const eventRepository = createMock<EventRepository>({
-          find: async () =>
-            EVENT_IDS_TO_BE_DELETED.map(
-              (id) => ({ id, pubkey: 'fake-pubkey' } as Event),
-            ),
-          create: async () => true,
-          delete: mockDelete,
-        });
-        (eventService as any).eventRepository = eventRepository;
-
-        await eventService.handleEvent(DELETION_EVENT);
-        expect(mockEmit).toBeCalled();
-        expect(mockDelete).toHaveBeenCalledWith([]);
       });
     });
 
