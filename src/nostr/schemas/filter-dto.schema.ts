@@ -39,7 +39,7 @@ export const FilterDtoSchema = z.preprocess(
       kinds: z.array(EventKindSchema).max(20),
       since: TimestampInSecSchema,
       until: TimestampInSecSchema,
-      limit: z.number().int().min(0).max(1000),
+      limit: z.number().int().min(0),
       tags: TagsFilterSchema,
       search: z.string().max(256),
     })

@@ -33,7 +33,7 @@ import { NostrModule } from './nostr/nostr.module';
           migrationsRun: true,
           migrations: ['dist/migrations/*.js'],
           logger: new TypeOrmLogger(logger),
-          maxQueryExecutionTime: 100,
+          maxQueryExecutionTime: 150,
         };
       },
       inject: [ConfigService, PinoLogger],

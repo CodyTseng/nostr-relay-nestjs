@@ -113,7 +113,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
 
     const result = await this.index.search(filter.search, {
-      limit: filter.limit,
+      limit: Math.min(filter.limit ?? 100, 1000),
       filter: searchFilters,
       sort: ['createdAt:desc'],
     });

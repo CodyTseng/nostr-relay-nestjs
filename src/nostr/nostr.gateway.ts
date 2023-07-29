@@ -106,7 +106,8 @@ export class NostrGateway
     @MessageBody(new ZodValidationPipe(ReqMessageSchema))
     [subscriptionId, ...filtersDto]: ReqMessageDto,
   ) {
-    const filters = filtersDto.map(Filter.fromFilterDto);
+    // only the first ten are valid
+    const filters = filtersDto.slice(0, 10).map(Filter.fromFilterDto);
 
     if (
       filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
