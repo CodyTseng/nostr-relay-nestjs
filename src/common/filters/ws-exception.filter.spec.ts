@@ -1,9 +1,9 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ArgumentsHost } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { ValidationError } from 'zod-validation-error';
-import { WsExceptionFilter } from '.';
 import { createNoticeResponse } from '../../nostr/utils';
+import { ClientException } from '../exceptions';
+import { WsExceptionFilter } from './ws-exception.filter';
 
 describe('WsExceptionFilter', () => {
   let wsExceptionFilter: WsExceptionFilter;
@@ -38,14 +38,14 @@ describe('WsExceptionFilter', () => {
     );
   });
 
-  it('should not log when catch ValidationError', () => {
+  it('should not log when catch ClientException', () => {
     const host = createMock<ArgumentsHost>({
       getType: () => 'ws',
       switchToWs: () => ({
         getClient: () => createMock<WebSocket>(),
       }),
     });
-    const error = new ValidationError('test');
+    const error = new ClientException('test');
 
     wsExceptionFilter.catch(error, host);
 

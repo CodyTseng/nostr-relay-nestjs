@@ -11,6 +11,7 @@ import {
   REPLACEABLE_EVENT_DTO,
   TEST_PUBKEY,
 } from '../../seeds';
+import { RestrictedException } from '../common/exceptions';
 import { EventKind, MessageType } from './constants';
 import { Event } from './entities';
 import { NostrGateway } from './nostr.gateway';
@@ -61,17 +62,17 @@ describe('NostrGateway', () => {
 
   describe('EVENT', () => {
     it('should handle event successfully', async () => {
-      await expect(nostrGateway.event([REGULAR_EVENT_DTO])).resolves.toEqual([
-        MessageType.OK,
-        REGULAR_EVENT_DTO.id,
-        true,
-        '',
-      ]);
+      await expect(
+        nostrGateway.event([MessageType.EVENT, REGULAR_EVENT_DTO]),
+      ).resolves.toEqual([MessageType.OK, REGULAR_EVENT_DTO.id, true, '']);
     });
 
     it('should return validate error', async () => {
       await expect(
-        nostrGateway.event([{ ...REGULAR_EVENT_DTO, sig: 'fake-sig' }]),
+        nostrGateway.event([
+          MessageType.EVENT,
+          { ...REGULAR_EVENT_DTO, sig: 'fake-sig' },
+        ]),
       ).resolves.toEqual([
         MessageType.OK,
         REGULAR_EVENT_DTO.id,
@@ -82,7 +83,7 @@ describe('NostrGateway', () => {
 
     it('should return an error', async () => {
       await expect(
-        nostrGateway.event([CAUSE_ERROR_EVENT_DTO]),
+        nostrGateway.event([MessageType.EVENT, CAUSE_ERROR_EVENT_DTO]),
       ).resolves.toEqual([
         MessageType.OK,
         CAUSE_ERROR_EVENT_DTO.id,
@@ -97,7 +98,11 @@ describe('NostrGateway', () => {
       const subscriptionId = 'test:req';
       const responses: (EventResponse | EndOfStoredEventResponse)[] = [];
 
-      const response$ = await nostrGateway.req({} as any, [subscriptionId, {}]);
+      const response$ = await nostrGateway.req({} as any, [
+        MessageType.REQ,
+        subscriptionId,
+        {},
+      ]);
       response$.subscribe((item) => responses.push(item));
       await lastValueFrom(response$);
 
@@ -114,11 +119,14 @@ describe('NostrGateway', () => {
     it('should reject when unauthenticated and count DM events', async () => {
       await expect(
         nostrGateway.req({} as any, [
+          MessageType.REQ,
           'test:req',
           { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
         ]),
       ).rejects.toThrowError(
-        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+        new RestrictedException(
+          "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+        ),
       );
     });
 
@@ -131,7 +139,11 @@ describe('NostrGateway', () => {
       const subscriptionId = 'test:req';
       const responses: (EventResponse | EndOfStoredEventResponse)[] = [];
 
-      const response$ = await nostrGateway.req({} as any, [subscriptionId, {}]);
+      const response$ = await nostrGateway.req({} as any, [
+        MessageType.REQ,
+        subscriptionId,
+        {},
+      ]);
       response$.subscribe((item) => responses.push(item));
       await lastValueFrom(response$);
 
@@ -144,7 +156,7 @@ describe('NostrGateway', () => {
           pubkey:
             'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac',
         } as any,
-        [subscriptionId, {}],
+        [MessageType.REQ, subscriptionId, {}],
       );
       response2$.subscribe((item) => responses2.push(item));
       await lastValueFrom(response2$);
@@ -165,7 +177,7 @@ describe('NostrGateway', () => {
       const subscriptionId = 'test:close';
 
       expect(() =>
-        nostrGateway.close({} as any, [subscriptionId]),
+        nostrGateway.close({} as any, [MessageType.CLOSE, subscriptionId]),
       ).not.toThrowError();
     });
   });
@@ -174,19 +186,30 @@ describe('NostrGateway', () => {
     it('should count successfully', async () => {
       const subscriptionId = 'test:count';
 
-      expect(await nostrGateway.count({} as any, [subscriptionId, {}])).toEqual(
-        [MessageType.COUNT, subscriptionId, { count: FIND_EVENTS.length }],
-      );
+      expect(
+        await nostrGateway.count({} as any, [
+          MessageType.COUNT,
+          subscriptionId,
+          {},
+        ]),
+      ).toEqual([
+        MessageType.COUNT,
+        subscriptionId,
+        { count: FIND_EVENTS.length },
+      ]);
     });
 
     it('should reject when unauthenticated and count DM events', async () => {
       await expect(
         nostrGateway.count({} as any, [
+          MessageType.COUNT,
           'test:req',
           { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
         ]),
       ).rejects.toThrowError(
-        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+        new RestrictedException(
+          "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+        ),
       );
     });
   });
@@ -200,9 +223,9 @@ describe('NostrGateway', () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
       const event = await createSignedEventDtoMock({ challenge });
-      expect(await nostrGateway.auth(client, [event])).toEqual(
-        createCommandResultResponse(event.id, true),
-      );
+      expect(
+        await nostrGateway.auth(client, [MessageType.AUTH, event]),
+      ).toEqual(createCommandResultResponse(event.id, true));
 
       expect(client.pubkey).toBe(TEST_PUBKEY);
     });
@@ -211,6 +234,7 @@ describe('NostrGateway', () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
       await nostrGateway.auth(client, [
+        MessageType.AUTH,
         await createSignedEventDtoMock({ pubkey: 'fake-pubkey', challenge }),
       ]);
 

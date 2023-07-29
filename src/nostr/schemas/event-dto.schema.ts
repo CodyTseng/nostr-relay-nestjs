@@ -14,7 +14,9 @@ export const EventDtoSchema = z.object({
   pubkey: PubkeySchema,
   created_at: TimestampInSecSchema,
   kind: EventKindSchema,
-  tags: z.array(EventTagSchema).max(2000),
+  tags: z
+    .array(EventTagSchema)
+    .max(2000, { message: 'must less than or equal to 2000 tags' }),
   content: EventContentSchema,
   sig: EventSigSchema,
 });

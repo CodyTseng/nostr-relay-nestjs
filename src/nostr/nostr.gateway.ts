@@ -13,6 +13,7 @@ import { randomUUID } from 'crypto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { concatWith, filter, from, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
+import { RestrictedException } from '../common/exceptions';
 import { WsExceptionFilter } from '../common/filters';
 import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
@@ -20,15 +21,10 @@ import { MessageType } from './constants';
 import { Event, Filter } from './entities';
 import {
   AuthMessageDto,
-  AuthMessageSchema,
   CloseMessageDto,
-  CloseMessageSchema,
   CountMessageDto,
-  CountMessageSchema,
   EventMessageDto,
-  EventMessageSchema,
   ReqMessageDto,
-  ReqMessageSchema,
 } from './schemas';
 import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
@@ -74,8 +70,8 @@ export class NostrGateway
 
   @SubscribeMessage(MessageType.EVENT)
   async event(
-    @MessageBody(new ZodValidationPipe(EventMessageSchema))
-    [e]: EventMessageDto,
+    @MessageBody(new ZodValidationPipe(EventMessageDto))
+    [, e]: EventMessageDto,
   ) {
     const event = Event.fromEventDto(e);
     const validateErrorMsg = await event.validate({
@@ -103,8 +99,8 @@ export class NostrGateway
   @SubscribeMessage(MessageType.REQ)
   async req(
     @ConnectedSocket() client: WebSocket,
-    @MessageBody(new ZodValidationPipe(ReqMessageSchema))
-    [subscriptionId, ...filtersDto]: ReqMessageDto,
+    @MessageBody(new ZodValidationPipe(ReqMessageDto))
+    [, subscriptionId, ...filtersDto]: ReqMessageDto,
   ) {
     // only the first ten are valid
     const filters = filtersDto.slice(0, 10).map(Filter.fromFilterDto);
@@ -113,8 +109,8 @@ export class NostrGateway
       filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
       !client.pubkey
     ) {
-      throw new Error(
-        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+      throw new RestrictedException(
+        "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
       );
     }
 
@@ -131,8 +127,8 @@ export class NostrGateway
   @SubscribeMessage(MessageType.CLOSE)
   close(
     @ConnectedSocket() client: WebSocket,
-    @MessageBody(new ZodValidationPipe(CloseMessageSchema))
-    [subscriptionId]: CloseMessageDto,
+    @MessageBody(new ZodValidationPipe(CloseMessageDto))
+    [, subscriptionId]: CloseMessageDto,
   ) {
     this.subscriptionService.unSubscribe(client, subscriptionId);
   }
@@ -140,16 +136,16 @@ export class NostrGateway
   @SubscribeMessage(MessageType.COUNT)
   async count(
     @ConnectedSocket() client: WebSocket,
-    @MessageBody(new ZodValidationPipe(CountMessageSchema))
-    [subscriptionId, ...filtersDto]: CountMessageDto,
+    @MessageBody(new ZodValidationPipe(CountMessageDto))
+    [, subscriptionId, ...filtersDto]: CountMessageDto,
   ) {
     const filters = filtersDto.map(Filter.fromFilterDto);
     if (
       filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
       !client.pubkey
     ) {
-      throw new Error(
-        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+      throw new RestrictedException(
+        "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
       );
     }
 
@@ -160,8 +156,8 @@ export class NostrGateway
   @SubscribeMessage(MessageType.AUTH)
   async auth(
     @ConnectedSocket() client: WebSocket,
-    @MessageBody(new ZodValidationPipe(AuthMessageSchema))
-    [signedEvent]: AuthMessageDto,
+    @MessageBody(new ZodValidationPipe(AuthMessageDto))
+    [, signedEvent]: AuthMessageDto,
   ) {
     const event = Event.fromEventDto(signedEvent);
     const validateErrorMsg = await event.validateSignedEvent(
