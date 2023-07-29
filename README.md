@@ -22,7 +22,7 @@ Try here: wss://nostr-relay.app
 | [NIP-01: Basic protocol flow description](https://github.com/nostr-protocol/nips/blob/master/01.md)     |   🟢   |                             |
 | [NIP-02: Contact List and Petnames](https://github.com/nostr-protocol/nips/blob/master/02.md)           |   🟢   |                             |
 | [NIP-04: Encrypted Direct Message](https://github.com/nostr-protocol/nips/blob/master/04.md)            |   🟢   |                             |
-| [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                      |   🟡   | Not support `a` tag         |
+| [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                      |   🟢   |                             |
 | [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)          |   🟢   |                             |
 | [NIP-12: Generic Tag Queries](https://github.com/nostr-protocol/nips/blob/master/12.md)                 |   🟢   |                             |
 | [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)                       |   🟢   |                             |
