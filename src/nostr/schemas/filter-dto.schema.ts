@@ -3,6 +3,7 @@ import {
   EventIdPrefixSchema,
   EventKindSchema,
   PubkeyPrefixSchema,
+  SearchSchema,
   TimestampInSecSchema,
 } from './common.schema';
 
@@ -56,9 +57,7 @@ export const FilterDtoSchema = z.preprocess(
         .int({ message: 'must be an integer' })
         .min(0, { message: 'must be greater than or equal to 0' }),
       tags: TagsFilterSchema,
-      search: z.string({ invalid_type_error: 'must be a string' }).max(256, {
-        message: 'must be less than or equal to 256 chars',
-      }),
+      search: SearchSchema,
     })
     .partial(),
 );

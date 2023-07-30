@@ -123,6 +123,7 @@ describe('EventSearchRepository', () => {
           'proximity',
           'attribute',
           'exactness',
+          'createdAt:desc',
         ],
       });
     });
@@ -297,6 +298,22 @@ describe('EventSearchRepository', () => {
           limit: 10,
         },
       });
+    });
+  });
+
+  describe('findTopIds', () => {
+    it('should return empty array if no index', async () => {
+      const result = await eventSearchRepositoryWithoutIndex.findTopIds({
+        search: 'test',
+      });
+      expect(result).toEqual([]);
+    });
+
+    it('should return ids', async () => {
+      const result = await eventSearchRepositoryWithIndex.findTopIds({
+        search: 'test',
+      });
+      expect(result).toEqual([REGULAR_EVENT_DOCUMENT.id]);
     });
   });
 

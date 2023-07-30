@@ -292,5 +292,18 @@ describe('EventService', () => {
         ).toBe(COUNT);
       });
     });
+
+    describe('findTopIds', () => {
+      it('should return top ids', async () => {
+        const eventSearchRepository = createMock<EventSearchRepository>({
+          findTopIds: async () => [REGULAR_EVENT.id],
+        });
+        (eventService as any).eventSearchRepository = eventSearchRepository;
+
+        expect(
+          await eventService.findTopIds('test', Filter.fromFilterDto({})),
+        ).toEqual([REGULAR_EVENT.id]);
+      });
+    });
   });
 });

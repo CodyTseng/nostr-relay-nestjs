@@ -21,7 +21,7 @@ type EventDocument = {
   dTagValue: string | null;
 };
 
-type EventRepositoryFilter = Pick<
+type EventSearchRepositoryFilter = Pick<
   SearchFilter,
   | 'ids'
   | 'authors'
@@ -72,13 +72,69 @@ export class EventSearchRepository implements OnApplicationBootstrap {
         'proximity',
         'attribute',
         'exactness',
+        'createdAt:desc',
       ],
     });
   }
 
-  async find(filter: EventRepositoryFilter) {
+  async find(filter: EventSearchRepositoryFilter) {
     if (!this.index) return [];
 
+    const searchFilters = this.buildSearchFilters(filter);
+
+    const result = await this.index.search(filter.search, {
+      limit: this.getLimit(filter, 100),
+      filter: searchFilters,
+      sort: ['createdAt:desc'],
+    });
+
+    return result.hits.map(this.toEvent);
+  }
+
+  async findTopIds(filter: EventSearchRepositoryFilter) {
+    if (!this.index) return [];
+
+    const searchFilters = this.buildSearchFilters(filter);
+
+    const result = await this.index.search(filter.search, {
+      limit: this.getLimit(filter, 1000),
+      filter: searchFilters,
+      attributesToRetrieve: ['id'],
+    });
+
+    return result.hits.map((hit) => hit.id);
+  }
+
+  async add(event: Event) {
+    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) return;
+
+    try {
+      await this.index.addDocuments([this.toEventDocument(event)]);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async deleteMany(eventIds: string[]) {
+    if (!this.index) return;
+
+    try {
+      await this.index.deleteDocuments(eventIds);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async replace(event: Event, oldEventId?: string) {
+    if (!this.index) return;
+
+    await Promise.all([
+      this.add(event),
+      oldEventId ? this.deleteMany([oldEventId]) : undefined,
+    ]);
+  }
+
+  private buildSearchFilters(filter: EventSearchRepositoryFilter): string[] {
     const searchFilters: string[] = [
       `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
     ];
@@ -112,42 +168,11 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       });
     }
 
-    const result = await this.index.search(filter.search, {
-      limit: Math.min(filter.limit ?? 100, 1000),
-      filter: searchFilters,
-      sort: ['createdAt:desc'],
-    });
-
-    return result.hits.map(this.toEvent);
+    return searchFilters;
   }
 
-  async add(event: Event) {
-    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) return;
-
-    try {
-      await this.index.addDocuments([this.toEventDocument(event)]);
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  async deleteMany(eventIds: string[]) {
-    if (!this.index) return;
-
-    try {
-      await this.index.deleteDocuments(eventIds);
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  async replace(event: Event, oldEventId?: string) {
-    if (!this.index) return;
-
-    await Promise.all([
-      this.add(event),
-      oldEventId ? this.deleteMany([oldEventId]) : undefined,
-    ]);
+  private getLimit(filter: EventSearchRepositoryFilter, defaultLimit: number) {
+    return Math.min(filter.limit ?? defaultLimit, 1000);
   }
 
   private toEventDocument(event: Event): EventDocument {
