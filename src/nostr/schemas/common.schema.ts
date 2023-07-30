@@ -57,3 +57,9 @@ export const SubscriptionIdSchema = z
   .max(64, {
     message: 'must be less than or equal to 64 characters',
   });
+
+export const SearchSchema = z
+  .string({ invalid_type_error: 'must be a string' })
+  .max(256, {
+    message: 'must be less than or equal to 256 chars',
+  });

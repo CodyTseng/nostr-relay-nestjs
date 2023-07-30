@@ -25,6 +25,7 @@ import {
   CountMessageDto,
   EventMessageDto,
   ReqMessageDto,
+  TopMessageDto,
 } from './schemas';
 import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
@@ -34,6 +35,7 @@ import {
   createCountResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
+  createTopResponse,
 } from './utils';
 
 @WebSocketGateway()
@@ -170,5 +172,18 @@ export class NostrGateway
 
     client.pubkey = event.pubkey;
     return createCommandResultResponse(event.id, true);
+  }
+
+  @SubscribeMessage(MessageType.TOP)
+  async top(
+    @MessageBody(new ZodValidationPipe(TopMessageDto))
+    [, search, filterDto]: TopMessageDto,
+  ) {
+    const topIds = await this.eventService.findTopIds(
+      search,
+      Filter.fromFilterDto(filterDto),
+    );
+
+    return createTopResponse(search, topIds);
   }
 }

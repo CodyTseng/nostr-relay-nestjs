@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { MessageType } from '../constants';
-import { SubscriptionIdSchema } from './common.schema';
+import { SearchSchema, SubscriptionIdSchema } from './common.schema';
 import { EventDtoSchema } from './event-dto.schema';
 import { FilterDtoSchema } from './filter-dto.schema';
 
@@ -31,3 +31,10 @@ export const AuthMessageDto = z.tuple([
   EventDtoSchema,
 ]);
 export type AuthMessageDto = z.infer<typeof AuthMessageDto>;
+
+export const TopMessageDto = z.tuple([
+  z.literal(MessageType.TOP),
+  SearchSchema,
+  FilterDtoSchema,
+]);
+export type TopMessageDto = z.infer<typeof TopMessageDto>;

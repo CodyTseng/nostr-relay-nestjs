@@ -44,6 +44,10 @@ export class EventService {
     return await this.eventRepository.count(filters);
   }
 
+  async findTopIds(search: string, filter: Filter) {
+    return await this.eventSearchRepository.findTopIds({ ...filter, search });
+  }
+
   async handleEvent(event: Event): Promise<void | CommandResultResponse> {
     switch (event.type) {
       case EventType.REPLACEABLE:

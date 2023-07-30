@@ -50,6 +50,7 @@ describe('NostrGateway', () => {
       },
       findByFilters: async () => FIND_EVENTS.map(Event.fromEventDto),
       countByFilters: async () => FIND_EVENTS.length,
+      findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(
       mockLogger,
@@ -234,6 +235,17 @@ describe('NostrGateway', () => {
       ]);
 
       expect(client.pubkey).toBeUndefined();
+    });
+  });
+
+  describe('TOP', () => {
+    it('should return top ids successfully', async () => {
+      const search = 'test';
+      expect(await nostrGateway.top([MessageType.TOP, search, {}])).toEqual([
+        MessageType.TOP,
+        search,
+        FIND_EVENTS.map((event) => event.id),
+      ]);
     });
   });
 
