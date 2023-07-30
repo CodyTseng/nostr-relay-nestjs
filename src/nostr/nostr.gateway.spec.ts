@@ -11,7 +11,6 @@ import {
   REPLACEABLE_EVENT_DTO,
   TEST_PUBKEY,
 } from '../../seeds';
-import { RestrictedException } from '../common/exceptions';
 import { EventKind, MessageType } from './constants';
 import { Event } from './entities';
 import { NostrGateway } from './nostr.gateway';
@@ -124,9 +123,7 @@ describe('NostrGateway', () => {
           { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
         ]),
       ).rejects.toThrowError(
-        new RestrictedException(
-          "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-        ),
+        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
       );
     });
 
@@ -207,9 +204,7 @@ describe('NostrGateway', () => {
           { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
         ]),
       ).rejects.toThrowError(
-        new RestrictedException(
-          "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-        ),
+        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
       );
     });
   });
