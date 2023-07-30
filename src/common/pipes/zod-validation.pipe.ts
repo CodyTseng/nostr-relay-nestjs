@@ -1,6 +1,6 @@
 import { Injectable, PipeTransform } from '@nestjs/common';
-import { ZodSchema } from 'zod';
-import { fromZodError } from 'zod-validation-error';
+import { ZodError, ZodSchema } from 'zod';
+import { ValidationException } from '../exceptions';
 
 @Injectable()
 export class ZodValidationPipe implements PipeTransform {
@@ -10,7 +10,10 @@ export class ZodValidationPipe implements PipeTransform {
     try {
       return await this.schema.parseAsync(value);
     } catch (error) {
-      throw fromZodError(error, { prefix: 'invalid', maxIssuesInMessage: 1 });
+      if (error instanceof ZodError) {
+        throw new ValidationException(error);
+      }
+      throw error;
     }
   }
 }

@@ -6,7 +6,13 @@ import {
   TimestampInSecSchema,
 } from './common.schema';
 
-const TagFilterValuesSchema = z.array(z.string().max(1024)).max(256);
+const TagFilterValuesSchema = z
+  .array(
+    z.string({ invalid_type_error: 'must be a string' }).max(1024, {
+      message: 'must be less than or equal to 1024 characters',
+    }),
+  )
+  .max(256, { message: 'must be less than or equal to 256 tagValues' });
 
 const TagsFilterSchema = z.record(
   z.string().regex(/^[a-zA-Z]$/),
@@ -34,14 +40,25 @@ export const FilterDtoSchema = z.preprocess(
   },
   z
     .object({
-      ids: z.array(EventIdPrefixSchema).max(1000),
-      authors: z.array(PubkeyPrefixSchema).max(1000),
-      kinds: z.array(EventKindSchema).max(20),
+      ids: z
+        .array(EventIdPrefixSchema)
+        .max(1000, { message: 'must be less than or equal to 1000 ids' }),
+      authors: z
+        .array(PubkeyPrefixSchema)
+        .max(1000, { message: 'must be less than or equal to 1000 authors' }),
+      kinds: z
+        .array(EventKindSchema)
+        .max(20, { message: 'must be less than or equal to 20 kinds' }),
       since: TimestampInSecSchema,
       until: TimestampInSecSchema,
-      limit: z.number().int().min(0),
+      limit: z
+        .number({ invalid_type_error: 'must be a number' })
+        .int({ message: 'must be an integer' })
+        .min(0, { message: 'must be greater than or equal to 0' }),
       tags: TagsFilterSchema,
-      search: z.string().max(256),
+      search: z.string({ invalid_type_error: 'must be a string' }).max(256, {
+        message: 'must be less than or equal to 256 chars',
+      }),
     })
     .partial(),
 );

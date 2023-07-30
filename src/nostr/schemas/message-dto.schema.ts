@@ -1,23 +1,33 @@
 import { z } from 'zod';
+import { MessageType } from '../constants';
 import { SubscriptionIdSchema } from './common.schema';
 import { EventDtoSchema } from './event-dto.schema';
 import { FilterDtoSchema } from './filter-dto.schema';
 
-export const EventMessageSchema = z.tuple([EventDtoSchema]);
-export type EventMessageDto = z.infer<typeof EventMessageSchema>;
+export const EventMessageDto = z.tuple([
+  z.literal(MessageType.EVENT),
+  EventDtoSchema,
+]);
+export type EventMessageDto = z.infer<typeof EventMessageDto>;
 
-export const ReqMessageSchema = z
-  .tuple([SubscriptionIdSchema])
+export const ReqMessageDto = z
+  .tuple([z.literal(MessageType.REQ), SubscriptionIdSchema])
   .rest(FilterDtoSchema);
-export type ReqMessageDto = z.infer<typeof ReqMessageSchema>;
+export type ReqMessageDto = z.infer<typeof ReqMessageDto>;
 
-export const CloseMessageSchema = z.tuple([SubscriptionIdSchema]);
-export type CloseMessageDto = z.infer<typeof CloseMessageSchema>;
+export const CloseMessageDto = z.tuple([
+  z.literal(MessageType.CLOSE),
+  SubscriptionIdSchema,
+]);
+export type CloseMessageDto = z.infer<typeof CloseMessageDto>;
 
-export const CountMessageSchema = z
-  .tuple([SubscriptionIdSchema])
+export const CountMessageDto = z
+  .tuple([z.literal(MessageType.COUNT), SubscriptionIdSchema])
   .rest(FilterDtoSchema);
-export type CountMessageDto = z.infer<typeof CountMessageSchema>;
+export type CountMessageDto = z.infer<typeof CountMessageDto>;
 
-export const AuthMessageSchema = z.tuple([EventDtoSchema]);
-export type AuthMessageDto = z.infer<typeof AuthMessageSchema>;
+export const AuthMessageDto = z.tuple([
+  z.literal(MessageType.AUTH),
+  EventDtoSchema,
+]);
+export type AuthMessageDto = z.infer<typeof AuthMessageDto>;

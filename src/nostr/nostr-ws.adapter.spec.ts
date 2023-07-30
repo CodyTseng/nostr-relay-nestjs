@@ -24,7 +24,10 @@ describe('NostrWsAdapter', () => {
 
   it('should handle message successfully', () => {
     const DATA = 'hello';
-    testBindMessageHandler(JSON.stringify([EVENT_TYPE, DATA]), [DATA]);
+    testBindMessageHandler(JSON.stringify([EVENT_TYPE, DATA]), [
+      EVENT_TYPE,
+      DATA,
+    ]);
   });
 
   it('should return message must be a JSON array notice', () => {
