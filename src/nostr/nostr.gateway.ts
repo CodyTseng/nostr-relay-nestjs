@@ -76,7 +76,7 @@ export class NostrGateway
     [, e]: EventMessageDto,
   ) {
     const event = Event.fromEventDto(e);
-    const validateErrorMsg = await event.validate({
+    const validateErrorMsg = event.validate({
       createdAtUpperLimit: this.limitConfig.createdAt.upper,
       eventIdMinLeadingZeroBits: this.limitConfig.eventId.minLeadingZeroBits,
     });
@@ -156,16 +156,13 @@ export class NostrGateway
   }
 
   @SubscribeMessage(MessageType.AUTH)
-  async auth(
+  auth(
     @ConnectedSocket() client: WebSocket,
     @MessageBody(new ZodValidationPipe(AuthMessageDto))
     [, signedEvent]: AuthMessageDto,
   ) {
     const event = Event.fromEventDto(signedEvent);
-    const validateErrorMsg = await event.validateSignedEvent(
-      client.id,
-      this.domain,
-    );
+    const validateErrorMsg = event.validateSignedEvent(client.id, this.domain);
     if (validateErrorMsg) {
       return createCommandResultResponse(event.id, false, validateErrorMsg);
     }

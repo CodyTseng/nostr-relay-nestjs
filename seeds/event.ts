@@ -1,8 +1,12 @@
-import { getSharedSecret, schnorr, utils } from '@noble/secp256k1';
 import { createCipheriv, randomFillSync } from 'crypto';
-import { EventDto } from '../src/nostr/schemas';
 import { Event } from '../src/nostr/entities';
-import { getTimestampInSeconds } from '../src/nostr/utils';
+import { EventDto } from '../src/nostr/schemas';
+import {
+  getSharedSecret,
+  getTimestampInSeconds,
+  schnorrSign,
+  sha256,
+} from '../src/nostr/utils';
 
 export const REGULAR_EVENT_DTO = {
   id: 'f2c611fb04e2586703ccc13a6ddcbfe7ac5026ace1e0cf2ab79337b3ff73ac70',
@@ -312,29 +316,24 @@ export const TEST_PRIVKEY =
 export const TEST_PUBKEY =
   'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7';
 
-async function getEventHash(
+function getEventHash(
   event: Pick<EventDto, 'pubkey' | 'kind' | 'tags' | 'content' | 'created_at'>,
 ) {
-  const eventHash = await utils.sha256(
-    Buffer.from(
-      JSON.stringify([
-        0,
-        event.pubkey,
-        event.created_at,
-        event.kind,
-        event.tags,
-        event.content,
-      ]),
-    ),
-  );
-  return utils.bytesToHex(eventHash);
+  return sha256([
+    0,
+    event.pubkey,
+    event.created_at,
+    event.kind,
+    event.tags,
+    event.content,
+  ]);
 }
 
-async function signEvent(eventId: string, key: string) {
-  return utils.bytesToHex(await schnorr.sign(eventId, key));
+function signEvent(eventId: string, key: string) {
+  return schnorrSign(eventId, key);
 }
 
-export async function createEncryptedDirectMessageEventMock(
+export function createEncryptedDirectMessageEventMock(
   params: {
     to?: string;
     text?: string;
@@ -363,8 +362,8 @@ export async function createEncryptedDirectMessageEventMock(
     tags: [['p', to]],
     content: encryptedMessage + '?iv=' + ivBase64,
   };
-  const id = await getEventHash(baseEvent);
-  const sig = await signEvent(id, TEST_PRIVKEY);
+  const id = getEventHash(baseEvent);
+  const sig = signEvent(id, TEST_PRIVKEY);
 
   return Event.fromEventDto({
     ...baseEvent,
@@ -373,14 +372,14 @@ export async function createEncryptedDirectMessageEventMock(
   });
 }
 
-export async function createSignedEventDtoMock(
+export function createSignedEventDtoMock(
   params: {
     pubkey?: string;
     challenge?: string;
     created_at?: number;
     relay?: string;
   } = {},
-): Promise<EventDto> {
+): EventDto {
   const {
     pubkey = TEST_PUBKEY,
     challenge = 'challenge',
@@ -398,8 +397,8 @@ export async function createSignedEventDtoMock(
     ],
     content: '',
   };
-  const id = await getEventHash(baseEvent);
-  const sig = await signEvent(id, TEST_PRIVKEY);
+  const id = getEventHash(baseEvent);
+  const sig = signEvent(id, TEST_PRIVKEY);
 
   return {
     ...baseEvent,
@@ -408,7 +407,7 @@ export async function createSignedEventDtoMock(
   };
 }
 
-export async function createSignedEventMock(
+export function createSignedEventMock(
   params: {
     pubkey?: string;
     challenge?: string;
@@ -416,10 +415,10 @@ export async function createSignedEventMock(
     relay?: string;
   } = {},
 ) {
-  return Event.fromEventDto(await createSignedEventDtoMock(params));
+  return Event.fromEventDto(createSignedEventDtoMock(params));
 }
 
-export async function createEventDtoMock(params: {
+export function createEventDtoMock(params: {
   pubkey?: string;
   kind?: number;
   created_at?: number;
@@ -433,8 +432,8 @@ export async function createEventDtoMock(params: {
     tags: params.tags ?? [],
     content: params.content ?? '',
   };
-  const id = await getEventHash(baseEvent);
-  const sig = await signEvent(id, TEST_PRIVKEY);
+  const id = getEventHash(baseEvent);
+  const sig = signEvent(id, TEST_PRIVKEY);
 
   return {
     ...baseEvent,

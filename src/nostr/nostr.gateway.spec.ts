@@ -130,7 +130,7 @@ describe('NostrGateway', () => {
 
     it('should filter out unauthorized events', async () => {
       const encryptedDirectMessageEvent =
-        await createEncryptedDirectMessageEventMock();
+        createEncryptedDirectMessageEventMock();
       (nostrGateway as any).eventService = createMock<EventService>({
         findByFilters: async () => [encryptedDirectMessageEvent],
       });
@@ -218,7 +218,7 @@ describe('NostrGateway', () => {
     it('should auth successfully', async () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
-      const event = await createSignedEventDtoMock({ challenge });
+      const event = createSignedEventDtoMock({ challenge });
       expect(
         await nostrGateway.auth(client, [MessageType.AUTH, event]),
       ).toEqual(createCommandResultResponse(event.id, true));
@@ -231,7 +231,7 @@ describe('NostrGateway', () => {
       const client = { id: challenge } as any;
       await nostrGateway.auth(client, [
         MessageType.AUTH,
-        await createSignedEventDtoMock({ pubkey: 'fake-pubkey', challenge }),
+        createSignedEventDtoMock({ pubkey: 'fake-pubkey', challenge }),
       ]);
 
       expect(client.pubkey).toBeUndefined();

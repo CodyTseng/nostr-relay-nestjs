@@ -209,9 +209,9 @@ describe('EventService', () => {
               return filters
                 .map((filter) => {
                   if (filter.ids?.length) {
-                    return filter.ids.map((id) => ({ id } as Event));
+                    return filter.ids.map((id) => ({ id }) as Event);
                   }
-                  return filter.dTagValues?.map((id) => ({ id } as Event));
+                  return filter.dTagValues?.map((id) => ({ id }) as Event);
                 })
                 .flat() as Event[];
             }
@@ -222,7 +222,7 @@ describe('EventService', () => {
         });
         (eventService as any).eventRepository = eventRepository;
 
-        const eventDto = await createEventDtoMock({
+        const eventDto = createEventDtoMock({
           pubkey: TEST_PUBKEY,
           kind: EventKind.DELETION,
           tags: [

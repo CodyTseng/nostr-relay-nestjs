@@ -50,7 +50,7 @@ export class SubscriptionService {
       if (!this.server) {
         throw new Error('WebSocketServer not found');
       }
-      this.server.clients.forEach((client) => {
+      this.server.clients.forEach((client: WebSocket) => {
         if (client.readyState !== WebSocket.OPEN) {
           return;
         }

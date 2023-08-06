@@ -1,4 +1,3 @@
-import { schnorr, utils } from '@noble/secp256k1';
 import { isNil } from 'lodash';
 import {
   Column,
@@ -14,6 +13,8 @@ import {
   countLeadingZeroBits,
   getTimestampInSeconds,
   isGenericTagName,
+  schnorrVerify,
+  sha256,
   toGenericTag,
 } from '../utils';
 
@@ -180,17 +181,17 @@ export class Event {
     return pubkeyTag ? pubkey === pubkeyTag[1] : false;
   }
 
-  async validate(
+  validate(
     options: {
       createdAtUpperLimit?: number;
       eventIdMinLeadingZeroBits?: number;
     } = {},
-  ): Promise<string | void> {
-    if (!(await this.isEventIdValid())) {
+  ): string | undefined {
+    if (!this.isEventIdValid()) {
       return 'invalid: id is wrong';
     }
 
-    if (!(await this.isEventSigValid())) {
+    if (!this.isEventSigValid()) {
       return 'invalid: signature is wrong';
     }
 
@@ -233,18 +234,15 @@ export class Event {
       ([tagName]) => tagName === TagName.DELEGATION,
     );
     if (delegationTag) {
-      if (!(await this.isDelegationTagValid(delegationTag))) {
+      if (!this.isDelegationTagValid(delegationTag)) {
         return 'invalid: delegation tag verification failed';
       }
       this.delegator = delegationTag[1];
     }
   }
 
-  async validateSignedEvent(
-    clientId: string,
-    domain: string,
-  ): Promise<string | void> {
-    const validateErrorMsg = await this.validate();
+  validateSignedEvent(clientId: string, domain: string): string | void {
+    const validateErrorMsg = this.validate();
     if (validateErrorMsg) {
       return validateErrorMsg;
     }
@@ -292,33 +290,34 @@ export class Event {
     };
   }
 
-  private async isEventIdValid() {
-    const arr = [
-      0,
-      this.pubkey,
-      this.createdAt,
-      this.kind,
-      this.tags,
-      this.content,
-    ];
-    const id = await utils.sha256(Buffer.from(JSON.stringify(arr)));
-    return Buffer.from(id).toString('hex') === this.id;
+  private isEventIdValid() {
+    return (
+      sha256([
+        0,
+        this.pubkey,
+        this.createdAt,
+        this.kind,
+        this.tags,
+        this.content,
+      ]) === this.id
+    );
   }
 
-  private async isEventSigValid() {
-    return schnorr.verify(this.sig, this.id, this.pubkey);
+  private isEventSigValid() {
+    return schnorrVerify(this.sig, this.id, this.pubkey);
   }
 
-  private async isDelegationTagValid(delegationTag: string[]) {
+  private isDelegationTagValid(delegationTag: string[]) {
     if (delegationTag.length !== 4) {
       return false;
     }
     const [, delegator, conditionsStr, token] = delegationTag;
 
-    const delegationStr = await utils.sha256(
-      Buffer.from(`nostr:delegation:${this.pubkey}:${conditionsStr}`),
+    const delegationStr = sha256(
+      `nostr:delegation:${this.pubkey}:${conditionsStr}`,
     );
-    if (!(await schnorr.verify(token, delegationStr, delegator))) {
+
+    if (!schnorrVerify(token, delegationStr, delegator)) {
       return false;
     }
 
