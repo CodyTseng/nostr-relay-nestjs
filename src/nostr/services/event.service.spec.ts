@@ -222,7 +222,7 @@ describe('EventService', () => {
         });
         (eventService as any).eventRepository = eventRepository;
 
-        const eventDto = await createEventDtoMock({
+        const eventDto = createEventDtoMock({
           pubkey: TEST_PUBKEY,
           kind: EventKind.DELETION,
           tags: [

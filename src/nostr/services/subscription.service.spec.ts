@@ -156,9 +156,7 @@ describe('SubscriptionService', () => {
         createMock<WebSocketServer>({ clients: new Set([client]) }),
       );
       subscriptionService.subscribe(client, subscriptionId, filters);
-      subscriptionService.broadcast(
-        await createEncryptedDirectMessageEventMock(),
-      );
+      subscriptionService.broadcast(createEncryptedDirectMessageEventMock());
 
       expect(mockClientSend).not.toBeCalled();
     });

@@ -25,7 +25,7 @@ describe('filter', () => {
         }).isEventMatching(PARAMETERIZED_REPLACEABLE_EVENT),
       ).toBeTruthy();
 
-      const unStandardTagEvent = await createEventDtoMock({
+      const unStandardTagEvent = createEventDtoMock({
         tags: [['z', 'test1']],
       });
       expect(
@@ -38,9 +38,7 @@ describe('filter', () => {
 
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          Event.fromEventDto(
-            await createEventDtoMock({ content: 'abandon test' }),
-          ),
+          Event.fromEventDto(createEventDtoMock({ content: 'abandon test' })),
         ),
       ).toBeTruthy();
     });
@@ -76,7 +74,7 @@ describe('filter', () => {
       ).toBeFalsy();
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          Event.fromEventDto(await createEventDtoMock({ content: 'abandon' })),
+          Event.fromEventDto(createEventDtoMock({ content: 'abandon' })),
         ),
       ).toBeFalsy();
     });

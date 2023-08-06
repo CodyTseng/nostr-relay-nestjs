@@ -36,7 +36,7 @@
     "@nestjs/platform-ws": "^9.3.10",
     "@nestjs/typeorm": "^9.0.1",
     "@nestjs/websockets": "^9.3.10",
-    "@noble/secp256k1": "^1.7.1",
+    "@noble/curves": "^1.1.0",
     "@types/ws": "^8.5.4",
     "dayjs": "^1.11.7",
     "helmet": "^6.0.1",

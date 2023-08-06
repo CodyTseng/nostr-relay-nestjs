@@ -264,7 +264,7 @@ describe('EventRepository', () => {
         )?.toEventDto(),
       ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
 
-      const unStandardTagEventDto = await createEventDtoMock({
+      const unStandardTagEventDto = createEventDtoMock({
         tags: [['z', 'test2']],
       });
       await eventRepository.create(Event.fromEventDto(unStandardTagEventDto));
