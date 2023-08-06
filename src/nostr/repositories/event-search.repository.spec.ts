@@ -60,7 +60,7 @@ describe('EventSearchRepository', () => {
         query,
         options,
       };
-      return { hits: [REGULAR_EVENT_DOCUMENT] };
+      return { hits: [{ ...REGULAR_EVENT_DOCUMENT, _rankingScore: 1 }] };
     },
     addDocuments: (eventDocuments) => {
       if (eventDocuments[0]?.id === CAUSE_ERROR_EVENT_DTO.id) {
@@ -301,19 +301,25 @@ describe('EventSearchRepository', () => {
     });
   });
 
-  describe('findTopIds', () => {
+  describe('findTopIdsWithScore', () => {
     it('should return empty array if no index', async () => {
-      const result = await eventSearchRepositoryWithoutIndex.findTopIds({
-        search: 'test',
-      });
+      const result =
+        await eventSearchRepositoryWithoutIndex.findTopIdsWithScore({
+          search: 'test',
+        });
       expect(result).toEqual([]);
     });
 
-    it('should return ids', async () => {
-      const result = await eventSearchRepositoryWithIndex.findTopIds({
+    it('should return idsWithScore', async () => {
+      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
         search: 'test',
       });
-      expect(result).toEqual([REGULAR_EVENT_DOCUMENT.id]);
+      expect(result).toEqual([
+        {
+          id: REGULAR_EVENT_DOCUMENT.id,
+          score: REGULAR_EVENT_DOCUMENT.createdAt * 2,
+        },
+      ]);
     });
   });
 

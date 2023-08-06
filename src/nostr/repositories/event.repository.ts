@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { sumBy } from 'lodash';
 import { Brackets, In, QueryFailedError, Repository } from 'typeorm';
 import { Event, Filter } from '../entities';
+import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
 
 export type EventRepositoryFilter = Pick<
@@ -58,6 +59,24 @@ export class EventRepository {
 
   async count(filters: EventRepositoryFilter | EventRepositoryFilter[]) {
     return await this.createQueryBuilder(filters).getCount();
+  }
+
+  async findTopIdsWithScore(
+    filters: EventRepositoryFilter | EventRepositoryFilter[],
+  ): Promise<TEventIdWithScore[]> {
+    if (Array.isArray(filters) && filters.length === 0) return [];
+
+    const partialEvents = await this.createQueryBuilder(filters)
+      .select(['event.id', 'event.createdAtStr'])
+      .take(this.getLimitFrom(filters, 1000))
+      .orderBy('event.createdAtStr', 'DESC')
+      .getMany();
+
+    // TODO: algorithm to calculate score
+    return partialEvents.map((event) => ({
+      id: event.id,
+      score: event.createdAt,
+    }));
   }
 
   async replace(event: Event, oldEventId?: string) {
@@ -209,11 +228,12 @@ export class EventRepository {
 
   private getLimitFrom(
     filters: EventRepositoryFilter[] | EventRepositoryFilter,
+    defaultLimit = 100,
   ) {
     return Math.min(
       Array.isArray(filters)
-        ? sumBy(filters, (filter) => filter.limit ?? 100)
-        : filters.limit ?? 100,
+        ? sumBy(filters, (filter) => filter.limit ?? defaultLimit)
+        : filters.limit ?? defaultLimit,
       1000,
     );
   }

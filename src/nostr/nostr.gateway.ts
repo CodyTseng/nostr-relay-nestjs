@@ -176,14 +176,22 @@ export class NostrGateway
 
   @SubscribeMessage(MessageType.TOP)
   async top(
+    @ConnectedSocket() client: WebSocket,
     @MessageBody(new ZodValidationPipe(TopMessageDto))
-    [, search, filterDto]: TopMessageDto,
+    [, subscriptionId, ...filtersDto]: TopMessageDto,
   ) {
-    const topIds = await this.eventService.findTopIds(
-      search,
-      Filter.fromFilterDto(filterDto),
-    );
+    const filters = filtersDto.map(Filter.fromFilterDto);
+    if (
+      filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
+      !client.pubkey
+    ) {
+      throw new RestrictedException(
+        "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+      );
+    }
 
-    return createTopResponse(search, topIds);
+    const topIds = await this.eventService.findTopIds(filters);
+
+    return createTopResponse(subscriptionId, topIds);
   }
 }

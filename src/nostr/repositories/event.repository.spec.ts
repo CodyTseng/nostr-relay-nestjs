@@ -1,3 +1,4 @@
+import { sortBy } from 'lodash';
 import { newDb } from 'pg-mem';
 import { DataSource } from 'typeorm';
 import {
@@ -380,6 +381,24 @@ describe('EventRepository', () => {
       await Promise.all(EVENTS.map((EVENT) => eventRepository.create(EVENT)));
 
       expect(await eventRepository.count([{}])).toBe(EVENTS.length);
+    });
+  });
+
+  describe('findTopIdsWithScore', () => {
+    it('should find top ids with score successfully', async () => {
+      const EVENTS = [
+        REGULAR_EVENT,
+        REPLACEABLE_EVENT,
+        PARAMETERIZED_REPLACEABLE_EVENT,
+      ];
+      await Promise.all(EVENTS.map((EVENT) => eventRepository.create(EVENT)));
+
+      expect(await eventRepository.findTopIdsWithScore([{}])).toEqual(
+        sortBy(
+          EVENTS.map((e) => ({ id: e.id, score: e.createdAt })),
+          (item) => -item.score,
+        ),
+      );
     });
   });
 });

@@ -5,6 +5,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
 import { SEARCHABLE_EVENT_KINDS } from '../constants';
 import { Event, SearchFilter } from '../entities';
+import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
 
 type EventDocument = {
@@ -83,7 +84,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     const searchFilters = this.buildSearchFilters(filter);
 
     const result = await this.index.search(filter.search, {
-      limit: this.getLimit(filter, 100),
+      limit: this.getLimitFrom(filter),
       filter: searchFilters,
       sort: ['createdAt:desc'],
     });
@@ -91,18 +92,25 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     return result.hits.map(this.toEvent);
   }
 
-  async findTopIds(filter: EventSearchRepositoryFilter) {
+  async findTopIdsWithScore(
+    filter: EventSearchRepositoryFilter,
+  ): Promise<TEventIdWithScore[]> {
     if (!this.index) return [];
 
     const searchFilters = this.buildSearchFilters(filter);
 
     const result = await this.index.search(filter.search, {
-      limit: this.getLimit(filter, 1000),
+      limit: this.getLimitFrom(filter, 1000),
       filter: searchFilters,
-      attributesToRetrieve: ['id'],
+      attributesToRetrieve: ['id', 'createdAt'],
+      showRankingScore: true,
     });
 
-    return result.hits.map((hit) => hit.id);
+    // TODO: algorithm to calculate score
+    return result.hits.map((hit) => ({
+      id: hit.id,
+      score: hit.createdAt * (1 + (hit._rankingScore ?? 0)),
+    }));
   }
 
   async add(event: Event) {
@@ -171,7 +179,10 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     return searchFilters;
   }
 
-  private getLimit(filter: EventSearchRepositoryFilter, defaultLimit: number) {
+  private getLimitFrom(
+    filter: EventSearchRepositoryFilter,
+    defaultLimit = 100,
+  ) {
     return Math.min(filter.limit ?? defaultLimit, 1000);
   }
 

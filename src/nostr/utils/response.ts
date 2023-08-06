@@ -45,6 +45,9 @@ export function createAuthResponse(challenge: string) {
 }
 
 export type TopResponse = [MessageType.TOP, string, string[]];
-export function createTopResponse(search: string, ids: string[]): TopResponse {
-  return [MessageType.TOP, search, ids];
+export function createTopResponse(
+  subscriptionId: string,
+  ids: string[],
+): TopResponse {
+  return [MessageType.TOP, subscriptionId, ids];
 }
