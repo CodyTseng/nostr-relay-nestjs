@@ -209,9 +209,9 @@ describe('EventService', () => {
               return filters
                 .map((filter) => {
                   if (filter.ids?.length) {
-                    return filter.ids.map((id) => ({ id } as Event));
+                    return filter.ids.map((id) => ({ id }) as Event);
                   }
-                  return filter.dTagValues?.map((id) => ({ id } as Event));
+                  return filter.dTagValues?.map((id) => ({ id }) as Event);
                 })
                 .flat() as Event[];
             }
