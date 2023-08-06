@@ -116,7 +116,7 @@ describe('NostrGateway', () => {
       ]);
     });
 
-    it('should reject when unauthenticated and count DM events', async () => {
+    it('should reject when unauthenticated and request DM events', async () => {
       await expect(
         nostrGateway.req({} as any, [
           MessageType.REQ,
@@ -240,12 +240,22 @@ describe('NostrGateway', () => {
 
   describe('TOP', () => {
     it('should return top ids successfully', async () => {
-      const search = 'test';
-      expect(await nostrGateway.top([MessageType.TOP, search, {}])).toEqual([
-        MessageType.TOP,
-        search,
-        FIND_EVENTS.map((event) => event.id),
-      ]);
+      const subId = 'test';
+      expect(
+        await nostrGateway.top({} as any, [MessageType.TOP, subId, {}]),
+      ).toEqual([MessageType.TOP, subId, FIND_EVENTS.map((event) => event.id)]);
+    });
+
+    it('should reject when unauthenticated and request DM events', async () => {
+      await expect(
+        nostrGateway.top({} as any, [
+          MessageType.TOP,
+          'test:req',
+          { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
+        ]),
+      ).rejects.toThrowError(
+        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
+      );
     });
   });
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { union, uniqBy } from 'lodash';
+import { chain, union, uniqBy } from 'lodash';
 import { EventKind, EventType, E_EVENT_BROADCAST, TagName } from '../constants';
 import { Event, Filter, SearchFilter } from '../entities';
 import { EventRepository, EventRepositoryFilter } from '../repositories';
@@ -19,16 +19,7 @@ export class EventService {
   ) {}
 
   async findByFilters(filters: Filter[]): Promise<Event[]> {
-    const searchFilters: SearchFilter[] = [],
-      normalFilters: Filter[] = [];
-
-    filters.forEach((filter) => {
-      if (Filter.isSearchFilter(filter)) {
-        searchFilters.push(filter);
-      } else {
-        normalFilters.push(filter);
-      }
-    });
+    const { normalFilters, searchFilters } = this.separateFilters(filters);
 
     const eventsCollection = await Promise.all([
       this.eventRepository.find(normalFilters),
@@ -44,8 +35,23 @@ export class EventService {
     return await this.eventRepository.count(filters);
   }
 
-  async findTopIds(search: string, filter: Filter) {
-    return await this.eventSearchRepository.findTopIds({ ...filter, search });
+  async findTopIds(filters: Filter[]) {
+    const { normalFilters, searchFilters } = this.separateFilters(filters);
+
+    const collection = await Promise.all([
+      this.eventRepository.findTopIdsWithScore(normalFilters),
+      ...searchFilters.map((searchFilter) =>
+        this.eventSearchRepository.findTopIdsWithScore(searchFilter),
+      ),
+    ]);
+
+    return chain(collection)
+      .flatten()
+      .uniqBy('id')
+      .sortBy('score')
+      .map('id')
+      .take(1000)
+      .value();
   }
 
   async handleEvent(event: Event): Promise<void | CommandResultResponse> {
@@ -222,5 +228,20 @@ export class EventService {
 
   private broadcastEvent(event: Event) {
     return this.eventEmitter.emit(E_EVENT_BROADCAST, event);
+  }
+
+  private separateFilters(filters: Filter[]) {
+    const searchFilters: SearchFilter[] = [],
+      normalFilters: Filter[] = [];
+
+    filters.forEach((filter) => {
+      if (Filter.isSearchFilter(filter)) {
+        searchFilters.push(filter);
+      } else {
+        normalFilters.push(filter);
+      }
+    });
+
+    return { searchFilters, normalFilters };
   }
 }

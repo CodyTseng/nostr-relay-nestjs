@@ -293,16 +293,26 @@ describe('EventService', () => {
       });
     });
 
-    describe('findTopIds', () => {
+    describe('findTopIdsWithScore', () => {
       it('should return top ids', async () => {
         const eventSearchRepository = createMock<EventSearchRepository>({
-          findTopIds: async () => [REGULAR_EVENT.id],
+          findTopIdsWithScore: async () => [
+            { id: REGULAR_EVENT.id, score: REGULAR_EVENT.createdAt },
+          ],
+        });
+        const eventRepository = createMock<EventRepository>({
+          findTopIdsWithScore: async () => [
+            { id: REPLACEABLE_EVENT.id, score: REPLACEABLE_EVENT.createdAt },
+          ],
         });
         (eventService as any).eventSearchRepository = eventSearchRepository;
+        (eventService as any).eventRepository = eventRepository;
 
         expect(
-          await eventService.findTopIds('test', Filter.fromFilterDto({})),
-        ).toEqual([REGULAR_EVENT.id]);
+          await eventService.findTopIds(
+            [{}, { search: 'test' }].map(Filter.fromFilterDto),
+          ),
+        ).toEqual([REPLACEABLE_EVENT.id, REGULAR_EVENT.id]);
       });
     });
   });
