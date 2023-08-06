@@ -312,7 +312,7 @@ describe('EventService', () => {
           await eventService.findTopIds(
             [{}, { search: 'test' }].map(Filter.fromFilterDto),
           ),
-        ).toEqual([REPLACEABLE_EVENT.id, REGULAR_EVENT.id]);
+        ).toEqual([REGULAR_EVENT.id, REPLACEABLE_EVENT.id]);
       });
     });
   });

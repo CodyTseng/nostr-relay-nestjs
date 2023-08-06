@@ -48,7 +48,7 @@ export class EventService {
     return chain(collection)
       .flatten()
       .uniqBy('id')
-      .sortBy('score')
+      .sortBy((item) => -item.score)
       .map('id')
       .take(1000)
       .value();
