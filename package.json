@@ -62,7 +62,7 @@
     "@types/node": "18.15.3",
     "@types/pg": "^8.10.2",
     "@types/supertest": "^2.0.12",
-    "@typescript-eslint/eslint-plugin": "^6.2.1",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.2.1",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
