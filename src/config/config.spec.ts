@@ -17,6 +17,8 @@ describe('config', () => {
         LOG_LEVEL: 'info',
         EVENT_CREATED_AT_UPPER_LIMIT: '60',
         EVENT_ID_MIN_LEADING_ZERO_BITS: '16',
+        THROTTLER_LIMIT: '100',
+        THROTTLER_TTL: '1',
       }),
     ).toEqual({
       DOMAIN: 'localhost',
@@ -26,6 +28,8 @@ describe('config', () => {
       LOG_LEVEL: 'info',
       EVENT_CREATED_AT_UPPER_LIMIT: 60,
       EVENT_ID_MIN_LEADING_ZERO_BITS: 16,
+      THROTTLER_LIMIT: 100,
+      THROTTLER_TTL: 1,
     });
   });
 });
