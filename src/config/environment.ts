@@ -35,6 +35,15 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((minLeadingZeroBits) => parseInt(minLeadingZeroBits))
     .optional(),
+
+  THROTTLER_LIMIT: z
+    .string()
+    .transform((limit) => parseInt(limit))
+    .optional(),
+  THROTTLER_TTL: z
+    .string()
+    .transform((ttl) => parseInt(ttl))
+    .optional(),
 });
 export type Environment = z.infer<typeof EnvironmentSchema>;
 

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule, PinoLogger } from 'nestjs-pino';
 import { loggerModuleFactory } from './common/utils/logger-module-factory';
@@ -37,6 +38,11 @@ import { NostrModule } from './nostr/nostr.module';
         };
       },
       inject: [ConfigService, PinoLogger],
+    }),
+    ThrottlerModule.forRootAsync({
+      useFactory: (configService: ConfigService<Config, true>) =>
+        configService.get('throttler', { infer: true }),
+      inject: [ConfigService],
     }),
     NostrModule,
   ],

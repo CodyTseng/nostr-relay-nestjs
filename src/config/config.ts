@@ -4,6 +4,7 @@ import { limitConfig } from './limit.config';
 import { loggerConfig } from './logger.config';
 import { meiliSearchConfig } from './meili-search';
 import { relayInfoDocConfig } from './relay-info-doc.config';
+import { throttlerConfig } from './throttler.config';
 
 export function config() {
   const env = validateEnvironment(process.env);
@@ -15,6 +16,7 @@ export function config() {
     limit: limitConfig(env),
     relayInfoDoc: relayInfoDocConfig(env),
     logger: loggerConfig(env),
+    throttler: throttlerConfig(env),
   };
 }
 export type Config = ReturnType<typeof config>;
