@@ -22,7 +22,7 @@ describe('LockService', () => {
   it('should lock and unlock', async () => {
     const lock = await lockService.acquireLock('test');
     expect(lock).toBeTruthy();
-    await lockService.releaseLock('test');
+    expect(await lockService.releaseLock('test')).toBeTruthy();
   });
 
   it('should not lock if locked', async () => {
@@ -30,7 +30,7 @@ describe('LockService', () => {
     expect(lock).toBeTruthy();
     const lock2 = await lockService.acquireLock('test');
     expect(lock2).toBeFalsy();
-    await lockService.releaseLock('test');
+    expect(await lockService.releaseLock('test')).toBeTruthy();
     const lock3 = await lockService.acquireLock('test');
     expect(lock3).toBeTruthy();
   });
@@ -46,6 +46,18 @@ describe('LockService', () => {
     ).toBe(
       `${PARAMETERIZED_REPLACEABLE_EVENT.pubkey}:${PARAMETERIZED_REPLACEABLE_EVENT.kind}:${PARAMETERIZED_REPLACEABLE_EVENT.dTagValue}`,
     );
+  });
+
+  it('should expire', async () => {
+    const lock = await lockService.acquireLock('test', 1);
+    expect(lock).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    const lock2 = await lockService.acquireLock('test');
+    expect(lock2).toBeTruthy();
+  });
+
+  it('should return false if key does not exist', async () => {
+    expect(await lockService.releaseLock('test')).toBeFalsy();
   });
 
   it('should clear all locks', async () => {

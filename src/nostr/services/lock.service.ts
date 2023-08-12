@@ -18,13 +18,13 @@ export class LockService implements OnApplicationShutdown {
     return true;
   }
 
-  async releaseLock(key: string): Promise<void> {
+  async releaseLock(key: string): Promise<boolean> {
     const timeoutId = this.locks.get(key);
-    if (!timeoutId) return;
+    if (!timeoutId) return false;
 
     this.locks.delete(key);
     clearTimeout(timeoutId);
-    return;
+    return true;
   }
 
   getHandleReplaceableEventKey(event: Event) {
