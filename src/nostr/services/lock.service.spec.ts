@@ -11,6 +11,10 @@ describe('LockService', () => {
     lockService = new LockService();
   });
 
+  afterEach(() => {
+    lockService.onApplicationShutdown();
+  });
+
   it('should be defined', () => {
     expect(lockService).toBeDefined();
   });
@@ -42,5 +46,14 @@ describe('LockService', () => {
     ).toBe(
       `${PARAMETERIZED_REPLACEABLE_EVENT.pubkey}:${PARAMETERIZED_REPLACEABLE_EVENT.kind}:${PARAMETERIZED_REPLACEABLE_EVENT.dTagValue}`,
     );
+  });
+
+  it('should clear all locks', async () => {
+    const lock = await lockService.acquireLock('test');
+    expect(lock).toBeTruthy();
+    lockService.onApplicationShutdown();
+
+    const lock2 = await lockService.acquireLock('test');
+    expect(lock2).toBeTruthy();
   });
 });

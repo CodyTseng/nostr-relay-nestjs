@@ -1,27 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { Event } from '../entities';
 
 @Injectable()
-export class LockService {
-  private readonly locks: Map<string, number> = new Map();
+export class LockService implements OnApplicationShutdown {
+  private readonly locks: Map<string, NodeJS.Timeout> = new Map();
 
-  async acquireLock(key: string, ttl = 500): Promise<boolean> {
-    return new Promise((resolve) => {
-      const expirationTime = this.locks.get(key);
-      if (expirationTime && expirationTime > Date.now()) {
-        resolve(false);
-      }
+  async acquireLock(key: string, ttl = 1000): Promise<boolean> {
+    const exists = this.locks.has(key);
+    if (exists) {
+      return false;
+    }
 
-      this.locks.set(key, Date.now() + ttl);
-      resolve(true);
-    });
+    const timeoutId = setTimeout(async () => {
+      await this.releaseLock(key);
+    }, ttl);
+    this.locks.set(key, timeoutId);
+    return true;
   }
 
   async releaseLock(key: string): Promise<void> {
-    return new Promise((resolve) => {
-      this.locks.delete(key);
-      resolve();
-    });
+    const timeoutId = this.locks.get(key);
+    if (!timeoutId) return;
+
+    this.locks.delete(key);
+    clearTimeout(timeoutId);
+    return;
   }
 
   getHandleReplaceableEventKey(event: Event) {
@@ -30,5 +33,12 @@ export class LockService {
 
   getHandleParameterizedReplaceableEventKey(event: Event) {
     return `${event.pubkey}:${event.kind}:${event.dTagValue}`;
+  }
+
+  onApplicationShutdown() {
+    this.locks.forEach((timeoutId, key) => {
+      clearTimeout(timeoutId);
+      this.locks.delete(key);
+    });
   }
 }
