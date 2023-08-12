@@ -1,4 +1,4 @@
-import { intersection } from 'lodash';
+import { intersection, uniq } from 'lodash';
 import { EventKind } from '../constants';
 import { FilterDto } from '../schemas';
 import { toGenericTag } from '../utils';
@@ -28,7 +28,7 @@ export class Filter {
     filter.limit = filterDto.limit;
     filter.genericTagsCollection = filterDto.tags
       ? Object.entries(filterDto.tags).map(([key, values]) =>
-          values.map((value) => toGenericTag(key, value)),
+          uniq(values.map((value) => toGenericTag(key, value))),
         )
       : undefined;
 
