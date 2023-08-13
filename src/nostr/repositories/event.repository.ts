@@ -50,12 +50,7 @@ export class EventRepository {
     const qb = this.createQueryBuilder(filters);
 
     // HACK: deceive the query planner to use the index
-    if (
-      filters.some(
-        (filter) =>
-          filter.genericTagsCollection?.some((item) => item.length > 15),
-      )
-    ) {
+    if (filters.some((filter) => filter.genericTagsCollection?.length)) {
       const count = await qb.getCount();
       if (count < 1000) {
         const events = await qb.getMany();
