@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { sumBy } from 'lodash';
+import { chain, sumBy } from 'lodash';
 import { Brackets, In, QueryFailedError, Repository } from 'typeorm';
 import { Event, Filter } from '../entities';
 import { TEventIdWithScore } from '../types';
@@ -43,9 +43,25 @@ export class EventRepository {
   }
 
   async find(filters: EventRepositoryFilter[] | EventRepositoryFilter) {
-    if (Array.isArray(filters) && filters.length === 0) return [];
+    filters = Array.isArray(filters) ? filters : [filters];
 
-    return await this.createQueryBuilder(filters)
+    if (filters.length === 0) return [];
+
+    const qb = this.createQueryBuilder(filters);
+
+    // HACK: deceive the query planner to use the index
+    if (filters.some((filter) => filter.genericTagsCollection?.length)) {
+      const count = await qb.getCount();
+      if (count < 1000) {
+        const events = await qb.getMany();
+        return chain(events)
+          .sortBy((event) => -event.createdAt)
+          .take(this.getLimitFrom(filters))
+          .value();
+      }
+    }
+
+    return await qb
       .take(this.getLimitFrom(filters))
       .orderBy('event.createdAtStr', 'DESC')
       .getMany();
