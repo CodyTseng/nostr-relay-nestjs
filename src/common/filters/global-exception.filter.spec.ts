@@ -3,16 +3,16 @@ import { ArgumentsHost } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { createNoticeResponse } from '../../nostr/utils';
 import { ClientException } from '../exceptions';
-import { WsExceptionFilter } from './ws-exception.filter';
+import { GlobalExceptionFilter } from './global-exception.filter';
 
-describe('WsExceptionFilter', () => {
-  let wsExceptionFilter: WsExceptionFilter;
+describe('GlobalExceptionFilter', () => {
+  let globalExceptionFilter: GlobalExceptionFilter;
 
   const loggerErrorMock = jest.fn();
 
   beforeEach(() => {
     loggerErrorMock.mockReset();
-    wsExceptionFilter = new WsExceptionFilter(
+    globalExceptionFilter = new GlobalExceptionFilter(
       createMock<PinoLogger>({
         error: loggerErrorMock,
       }),
@@ -31,7 +31,7 @@ describe('WsExceptionFilter', () => {
       }),
     });
 
-    wsExceptionFilter.catch(error, host);
+    globalExceptionFilter.catch(error, host);
 
     expect(mockClientSend).toBeCalledWith(
       JSON.stringify(createNoticeResponse(errMsg)),
@@ -47,8 +47,29 @@ describe('WsExceptionFilter', () => {
     });
     const error = new ClientException('test');
 
-    wsExceptionFilter.catch(error, host);
+    globalExceptionFilter.catch(error, host);
 
     expect(loggerErrorMock).not.toBeCalled();
+  });
+
+  it('should return error msg when catch error in http', () => {
+    const errMsg = 'test';
+    const error = new Error(errMsg);
+
+    const mockClientSend = jest.fn();
+    const host = createMock<ArgumentsHost>({
+      getType: () => 'http',
+      switchToHttp: () => ({
+        getResponse: () => ({
+          status: () => ({
+            send: mockClientSend,
+          }),
+        }),
+      }),
+    });
+
+    globalExceptionFilter.catch(error, host);
+
+    expect(mockClientSend).toBeCalledWith(`Internal Server Error: ${errMsg}`);
   });
 });

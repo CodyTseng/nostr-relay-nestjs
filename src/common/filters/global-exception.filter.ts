@@ -3,24 +3,28 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
 import { createNoticeResponse } from '../../nostr/utils';
 import { ClientException } from '../exceptions';
+import { Response } from 'express';
 
 @Catch(Error)
-export class WsExceptionFilter implements ExceptionFilter {
+export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(
-    @InjectPinoLogger(WsExceptionFilter.name)
+    @InjectPinoLogger(GlobalExceptionFilter.name)
     private readonly logger: PinoLogger,
   ) {}
 
   catch(error: Error, host: ArgumentsHost) {
+    // skip logging ClientException
+    if (!(error instanceof ClientException)) {
+      this.logger.error(error);
+    }
+
     if (host.getType() === 'ws') {
       const wsHost = host.switchToWs();
       const client = wsHost.getClient<WebSocket>();
       client.send(JSON.stringify(createNoticeResponse(error.message)));
-
-      // skip logging ClientException
-      if (error instanceof ClientException) return;
-
-      this.logger.error(error);
+    } else if (host.getType() === 'http') {
+      const response = host.switchToHttp().getResponse<Response>();
+      response.status(500).send(`Internal Server Error: ${error.message}`);
     }
   }
 }
