@@ -14,7 +14,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { concatWith, filter, from, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RestrictedException } from '../common/exceptions';
-import { WsExceptionFilter } from '../common/filters';
+import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
 import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
@@ -40,7 +40,7 @@ import {
 } from './utils';
 
 @WebSocketGateway()
-@UseFilters(WsExceptionFilter)
+@UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
 export class NostrGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect

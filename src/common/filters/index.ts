@@ -1,1 +1,1 @@
-export * from './ws-exception.filter';
+export * from './global-exception.filter';

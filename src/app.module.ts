@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule, PinoLogger } from 'nestjs-pino';
+import { GlobalExceptionFilter } from './common/filters';
 import { loggerModuleFactory } from './common/utils/logger-module-factory';
 import { TypeOrmLogger } from './common/utils/type-orm-logger';
 import { Config, config } from './config';
@@ -46,5 +48,6 @@ import { NostrModule } from './nostr/nostr.module';
     }),
     NostrModule,
   ],
+  providers: [{ provide: APP_FILTER, useClass: GlobalExceptionFilter }],
 })
 export class AppModule {}
