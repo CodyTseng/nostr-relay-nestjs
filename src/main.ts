@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import 'dotenv/config';
-import { Express } from 'express';
+import { Express, static as ExpressStatic } from 'express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
@@ -13,6 +13,8 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   app.use(helmet());
   app.useWebSocketAdapter(new NostrWsAdapter(app));
+
+  app.use('/favicon.ico', ExpressStatic('./resources/favicon.ico'));
 
   const express: Express = app.getHttpAdapter().getInstance();
   express.disable('x-powered-by');
