@@ -7,4 +7,5 @@ updates:
     ignore:
       - dependency-name: '@types/node'
       - dependency-name: '@typescript-eslint/*'
+      - dependency-name: 'eslint'
     open-pull-requests-limit: 10
