@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
 import { createNoticeResponse } from '../../nostr/utils';
@@ -13,8 +18,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   ) {}
 
   catch(error: Error, host: ArgumentsHost) {
-    // skip logging ClientException
-    if (!(error instanceof ClientException)) {
+    // skip logging ClientException & NotFoundException
+    if (
+      !(error instanceof ClientException || error instanceof NotFoundException)
+    ) {
       this.logger.error(error);
     }
 
