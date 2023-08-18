@@ -82,7 +82,7 @@ describe('CacheEventHandlingResult', () => {
       const context = {
         getType: () => 'ws',
         switchToWs: () => ({
-          getData: () => [null, null],
+          getData: () => [null, { id: 'test-event-id' }],
         }),
       } as ExecutionContext;
       const next = {
@@ -95,6 +95,28 @@ describe('CacheEventHandlingResult', () => {
       );
 
       expect(result).toBe('test-response');
+    });
+
+    it('should return the response from the next handler if the response is null', async () => {
+      const eventId = 'test-event-id';
+      const context = {
+        getType: () => 'ws',
+        switchToWs: () => ({
+          getData: () => [null, { id: eventId }],
+        }),
+      } as ExecutionContext;
+      const next = {
+        handle: () => of(null),
+      };
+
+      const result = await lastValueFrom(
+        await interceptor.intercept(context, next as any),
+      );
+
+      expect(result).toBeNull();
+      expect(await storageService.get(`EventHandlingResult:${eventId}`)).toBe(
+        null,
+      );
     });
   });
 
