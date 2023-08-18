@@ -1,7 +1,9 @@
-import { CacheEventHandlingResultInterceptor } from './cache-event-handling-result.interceptor';
+import { createMock } from '@golevelup/ts-jest';
 import { ExecutionContext } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { lastValueFrom, of } from 'rxjs';
 import { StorageService } from '../services/storage.service';
+import { CacheEventHandlingResultInterceptor } from './cache-event-handling-result.interceptor';
 
 describe('CacheEventHandlingResult', () => {
   let interceptor: CacheEventHandlingResultInterceptor;
@@ -9,7 +11,10 @@ describe('CacheEventHandlingResult', () => {
 
   beforeEach(() => {
     storageService = new StorageService();
-    interceptor = new CacheEventHandlingResultInterceptor(storageService);
+    interceptor = new CacheEventHandlingResultInterceptor(
+      storageService,
+      createMock<ConfigService>(),
+    );
   });
 
   afterEach(async () => {
@@ -17,6 +22,24 @@ describe('CacheEventHandlingResult', () => {
   });
 
   describe('intercept', () => {
+    it('should return the response from the next handler if cache is disabled', async () => {
+      const context = {
+        getType: () => 'ws',
+      } as ExecutionContext;
+      const next = {
+        handle: () => of('test-response'),
+      };
+      (interceptor as any).cacheEnabled = false;
+      const spy = jest.spyOn(interceptor, 'getEventHandlingResultCacheKey');
+
+      const result = await lastValueFrom(
+        await interceptor.intercept(context, next as any),
+      );
+
+      expect(result).toBe('test-response');
+      expect(spy).not.toHaveBeenCalled();
+    });
+
     it('should return the response from the next handler if eventId is null', async () => {
       const context = {
         getType: () => 'http',
@@ -121,19 +144,17 @@ describe('CacheEventHandlingResult', () => {
   });
 
   describe('getEventHandlingResultCacheKey', () => {
-    it('should return null if context type is not ws', async () => {
+    it('should return null if context type is not ws', () => {
       const context = {
         getType: () => 'http',
       } as ExecutionContext;
 
-      const result = await interceptor['getEventHandlingResultCacheKey'](
-        context,
-      );
+      const result = interceptor.getEventHandlingResultCacheKey(context);
 
       expect(result).toBeNull();
     });
 
-    it('should return null if data is not an array', async () => {
+    it('should return null if data is not an array', () => {
       const context = {
         getType: () => 'ws',
         switchToWs: () => ({
@@ -141,14 +162,12 @@ describe('CacheEventHandlingResult', () => {
         }),
       } as ExecutionContext;
 
-      const result = await interceptor['getEventHandlingResultCacheKey'](
-        context,
-      );
+      const result = interceptor.getEventHandlingResultCacheKey(context);
 
       expect(result).toBeNull();
     });
 
-    it('should return null if event is null', async () => {
+    it('should return null if event is null', () => {
       const context = {
         getType: () => 'ws',
         switchToWs: () => ({
@@ -156,14 +175,12 @@ describe('CacheEventHandlingResult', () => {
         }),
       } as ExecutionContext;
 
-      const result = await interceptor['getEventHandlingResultCacheKey'](
-        context,
-      );
+      const result = interceptor.getEventHandlingResultCacheKey(context);
 
       expect(result).toBeNull();
     });
 
-    it('should return the event ID as a string', async () => {
+    it('should return the event ID as a string', () => {
       const eventId = 'test-event-id';
       const context = {
         getType: () => 'ws',
@@ -172,9 +189,7 @@ describe('CacheEventHandlingResult', () => {
         }),
       } as ExecutionContext;
 
-      const result = await interceptor['getEventHandlingResultCacheKey'](
-        context,
-      );
+      const result = interceptor.getEventHandlingResultCacheKey(context);
 
       expect(result).toBe(`EventHandlingResult:${eventId}`);
     });

@@ -7,23 +7,37 @@ import {
 import { isArray } from 'lodash';
 import { Observable, of, tap } from 'rxjs';
 import { StorageService } from '../services/storage.service';
+import { ConfigService } from '@nestjs/config';
+import { Config } from 'src/config';
 
 @Injectable()
 export class CacheEventHandlingResultInterceptor implements NestInterceptor {
-  constructor(private readonly storageService: StorageService) {}
+  private readonly cacheEnabled: boolean;
+  private readonly cacheTtl: number;
+
+  constructor(
+    private readonly storageService: StorageService,
+    configService: ConfigService<Config, true>,
+  ) {
+    const cacheConfig = configService.get('cache', { infer: true });
+    this.cacheEnabled = cacheConfig.eventHandlingResultCacheEnabled;
+    this.cacheTtl = cacheConfig.eventHandlingResultCacheTtl;
+  }
 
   async intercept(
     context: ExecutionContext,
     next: CallHandler<any>,
   ): Promise<Observable<any>> {
+    if (!this.cacheEnabled) return next.handle();
+
     try {
-      const cacheKey = await this.getEventHandlingResultCacheKey(context);
+      const cacheKey = this.getEventHandlingResultCacheKey(context);
       if (!cacheKey) return next.handle();
 
       const lock = await this.storageService.setNx(
         cacheKey,
         undefined,
-        5 * 60 * 1000, // 5 minutes
+        this.cacheTtl,
       );
       if (!lock) {
         const value = await this.storageService.get(cacheKey);
@@ -32,8 +46,7 @@ export class CacheEventHandlingResultInterceptor implements NestInterceptor {
 
       return next.handle().pipe(
         tap(async (response) => {
-          // cache the response for 5 minutes
-          await this.storageService.set(cacheKey, response, 5 * 60 * 1000);
+          await this.storageService.set(cacheKey, response, this.cacheTtl);
         }),
       );
     } catch {
@@ -41,9 +54,7 @@ export class CacheEventHandlingResultInterceptor implements NestInterceptor {
     }
   }
 
-  private async getEventHandlingResultCacheKey(
-    context: ExecutionContext,
-  ): Promise<string | null> {
+  getEventHandlingResultCacheKey(context: ExecutionContext): string | null {
     if (context.getType() !== 'ws') return null;
 
     const data = context.switchToWs().getData<unknown>();
