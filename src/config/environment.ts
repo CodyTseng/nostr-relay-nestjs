@@ -44,6 +44,15 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((ttl) => parseInt(ttl))
     .optional(),
+
+  EVENT_HANDLING_RESULT_CACHE_ENABLED: z
+    .string()
+    .transform((enabled) => enabled === 'true')
+    .optional(),
+  EVENT_HANDLING_RESULT_CACHE_TTL: z
+    .string()
+    .transform((ttl) => parseInt(ttl))
+    .optional(),
 });
 export type Environment = z.infer<typeof EnvironmentSchema>;
 

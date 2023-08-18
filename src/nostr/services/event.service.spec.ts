@@ -17,12 +17,12 @@ import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
 import { createCommandResultResponse } from '../utils';
 import { EventService } from './event.service';
-import { LockService } from './lock.service';
+import { StorageService } from './storage.service';
 
 describe('EventService', () => {
   describe('handleEvent', () => {
     let eventEmitter: EventEmitter2, mockEmit: jest.Mock;
-    let lockService: LockService;
+    let storageService: StorageService;
     let eventService: EventService;
 
     beforeEach(() => {
@@ -30,14 +30,14 @@ describe('EventService', () => {
       eventEmitter = createMock<EventEmitter2>({
         emit: mockEmit,
       });
-      lockService = new LockService();
+      storageService = new StorageService();
       const eventRepository = createMock<EventRepository>();
       const eventSearchRepository = createMock<EventSearchRepository>();
       eventService = new EventService(
         eventRepository,
         eventSearchRepository,
         eventEmitter,
-        lockService,
+        storageService,
       );
     });
 
@@ -130,8 +130,8 @@ describe('EventService', () => {
       });
 
       it('should return rate-limited when acquiring the lock fails', async () => {
-        (eventService as any).lockService = createMock<LockService>({
-          acquireLock: async () => false,
+        (eventService as any).storageService = createMock<StorageService>({
+          setNx: async () => false,
         });
 
         await expect(
@@ -163,8 +163,8 @@ describe('EventService', () => {
       });
 
       it('should return rate-limited when acquiring the lock fails', async () => {
-        (eventService as any).lockService = createMock<LockService>({
-          acquireLock: async () => false,
+        (eventService as any).storageService = createMock<StorageService>({
+          setNx: async () => false,
         });
 
         await expect(

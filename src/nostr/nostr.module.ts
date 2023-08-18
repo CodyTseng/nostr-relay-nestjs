@@ -6,7 +6,7 @@ import { NostrGateway } from './nostr.gateway';
 import { EventRepository } from './repositories';
 import { EventSearchRepository } from './repositories/event-search.repository';
 import { EventService } from './services/event.service';
-import { LockService } from './services/lock.service';
+import { StorageService } from './services/storage.service';
 import { SubscriptionService } from './services/subscription.service';
 
 @Module({
@@ -18,7 +18,7 @@ import { SubscriptionService } from './services/subscription.service';
     NostrGateway,
     SubscriptionService,
     EventService,
-    LockService,
+    StorageService,
   ],
 })
 export class NostrModule {}

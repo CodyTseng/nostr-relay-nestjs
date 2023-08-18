@@ -1,4 +1,4 @@
-import { UseFilters, UseGuards } from '@nestjs/common';
+import { UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ConnectedSocket,
@@ -20,6 +20,7 @@ import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
 import { Event, Filter } from './entities';
+import { CacheEventHandlingResultInterceptor } from './interceptors';
 import {
   AuthMessageDto,
   CloseMessageDto,
@@ -72,6 +73,7 @@ export class NostrGateway
     this.subscriptionService.clear(client);
   }
 
+  @UseInterceptors(CacheEventHandlingResultInterceptor)
   @SubscribeMessage(MessageType.EVENT)
   async event(
     @MessageBody(new ZodValidationPipe(EventMessageDto))

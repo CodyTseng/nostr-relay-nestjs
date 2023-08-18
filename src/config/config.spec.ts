@@ -19,6 +19,8 @@ describe('config', () => {
         EVENT_ID_MIN_LEADING_ZERO_BITS: '16',
         THROTTLER_LIMIT: '100',
         THROTTLER_TTL: '1',
+        EVENT_HANDLING_RESULT_CACHE_ENABLED: 'false',
+        EVENT_HANDLING_RESULT_CACHE_TTL: '300000',
       }),
     ).toEqual({
       DOMAIN: 'localhost',
@@ -30,6 +32,8 @@ describe('config', () => {
       EVENT_ID_MIN_LEADING_ZERO_BITS: 16,
       THROTTLER_LIMIT: 100,
       THROTTLER_TTL: 1,
+      EVENT_HANDLING_RESULT_CACHE_ENABLED: false,
+      EVENT_HANDLING_RESULT_CACHE_TTL: 300000,
     });
   });
 });

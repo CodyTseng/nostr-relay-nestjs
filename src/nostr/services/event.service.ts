@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { chain, union, uniqBy } from 'lodash';
-import { EventKind, EventType, E_EVENT_BROADCAST, TagName } from '../constants';
+import { E_EVENT_BROADCAST, EventKind, EventType, TagName } from '../constants';
 import { Event, Filter, SearchFilter } from '../entities';
 import { EventRepository, EventRepositoryFilter } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
 import { EventIdSchema } from '../schemas';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
-import { LockService } from './lock.service';
+import { StorageService } from './storage.service';
 
 @Injectable()
 export class EventService {
@@ -15,7 +15,7 @@ export class EventService {
     private readonly eventRepository: EventRepository,
     private readonly eventSearchRepository: EventSearchRepository,
     private readonly eventEmitter: EventEmitter2,
-    private readonly lockService: LockService,
+    private readonly storageService: StorageService,
   ) {}
 
   async findByFilters(filters: Filter[]): Promise<Event[]> {
@@ -129,8 +129,8 @@ export class EventService {
   private async handleReplaceableEvent(
     event: Event,
   ): Promise<CommandResultResponse> {
-    const key = this.lockService.getHandleReplaceableEventKey(event);
-    const lock = await this.lockService.acquireLock(key);
+    const key = this.getHandleReplaceableEventKey(event);
+    const lock = await this.storageService.setNx(key, true);
     if (!lock) {
       return createCommandResultResponse(
         event.id,
@@ -146,14 +146,13 @@ export class EventService {
       });
       return await this.replaceEvent(event, oldEvent);
     } finally {
-      await this.lockService.releaseLock(key);
+      await this.storageService.del(key);
     }
   }
 
   private async handleParameterizedReplaceableEvent(event: Event) {
-    const key =
-      this.lockService.getHandleParameterizedReplaceableEventKey(event);
-    const lock = await this.lockService.acquireLock(key);
+    const key = this.getHandleParameterizedReplaceableEventKey(event);
+    const lock = await this.storageService.setNx(key, true);
     if (!lock) {
       return createCommandResultResponse(
         event.id,
@@ -171,7 +170,7 @@ export class EventService {
       });
       return await this.replaceEvent(event, oldEvent);
     } finally {
-      await this.lockService.releaseLock(key);
+      await this.storageService.del(key);
     }
   }
 
@@ -243,5 +242,13 @@ export class EventService {
     });
 
     return { searchFilters, normalFilters };
+  }
+
+  private getHandleReplaceableEventKey(event: Event) {
+    return `Lock:${event.pubkey}:${event.kind}`;
+  }
+
+  private getHandleParameterizedReplaceableEventKey(event: Event) {
+    return `Lock:${event.pubkey}:${event.kind}:${event.dTagValue}`;
   }
 }

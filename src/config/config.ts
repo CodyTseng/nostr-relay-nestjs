@@ -1,3 +1,4 @@
+import { cacheConfig } from './cache.config';
 import { databaseConfig } from './database.config';
 import { validateEnvironment } from './environment';
 import { limitConfig } from './limit.config';
@@ -17,6 +18,7 @@ export function config() {
     relayInfoDoc: relayInfoDocConfig(env),
     logger: loggerConfig(env),
     throttler: throttlerConfig(env),
+    cache: cacheConfig(env),
   };
 }
 export type Config = ReturnType<typeof config>;
