@@ -32,7 +32,6 @@ export class CacheEventHandlingResultInterceptor implements NestInterceptor {
 
       return next.handle().pipe(
         tap(async (response) => {
-          if (!response) return;
           // cache the response for 5 minutes
           await this.storageService.set(cacheKey, response, 5 * 60 * 1000);
         }),
