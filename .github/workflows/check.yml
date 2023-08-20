@@ -43,7 +43,7 @@ jobs:
           parallel: true
 
   finish:
-    needs: test
+    needs: check
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
