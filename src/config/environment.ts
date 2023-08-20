@@ -16,6 +16,10 @@ export const EnvironmentSchema = z.object({
 
   MEILI_SEARCH_HOST: z.string().optional(),
   MEILI_SEARCH_API_KEY: z.string().optional(),
+  MEILI_SEARCH_SYNC_EVENT_KINDS: z
+    .string()
+    .transform((str) => str.split(',').map((item) => parseInt(item)))
+    .optional(),
 
   RELAY_NAME: z.string().optional(),
   RELAY_DESCRIPTION: z.string().optional(),

@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
-import { SEARCHABLE_EVENT_KINDS } from '../constants';
 import { Event, SearchFilter } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
@@ -39,13 +38,18 @@ type EventSearchRepositoryFilter = Pick<
 @Injectable()
 export class EventSearchRepository implements OnApplicationBootstrap {
   private readonly index?: Index<EventDocument>;
+  private readonly syncEventKinds: number[];
 
   constructor(
     @InjectPinoLogger(EventSearchRepository.name)
     private readonly logger: PinoLogger,
     configService: ConfigService<Config, true>,
   ) {
-    const { host, apiKey } = configService.get('meiliSearch', { infer: true });
+    const { host, apiKey, syncEventKinds } = configService.get('meiliSearch', {
+      infer: true,
+    });
+    this.syncEventKinds = syncEventKinds;
+
     if (!host || !apiKey) return;
 
     this.index = new MeiliSearch({ host, apiKey }).index('events');
@@ -114,7 +118,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async add(event: Event) {
-    if (!this.index || !SEARCHABLE_EVENT_KINDS.includes(event.kind)) return;
+    if (!this.index || !this.syncEventKinds.includes(event.kind)) return;
 
     try {
       await this.index.addDocuments([this.toEventDocument(event)]);

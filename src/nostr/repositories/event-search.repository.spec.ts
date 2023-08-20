@@ -78,7 +78,11 @@ describe('EventSearchRepository', () => {
     eventSearchRepositoryWithIndex = new EventSearchRepository(
       loggerMock,
       createMock<ConfigService>({
-        get: () => ({ apiKey: 'apiKey', host: 'host' }),
+        get: () => ({
+          apiKey: 'apiKey',
+          host: 'host',
+          syncEventKinds: [0, 1, 30023],
+        }),
       }),
     );
     (eventSearchRepositoryWithIndex as any).index = indexMock;
