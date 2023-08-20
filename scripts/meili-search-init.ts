@@ -4,6 +4,10 @@ import Pino from 'pino';
 
 async function run() {
   const logger = Pino();
+
+  const syncEventKinds =
+    process.env.MEILI_SEARCH_SYNC_EVENT_KINDS ?? '0,1,30023';
+
   const pg = await getPgClient();
   const meiliSearch = getMeiliSearchClient();
 
@@ -32,7 +36,8 @@ async function run() {
   logger.info('Updated settings');
 
   const limit = 1000;
-  let until = Math.floor(Date.now() / 1000),
+  const now = Math.floor(Date.now() / 1000);
+  let until = now,
     rowCount = 0,
     totalCount = 0,
     lastEventId: string | undefined;
@@ -50,7 +55,7 @@ async function run() {
       delegator: string | null;
       d_tag_value: string | null;
     }>(
-      `SELECT * FROM events WHERE kind IN (0, 1, 30023) AND created_at <= ${until} ORDER BY created_at DESC LIMIT ${limit}`,
+      `SELECT * FROM events WHERE kind IN (${syncEventKinds}) AND created_at <= ${until} AND (expired_at IS NULL OR expired_at > ${now}) AND delete_date IS NULL ORDER BY created_at DESC LIMIT ${limit}`,
     );
     rowCount = result.rowCount;
     logger.info(`Fetched ${rowCount} events`);
