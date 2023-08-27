@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { chain, sumBy } from 'lodash';
-import { Brackets, In, QueryFailedError, Repository } from 'typeorm';
+import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { Event, Filter } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
@@ -105,14 +105,6 @@ export class EventRepository {
     }
 
     return this.create(event);
-  }
-
-  async delete(eventIds: string[]) {
-    const { affected } = await this.repository.softDelete({
-      id: In(eventIds),
-    });
-
-    return affected ?? 0;
   }
 
   private createQueryBuilder(
