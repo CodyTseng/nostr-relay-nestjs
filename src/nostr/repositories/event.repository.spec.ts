@@ -345,32 +345,6 @@ describe('EventRepository', () => {
     });
   });
 
-  describe('delete', () => {
-    it('should delete successfully', async () => {
-      await eventRepository.create(REGULAR_EVENT);
-      await eventRepository.create(REPLACEABLE_EVENT);
-
-      expect(
-        (
-          await eventRepository.find({
-            ids: [REGULAR_EVENT.id, REPLACEABLE_EVENT.id],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
-      );
-
-      expect(
-        await eventRepository.delete([REGULAR_EVENT.id, REPLACEABLE_EVENT.id]),
-      ).toBe(2);
-      expect(
-        await eventRepository.find({
-          ids: [REGULAR_EVENT.id, REPLACEABLE_EVENT.id],
-        }),
-      ).toEqual([]);
-    });
-  });
-
   describe('count', () => {
     it('should count successfully', async () => {
       const EVENTS = [

@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { chain, union, uniqBy } from 'lodash';
-import { E_EVENT_BROADCAST, EventKind, EventType, TagName } from '../constants';
+import { chain, uniqBy } from 'lodash';
+import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
 import { Event, Filter, SearchFilter } from '../entities';
-import { EventRepository, EventRepositoryFilter } from '../repositories';
+import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
-import { EventIdSchema } from '../schemas';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
 import { StorageService } from './storage.service';
 
@@ -60,70 +59,11 @@ export class EventService {
         return this.handleReplaceableEvent(event);
       case EventType.EPHEMERAL:
         return this.handleEphemeralEvent(event);
-      case EventType.DELETION:
-        return this.handleDeletionEvent(event);
       case EventType.PARAMETERIZED_REPLACEABLE:
         return this.handleParameterizedReplaceableEvent(event);
       default:
         return this.handleRegularEvent(event);
     }
-  }
-
-  private async handleDeletionEvent(event: Event) {
-    const eventIds = union(
-      event.tags
-        .filter(
-          ([tagName, tagValue]) =>
-            tagName === TagName.EVENT &&
-            EventIdSchema.safeParse(tagValue).success,
-        )
-        .map(([, tagValue]) => tagValue),
-    );
-    const eventCoordinates = event.tags
-      .map(([tagName, tagValue]) => {
-        if (tagName !== TagName.EVENT_COORDINATES) return null;
-
-        const [kindStr, pubkey, dTagValue] = tagValue.split(':');
-        if (pubkey !== event.pubkey) return null;
-
-        const kind = parseInt(kindStr);
-        if (
-          isNaN(kind) ||
-          kind < EventKind.PARAMETERIZED_REPLACEABLE_FIRST ||
-          kind > EventKind.PARAMETERIZED_REPLACEABLE_LAST
-        ) {
-          return null;
-        }
-
-        return { kind, dTagValue };
-      })
-      .filter(Boolean) as { kind: EventKind; dTagValue: string }[];
-
-    const filters: EventRepositoryFilter[] = [];
-    if (eventIds.length) {
-      filters.push({ ids: eventIds, authors: [event.pubkey] });
-    }
-    if (eventCoordinates.length) {
-      eventCoordinates.forEach((item) => {
-        filters.push({
-          authors: [event.pubkey],
-          kinds: [item.kind],
-          dTagValues: [item.dTagValue],
-        });
-      });
-    }
-    const eventsToBeDeleted = await this.eventRepository.find(filters);
-
-    const eventIdsToBeDeleted = eventsToBeDeleted.map((item) => item.id);
-
-    if (eventIdsToBeDeleted.length) {
-      await Promise.all([
-        this.eventRepository.delete(eventIdsToBeDeleted),
-        this.eventSearchRepository.deleteMany(eventIdsToBeDeleted),
-      ]);
-    }
-
-    return this.handleRegularEvent(event);
   }
 
   private async handleReplaceableEvent(

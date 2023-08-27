@@ -1,12 +1,5 @@
 import { isNil } from 'lodash';
-import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryColumn } from 'typeorm';
 import { EventKind, EventType, TagName } from '../constants';
 import { EventDto } from '../schemas';
 import {
@@ -57,12 +50,6 @@ export class Event {
 
   @CreateDateColumn({ name: 'create_date', select: false })
   createDate: Date;
-
-  @UpdateDateColumn({ name: 'update_date', select: false })
-  updateDate: Date;
-
-  @DeleteDateColumn({ name: 'delete_date', nullable: true, select: false })
-  deleteDate: Date | null;
 
   get type() {
     if (!this[EVENT_TYPE_SYMBOL]) {
@@ -128,10 +115,6 @@ export class Event {
 
     if (kind >= EventKind.EPHEMERAL_FIRST && kind <= EventKind.EPHEMERAL_LAST) {
       return EventType.EPHEMERAL;
-    }
-
-    if (kind === EventKind.DELETION) {
-      return EventType.DELETION;
     }
 
     if (

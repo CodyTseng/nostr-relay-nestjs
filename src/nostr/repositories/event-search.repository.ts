@@ -221,8 +221,6 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     event.delegator = eventDocument.delegator;
 
     event.createDate = new Date(eventDocument.createdAt);
-    event.updateDate = new Date(eventDocument.createdAt);
-    event.deleteDate = null;
 
     return event;
   }
