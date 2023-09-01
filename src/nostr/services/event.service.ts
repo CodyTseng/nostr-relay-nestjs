@@ -30,10 +30,6 @@ export class EventService {
     return uniqBy(eventsCollection.flat(), 'id');
   }
 
-  async countByFilters(filters: Filter[]): Promise<number> {
-    return await this.eventRepository.count(filters);
-  }
-
   async findTopIds(filters: Filter[]) {
     const { normalFilters, searchFilters } = this.separateFilters(filters);
 

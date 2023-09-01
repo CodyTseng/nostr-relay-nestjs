@@ -73,10 +73,6 @@ export class EventRepository {
       .getOne();
   }
 
-  async count(filters: EventRepositoryFilter | EventRepositoryFilter[]) {
-    return await this.createQueryBuilder(filters).getCount();
-  }
-
   async findTopIdsWithScore(
     filters: EventRepositoryFilter | EventRepositoryFilter[],
   ): Promise<TEventIdWithScore[]> {
