@@ -222,20 +222,6 @@ describe('EventService', () => {
       });
     });
 
-    describe('countByFilters', () => {
-      it('should return count', async () => {
-        const COUNT = 10;
-        const eventRepository = createMock<EventRepository>({
-          count: async () => COUNT,
-        });
-        (eventService as any).eventRepository = eventRepository;
-
-        expect(
-          await eventService.countByFilters([{}].map(Filter.fromFilterDto)),
-        ).toBe(COUNT);
-      });
-    });
-
     describe('findTopIdsWithScore', () => {
       it('should return top ids', async () => {
         const eventSearchRepository = createMock<EventSearchRepository>({

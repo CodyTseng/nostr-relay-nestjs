@@ -49,7 +49,6 @@ describe('NostrGateway', () => {
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
       findByFilters: async () => FIND_EVENTS.map(Event.fromEventDto),
-      countByFilters: async () => FIND_EVENTS.length,
       findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(
@@ -177,36 +176,6 @@ describe('NostrGateway', () => {
       expect(() =>
         nostrGateway.close({} as any, [MessageType.CLOSE, subscriptionId]),
       ).not.toThrowError();
-    });
-  });
-
-  describe('COUNT', () => {
-    it('should count successfully', async () => {
-      const subscriptionId = 'test:count';
-
-      expect(
-        await nostrGateway.count({} as any, [
-          MessageType.COUNT,
-          subscriptionId,
-          {},
-        ]),
-      ).toEqual([
-        MessageType.COUNT,
-        subscriptionId,
-        { count: FIND_EVENTS.length },
-      ]);
-    });
-
-    it('should reject when unauthenticated and count DM events', async () => {
-      await expect(
-        nostrGateway.count({} as any, [
-          MessageType.COUNT,
-          'test:req',
-          { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
-        ]),
-      ).rejects.toThrowError(
-        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-      );
     });
   });
 

@@ -24,7 +24,6 @@ import { CacheEventHandlingResultInterceptor } from './interceptors';
 import {
   AuthMessageDto,
   CloseMessageDto,
-  CountMessageDto,
   EventMessageDto,
   ReqMessageDto,
   TopMessageDto,
@@ -34,7 +33,6 @@ import { SubscriptionService } from './services/subscription.service';
 import {
   createAuthResponse,
   createCommandResultResponse,
-  createCountResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
   createTopResponse,
@@ -137,26 +135,6 @@ export class NostrGateway
     [, subscriptionId]: CloseMessageDto,
   ) {
     this.subscriptionService.unSubscribe(client, subscriptionId);
-  }
-
-  @SubscribeMessage(MessageType.COUNT)
-  async count(
-    @ConnectedSocket() client: WebSocket,
-    @MessageBody(new ZodValidationPipe(CountMessageDto))
-    [, subscriptionId, ...filtersDto]: CountMessageDto,
-  ) {
-    const filters = filtersDto.map(Filter.fromFilterDto);
-    if (
-      filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
-      !client.pubkey
-    ) {
-      throw new RestrictedException(
-        "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-      );
-    }
-
-    const count = await this.eventService.countByFilters(filters);
-    return createCountResponse(subscriptionId, count);
   }
 
   @SubscribeMessage(MessageType.AUTH)

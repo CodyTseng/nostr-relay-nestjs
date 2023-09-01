@@ -345,19 +345,6 @@ describe('EventRepository', () => {
     });
   });
 
-  describe('count', () => {
-    it('should count successfully', async () => {
-      const EVENTS = [
-        REGULAR_EVENT,
-        REPLACEABLE_EVENT,
-        PARAMETERIZED_REPLACEABLE_EVENT,
-      ];
-      await Promise.all(EVENTS.map((EVENT) => eventRepository.create(EVENT)));
-
-      expect(await eventRepository.count([{}])).toBe(EVENTS.length);
-    });
-  });
-
   describe('findTopIdsWithScore', () => {
     it('should find top ids with score successfully', async () => {
       const EVENTS = [

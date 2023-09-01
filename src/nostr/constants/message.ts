@@ -5,7 +5,6 @@ export enum MessageType {
   OK = 'OK',
   NOTICE = 'NOTICE',
   EOSE = 'EOSE',
-  COUNT = 'COUNT',
   AUTH = 'AUTH',
   TOP = 'TOP',
 }
