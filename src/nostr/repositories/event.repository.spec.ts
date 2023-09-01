@@ -88,38 +88,7 @@ describe('EventRepository', () => {
 
       expect(
         (
-          await eventRepository.find({
-            ids: [
-              REGULAR_EVENT.id.slice(0, 10),
-              REPLACEABLE_EVENT.id.slice(0, 13),
-            ],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
-      );
-
-      expect(
-        (
-          await eventRepository.find({
-            ids: [REGULAR_EVENT.id.slice(0, 10), REPLACEABLE_EVENT.id],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
-      );
-
-      expect(
-        (
           await eventRepository.findOne({ ids: [REGULAR_EVENT.id] })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT.toEventDto());
-
-      expect(
-        (
-          await eventRepository.findOne({
-            ids: [REGULAR_EVENT.id.slice(0, 10)],
-          })
         )?.toEventDto(),
       ).toEqual(REGULAR_EVENT.toEventDto());
 
@@ -155,25 +124,7 @@ describe('EventRepository', () => {
 
       expect(
         (
-          await eventRepository.find({
-            authors: [REGULAR_EVENT.pubkey.slice(0, 10)],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
-      );
-
-      expect(
-        (
           await eventRepository.findOne({ authors: [REGULAR_EVENT.pubkey] })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT.toEventDto());
-
-      expect(
-        (
-          await eventRepository.findOne({
-            authors: [REGULAR_EVENT.pubkey.slice(0, 10)],
-          })
         )?.toEventDto(),
       ).toEqual(REGULAR_EVENT.toEventDto());
     });

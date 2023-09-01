@@ -17,7 +17,7 @@ export class NostrController {
 
   constructor(configService: ConfigService<Config, true>) {
     this.relayInfoDoc = configService.get('relayInfoDoc', { infer: true });
-    const supported_nips = [1, 2, 11, 12, 13, 16, 20, 22, 26, 28, 33, 40, 42];
+    const supported_nips = [1, 2, 4, 11, 13, 22, 26, 28, 40, 42];
 
     const meiliSearchConfig = configService.get('meiliSearch', { infer: true });
     if (meiliSearchConfig.apiKey && meiliSearchConfig.host) {

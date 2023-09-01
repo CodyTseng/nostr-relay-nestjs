@@ -24,18 +24,14 @@ Try here: wss://nostr-relay.app
 | [NIP-04: Encrypted Direct Message](https://github.com/nostr-protocol/nips/blob/master/04.md)            |   🟢   |                                          |
 | [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                      |   🔴   | No real deletion in a distributed system |
 | [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)          |   🟢   |                                          |
-| [NIP-12: Generic Tag Queries](https://github.com/nostr-protocol/nips/blob/master/12.md)                 |   🟢   |                                          |
 | [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)                       |   🟢   |                                          |
-| [NIP-16: Event Treatment](https://github.com/nostr-protocol/nips/blob/master/16.md)                     |   🟢   |                                          |
-| [NIP-20: Command Results](https://github.com/nostr-protocol/nips/blob/master/20.md)                     |   🟢   |                                          |
 | [NIP-22: Event created_at Limits](https://github.com/nostr-protocol/nips/blob/master/22.md)             |   🟡   | Restrict future events only              |
 | [NIP-26: Delegated Event Signing](https://github.com/nostr-protocol/nips/blob/master/26.md)             |   🟢   |                                          |
 | [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)                         |   🟢   |                                          |
-| [NIP-33: Parameterized Replaceable Events](https://github.com/nostr-protocol/nips/blob/master/33.md)    |   🟢   |                                          |
 | [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)                |   🟢   |                                          |
 | [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md) |   🟢   |                                          |
 | [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)                    |   🔴   |                                          |
-| [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                     |   🟡   | Not support prefixes                     |
+| [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                     |   🟢   |                                          |
 
 ## Extra Features
 

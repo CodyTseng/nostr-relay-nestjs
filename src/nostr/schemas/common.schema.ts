@@ -14,20 +14,8 @@ export const EventIdSchema = HexStringSchema.length(EVENT_ID_LENGTH, {
   message: `must be ${EVENT_ID_LENGTH} characters`,
 });
 
-export const EventIdPrefixSchema = HexStringSchema.min(4, {
-  message: 'must be at least 4 characters',
-}).max(EVENT_ID_LENGTH, {
-  message: `must be less than or equal to ${EVENT_ID_LENGTH} characters`,
-});
-
 export const PubkeySchema = HexStringSchema.length(PUBKEY_LENGTH, {
   message: `must be ${PUBKEY_LENGTH} characters`,
-});
-
-export const PubkeyPrefixSchema = HexStringSchema.min(4, {
-  message: 'must be at least 4 characters',
-}).max(PUBKEY_LENGTH, {
-  message: `must be less than or equal to ${PUBKEY_LENGTH} characters`,
 });
 
 export const EventKindSchema = z
