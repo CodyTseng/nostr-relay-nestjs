@@ -35,7 +35,7 @@ Try here: wss://nostr-relay.app
 | [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)                |   🟢   |                                          |
 | [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md) |   🟢   |                                          |
 | [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)                    |   🔴   |                                          |
-| [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                     |   🟡   | Not support prefixes                     |
+| [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                     |   🟢   |                                          |
 
 ## Extra Features
 
