@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { chain, uniqBy } from 'lodash';
+import { chain } from 'lodash';
+import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
-import { Event, Filter, SearchFilter } from '../entities';
+import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
@@ -17,30 +18,27 @@ export class EventService {
     private readonly storageService: StorageService,
   ) {}
 
-  async findByFilters(filters: Filter[]): Promise<Event[]> {
-    const { normalFilters, searchFilters } = this.separateFilters(filters);
-
-    const eventsCollection = await Promise.all([
-      ...normalFilters.map((normalFilter) =>
-        this.eventRepository.find(normalFilter),
+  findByFilters(filters: Filter[]): Observable<Event> {
+    return merge(
+      ...filters.map((filter) =>
+        from(
+          filter.isSearchFilter()
+            ? this.eventSearchRepository.find(filter)
+            : this.eventRepository.find(filter),
+        ),
       ),
-      ...searchFilters.map((searchFilter) =>
-        this.eventSearchRepository.find(searchFilter),
-      ),
-    ]);
-
-    return uniqBy(eventsCollection.flat(), 'id');
+    ).pipe(
+      mergeMap((events) => from(events)),
+      distinct((event) => event.id),
+    );
   }
 
-  async findTopIds(filters: Filter[]) {
-    const { normalFilters, searchFilters } = this.separateFilters(filters);
-
+  async findTopIds(filters: Filter[]): Promise<string[]> {
     const collection = await Promise.all([
-      ...normalFilters.map((normalFilter) =>
-        this.eventRepository.findTopIdsWithScore(normalFilter),
-      ),
-      ...searchFilters.map((searchFilter) =>
-        this.eventSearchRepository.findTopIdsWithScore(searchFilter),
+      ...filters.map((filter) =>
+        filter.isSearchFilter()
+          ? this.eventSearchRepository.findTopIdsWithScore(filter)
+          : this.eventRepository.findTopIdsWithScore(filter),
       ),
     ]);
 
@@ -167,21 +165,6 @@ export class EventService {
 
   private broadcastEvent(event: Event) {
     return this.eventEmitter.emit(E_EVENT_BROADCAST, event);
-  }
-
-  private separateFilters(filters: Filter[]) {
-    const searchFilters: SearchFilter[] = [],
-      normalFilters: Filter[] = [];
-
-    filters.forEach((filter) => {
-      if (Filter.isSearchFilter(filter)) {
-        searchFilters.push(filter);
-      } else {
-        normalFilters.push(filter);
-      }
-    });
-
-    return { searchFilters, normalFilters };
   }
 
   private getHandleReplaceableEventKey(event: Event) {

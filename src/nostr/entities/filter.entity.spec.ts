@@ -120,13 +120,13 @@ describe('filter', () => {
   describe('isSearchFilter', () => {
     it('should return true', () => {
       expect(
-        Filter.isSearchFilter(Filter.fromFilterDto({ search: 'test' })),
+        Filter.fromFilterDto({ search: 'test' }).isSearchFilter(),
       ).toBeTruthy();
     });
 
     it('should return false', () => {
       expect(
-        Filter.isSearchFilter(Filter.fromFilterDto({ ids: ['test'] })),
+        Filter.fromFilterDto({ ids: ['test'] }).isSearchFilter(),
       ).toBeFalsy();
     });
   });
