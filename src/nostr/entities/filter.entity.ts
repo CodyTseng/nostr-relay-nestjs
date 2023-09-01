@@ -60,8 +60,8 @@ export class Filter {
     };
   }
 
-  static isSearchFilter(filter: Filter): filter is SearchFilter {
-    return !!filter.search;
+  isSearchFilter(): this is SearchFilter {
+    return !!this.search;
   }
 
   hasEncryptedDirectMessageKind() {

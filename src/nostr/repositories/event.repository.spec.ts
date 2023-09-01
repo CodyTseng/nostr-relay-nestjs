@@ -91,8 +91,6 @@ describe('EventRepository', () => {
           await eventRepository.findOne({ ids: [REGULAR_EVENT.id] })
         )?.toEventDto(),
       ).toEqual(REGULAR_EVENT.toEventDto());
-
-      expect(await eventRepository.find([])).toEqual([]);
     });
 
     it('should filter by kind successfully', async () => {
@@ -228,28 +226,6 @@ describe('EventRepository', () => {
       ).toEqual(unStandardTagEventDto);
     });
 
-    it('should find by multi filters successfully', async () => {
-      expect(
-        (
-          await eventRepository.find([
-            { ids: [REGULAR_EVENT.id] },
-            { kinds: [REPLACEABLE_EVENT.kind] },
-          ])
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
-      );
-
-      expect(
-        (
-          await eventRepository.findOne([
-            { ids: [REGULAR_EVENT.id] },
-            { kinds: [REPLACEABLE_EVENT.kind] },
-          ])
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT.toEventDto());
-    });
-
     it('should limit successfully', async () => {
       expect(
         await eventRepository.find({
@@ -305,7 +281,7 @@ describe('EventRepository', () => {
       ];
       await Promise.all(EVENTS.map((EVENT) => eventRepository.create(EVENT)));
 
-      expect(await eventRepository.findTopIdsWithScore([{}])).toEqual(
+      expect(await eventRepository.findTopIdsWithScore({})).toEqual(
         sortBy(
           EVENTS.map((e) => ({ id: e.id, score: e.createdAt })),
           (item) => -item.score,

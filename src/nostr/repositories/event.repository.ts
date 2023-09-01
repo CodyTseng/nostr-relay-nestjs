@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { chain, sumBy } from 'lodash';
+import { chain } from 'lodash';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { Event, Filter } from '../entities';
 import { TEventIdWithScore } from '../types';
@@ -42,45 +42,39 @@ export class EventRepository {
     return true;
   }
 
-  async find(filters: EventRepositoryFilter[] | EventRepositoryFilter) {
-    filters = Array.isArray(filters) ? filters : [filters];
-
-    if (filters.length === 0) return [];
-
-    const qb = this.createQueryBuilder(filters);
+  async find(filter: EventRepositoryFilter) {
+    const qb = this.createQueryBuilder(filter);
 
     // HACK: deceive the query planner to use the index
-    if (filters.some((filter) => filter.genericTagsCollection?.length)) {
+    if (filter.genericTagsCollection?.length) {
       const count = await qb.getCount();
       if (count < 1000) {
         const events = await qb.getMany();
         return chain(events)
           .sortBy((event) => -event.createdAt)
-          .take(this.getLimitFrom(filters))
+          .take(this.getLimitFrom(filter))
           .value();
       }
     }
 
     return await qb
-      .take(this.getLimitFrom(filters))
+      .take(this.getLimitFrom(filter))
       .orderBy('event.createdAtStr', 'DESC')
       .getMany();
   }
 
-  async findOne(filters: EventRepositoryFilter[] | EventRepositoryFilter) {
-    return await this.createQueryBuilder(filters)
+  async findOne(filter: EventRepositoryFilter) {
+    return await this.createQueryBuilder(filter)
       .orderBy('event.createdAtStr', 'DESC')
       .getOne();
   }
 
   async findTopIdsWithScore(
-    filters: EventRepositoryFilter | EventRepositoryFilter[],
+    filter: EventRepositoryFilter,
   ): Promise<TEventIdWithScore[]> {
-    if (Array.isArray(filters) && filters.length === 0) return [];
-
-    const partialEvents = await this.createQueryBuilder(filters)
+    const partialEvents = await this.createQueryBuilder(filter)
       .select(['event.id', 'event.createdAtStr'])
-      .take(this.getLimitFrom(filters, 1000))
+      .take(this.getLimitFrom(filter, 1000))
       .orderBy('event.createdAtStr', 'DESC')
       .getMany();
 
@@ -103,85 +97,75 @@ export class EventRepository {
     return this.create(event);
   }
 
-  private createQueryBuilder(
-    filters: EventRepositoryFilter[] | EventRepositoryFilter,
-  ) {
+  private createQueryBuilder(filter: EventRepositoryFilter) {
     const queryBuilder = this.repository.createQueryBuilder('event');
 
-    (Array.isArray(filters) ? filters : [filters]).forEach((filter, index) => {
-      const brackets = new Brackets((qb) => {
-        qb.where('1 = 1');
+    queryBuilder.where('1 = 1');
 
-        if (filter.ids?.length) {
-          qb.andWhere('event.id IN (:...ids)', { ids: filter.ids });
-        }
+    if (filter.ids?.length) {
+      queryBuilder.andWhere('event.id IN (:...ids)', { ids: filter.ids });
+    }
 
-        if (filter.genericTagsCollection) {
-          filter.genericTagsCollection.forEach((genericTags) => {
-            qb.andWhere('event.generic_tags && (:genericTags)', {
-              genericTags,
-            });
-          });
-        }
-
-        if (filter.since) {
-          qb.andWhere('event.created_at >= :since', { since: filter.since });
-        }
-
-        if (filter.until) {
-          qb.andWhere('event.created_at <= :until', { until: filter.until });
-        }
-
-        if (filter.authors?.length) {
-          qb.andWhere(
-            new Brackets((subQb) => {
-              subQb
-                .where('event.pubkey IN (:...authors)', {
-                  authors: filter.authors,
-                })
-                .orWhere('event.delegator IN (:...authors)', {
-                  authors: filter.authors,
-                });
-            }),
-          );
-        }
-
-        if (filter.kinds?.length) {
-          qb.andWhere('event.kind IN (:...kinds)', { kinds: filter.kinds });
-        }
-
-        if (filter.dTagValues) {
-          qb.andWhere('event.d_tag_value IN (:...dTagValues)', {
-            dTagValues: filter.dTagValues,
-          });
-        }
-
-        qb.andWhere(
-          new Brackets((subQb) => {
-            subQb
-              .where('event.expired_at IS NULL')
-              .orWhere('event.expired_at > :expiredAt', {
-                expiredAt: getTimestampInSeconds(),
-              });
-          }),
-        );
+    if (filter.genericTagsCollection) {
+      filter.genericTagsCollection.forEach((genericTags) => {
+        queryBuilder.andWhere('event.generic_tags && (:genericTags)', {
+          genericTags,
+        });
       });
+    }
 
-      queryBuilder[index === 0 ? 'where' : 'orWhere'](brackets);
-    });
+    if (filter.since) {
+      queryBuilder.andWhere('event.created_at >= :since', {
+        since: filter.since,
+      });
+    }
+
+    if (filter.until) {
+      queryBuilder.andWhere('event.created_at <= :until', {
+        until: filter.until,
+      });
+    }
+
+    if (filter.authors?.length) {
+      queryBuilder.andWhere(
+        new Brackets((subQb) => {
+          subQb
+            .where('event.pubkey IN (:...authors)', {
+              authors: filter.authors,
+            })
+            .orWhere('event.delegator IN (:...authors)', {
+              authors: filter.authors,
+            });
+        }),
+      );
+    }
+
+    if (filter.kinds?.length) {
+      queryBuilder.andWhere('event.kind IN (:...kinds)', {
+        kinds: filter.kinds,
+      });
+    }
+
+    if (filter.dTagValues) {
+      queryBuilder.andWhere('event.d_tag_value IN (:...dTagValues)', {
+        dTagValues: filter.dTagValues,
+      });
+    }
+
+    queryBuilder.andWhere(
+      new Brackets((subQb) => {
+        subQb
+          .where('event.expired_at IS NULL')
+          .orWhere('event.expired_at > :expiredAt', {
+            expiredAt: getTimestampInSeconds(),
+          });
+      }),
+    );
 
     return queryBuilder;
   }
 
-  private getLimitFrom(
-    filters: EventRepositoryFilter[] | EventRepositoryFilter,
-    defaultLimit = 100,
-  ) {
-    return Math.min(
-      Array.isArray(filters)
-        ? sumBy(filters, (filter) => filter.limit ?? defaultLimit)
-        : filters.limit ?? defaultLimit,
-      1000,
-    );
+  private getLimitFrom(filter: EventRepositoryFilter, defaultLimit = 100) {
+    return filter.limit ?? defaultLimit;
   }
 }
