@@ -21,7 +21,9 @@ export class EventService {
     const { normalFilters, searchFilters } = this.separateFilters(filters);
 
     const eventsCollection = await Promise.all([
-      this.eventRepository.find(normalFilters),
+      ...normalFilters.map((normalFilter) =>
+        this.eventRepository.find(normalFilter),
+      ),
       ...searchFilters.map((searchFilter) =>
         this.eventSearchRepository.find(searchFilter),
       ),
@@ -34,7 +36,9 @@ export class EventService {
     const { normalFilters, searchFilters } = this.separateFilters(filters);
 
     const collection = await Promise.all([
-      this.eventRepository.findTopIdsWithScore(normalFilters),
+      ...normalFilters.map((normalFilter) =>
+        this.eventRepository.findTopIdsWithScore(normalFilter),
+      ),
       ...searchFilters.map((searchFilter) =>
         this.eventSearchRepository.findTopIdsWithScore(searchFilter),
       ),
