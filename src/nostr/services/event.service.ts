@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { chain } from 'lodash';
-import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
@@ -18,18 +17,15 @@ export class EventService {
     private readonly storageService: StorageService,
   ) {}
 
-  async findByFilters(filters: Filter[]): Promise<Observable<Event>> {
-    const observables = await Promise.all(
+  async findByFilters(filters: Filter[]): Promise<Event[]> {
+    const collection = await Promise.all(
       filters.map(async (filter) =>
         filter.isSearchFilter()
           ? this.eventSearchRepository.find(filter)
           : this.eventRepository.find(filter),
       ),
     );
-    return merge(observables).pipe(
-      mergeMap((events) => from(events)),
-      distinct((event) => event.id),
-    );
+    return chain(collection).flatten().uniqBy('id').value();
   }
 
   async findTopIds(filters: Filter[]): Promise<string[]> {
