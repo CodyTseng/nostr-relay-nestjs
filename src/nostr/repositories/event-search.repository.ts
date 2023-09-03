@@ -6,6 +6,7 @@ import { Config } from '../../config';
 import { Event, SearchFilter } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
+import { Observable, from, map } from 'rxjs';
 
 type EventDocument = {
   id: string;
@@ -82,8 +83,8 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     });
   }
 
-  async find(filter: EventSearchRepositoryFilter) {
-    if (!this.index) return [];
+  async find(filter: EventSearchRepositoryFilter): Promise<Observable<Event>> {
+    if (!this.index) return from([]);
 
     const searchFilters = this.buildSearchFilters(filter);
 
@@ -93,7 +94,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       sort: ['createdAt:desc'],
     });
 
-    return result.hits.map(this.toEvent);
+    return from(result.hits).pipe(map(this.toEvent));
   }
 
   async findTopIdsWithScore(
@@ -219,8 +220,6 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     event.genericTags = eventDocument.genericTags;
     event.dTagValue = eventDocument.dTagValue;
     event.delegator = eventDocument.delegator;
-
-    event.createDate = new Date(eventDocument.createdAt);
 
     return event;
   }

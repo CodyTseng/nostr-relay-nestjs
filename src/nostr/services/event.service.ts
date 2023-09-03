@@ -18,16 +18,15 @@ export class EventService {
     private readonly storageService: StorageService,
   ) {}
 
-  findByFilters(filters: Filter[]): Observable<Event> {
-    return merge(
-      ...filters.map((filter) =>
-        from(
-          filter.isSearchFilter()
-            ? this.eventSearchRepository.find(filter)
-            : this.eventRepository.find(filter),
-        ),
+  async findByFilters(filters: Filter[]): Promise<Observable<Event>> {
+    const observables = await Promise.all(
+      filters.map(async (filter) =>
+        filter.isSearchFilter()
+          ? this.eventSearchRepository.find(filter)
+          : this.eventRepository.find(filter),
       ),
-    ).pipe(
+    );
+    return merge(observables).pipe(
       mergeMap((events) => from(events)),
       distinct((event) => event.id),
     );

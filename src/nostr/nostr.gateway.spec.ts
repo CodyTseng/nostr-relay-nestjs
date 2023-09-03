@@ -48,7 +48,7 @@ describe('NostrGateway', () => {
         }
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
-      findByFilters: () => from(FIND_EVENTS.map(Event.fromEventDto)),
+      findByFilters: async () => from(FIND_EVENTS.map(Event.fromEventDto)),
       findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(
@@ -131,7 +131,7 @@ describe('NostrGateway', () => {
       const encryptedDirectMessageEvent =
         createEncryptedDirectMessageEventMock();
       (nostrGateway as any).eventService = createMock<EventService>({
-        findByFilters: () => of(encryptedDirectMessageEvent),
+        findByFilters: async () => of(encryptedDirectMessageEvent),
       });
       const subscriptionId = 'test:req';
       const responses: (EventResponse | EndOfStoredEventResponse)[] = [];

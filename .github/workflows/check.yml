@@ -10,6 +10,17 @@ jobs:
   check:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
 
@@ -31,6 +42,8 @@ jobs:
 
       - name: Unit testing
         run: npm run test:cov
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2

@@ -4,10 +4,9 @@ import { APP_FILTER } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { LoggerModule, PinoLogger } from 'nestjs-pino';
+import { LoggerModule } from 'nestjs-pino';
 import { GlobalExceptionFilter } from './common/filters';
 import { loggerModuleFactory } from './common/utils/logger-module-factory';
-import { TypeOrmLogger } from './common/utils/type-orm-logger';
 import { Config, config } from './config';
 import { NostrModule } from './nostr/nostr.module';
 
@@ -24,10 +23,7 @@ import { NostrModule } from './nostr/nostr.module';
     }),
     EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
-      useFactory: (
-        configService: ConfigService<Config, true>,
-        logger: PinoLogger,
-      ) => {
+      useFactory: (configService: ConfigService<Config, true>) => {
         const { url } = configService.get('database', { infer: true });
         return {
           type: 'postgres',
@@ -35,11 +31,9 @@ import { NostrModule } from './nostr/nostr.module';
           autoLoadEntities: true,
           migrationsRun: true,
           migrations: ['dist/migrations/*.js'],
-          logger: new TypeOrmLogger(logger),
-          maxQueryExecutionTime: 150,
         };
       },
-      inject: [ConfigService, PinoLogger],
+      inject: [ConfigService],
     }),
     ThrottlerModule.forRootAsync({
       useFactory: (configService: ConfigService<Config, true>) =>
