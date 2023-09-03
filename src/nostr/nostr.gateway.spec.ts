@@ -1,7 +1,7 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import { from, lastValueFrom, of } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT_DTO,
@@ -48,7 +48,7 @@ describe('NostrGateway', () => {
         }
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
-      findByFilters: async () => from(FIND_EVENTS.map(Event.fromEventDto)),
+      findByFilters: async () => FIND_EVENTS.map(Event.fromEventDto),
       findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(
@@ -131,7 +131,7 @@ describe('NostrGateway', () => {
       const encryptedDirectMessageEvent =
         createEncryptedDirectMessageEventMock();
       (nostrGateway as any).eventService = createMock<EventService>({
-        findByFilters: async () => of(encryptedDirectMessageEvent),
+        findByFilters: async () => [encryptedDirectMessageEvent],
       });
       const subscriptionId = 'test:req';
       const responses: (EventResponse | EndOfStoredEventResponse)[] = [];

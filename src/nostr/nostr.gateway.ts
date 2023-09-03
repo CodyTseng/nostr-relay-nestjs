@@ -11,7 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { randomUUID } from 'crypto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { concatWith, filter, map, of } from 'rxjs';
+import { concatWith, filter, from, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RestrictedException } from '../common/exceptions';
 import { GlobalExceptionFilter } from '../common/filters';
@@ -120,8 +120,8 @@ export class NostrGateway
 
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
-    const event$ = await this.eventService.findByFilters(filters);
-    return event$.pipe(
+    const events = await this.eventService.findByFilters(filters);
+    return from(events).pipe(
       filter((event) => event.checkPermission(client.pubkey)),
       map((event) => createEventResponse(subscriptionId, event)),
       concatWith(of(createEndOfStoredEventResponse(subscriptionId))),

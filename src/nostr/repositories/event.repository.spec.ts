@@ -18,7 +18,6 @@ import {
 } from '../../../seeds';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
-import { observableToArray } from '../utils';
 
 describe('EventRepository', () => {
   let rawEventRepository: Repository<Event>;
@@ -95,11 +94,9 @@ describe('EventRepository', () => {
     it('should filter by id successfully', async () => {
       expect(
         (
-          await observableToArray(
-            eventRepository.find({
-              ids: [REGULAR_EVENT.id, REPLACEABLE_EVENT.id],
-            }),
-          )
+          await eventRepository.find({
+            ids: [REGULAR_EVENT.id, REPLACEABLE_EVENT.id],
+          })
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
@@ -115,11 +112,9 @@ describe('EventRepository', () => {
     it('should filter by kind successfully', async () => {
       expect(
         (
-          await observableToArray(
-            eventRepository.find({
-              kinds: [REGULAR_EVENT.kind, REPLACEABLE_EVENT.kind],
-            }),
-          )
+          await eventRepository.find({
+            kinds: [REGULAR_EVENT.kind, REPLACEABLE_EVENT.kind],
+          })
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
@@ -134,11 +129,9 @@ describe('EventRepository', () => {
 
     it('should filter by authors successfully', async () => {
       expect(
-        (
-          await observableToArray(
-            eventRepository.find({ authors: [REGULAR_EVENT.pubkey] }),
-          )
-        ).map((event) => event.toEventDto()),
+        (await eventRepository.find({ authors: [REGULAR_EVENT.pubkey] })).map(
+          (event) => event.toEventDto(),
+        ),
       ).toEqual(
         [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
       );
@@ -153,9 +146,7 @@ describe('EventRepository', () => {
     it('should filter by created_at successfully', async () => {
       expect(
         (
-          await observableToArray(
-            eventRepository.find({ since: REPLACEABLE_EVENT.createdAt }),
-          )
+          await eventRepository.find({ since: REPLACEABLE_EVENT.createdAt })
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
@@ -163,9 +154,7 @@ describe('EventRepository', () => {
 
       expect(
         (
-          await observableToArray(
-            eventRepository.find({ until: REPLACEABLE_EVENT.createdAt }),
-          )
+          await eventRepository.find({ until: REPLACEABLE_EVENT.createdAt })
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REPLACEABLE_EVENT, PARAMETERIZED_REPLACEABLE_EVENT].map((event) =>
@@ -175,12 +164,10 @@ describe('EventRepository', () => {
 
       expect(
         (
-          await observableToArray(
-            eventRepository.find({
-              since: REPLACEABLE_EVENT.createdAt,
-              until: REPLACEABLE_EVENT.createdAt,
-            }),
-          )
+          await eventRepository.find({
+            since: REPLACEABLE_EVENT.createdAt,
+            until: REPLACEABLE_EVENT.createdAt,
+          })
         ).map((event) => event.toEventDto()),
       ).toEqual([REPLACEABLE_EVENT].map((event) => event.toEventDto()));
 
@@ -199,11 +186,9 @@ describe('EventRepository', () => {
 
     it('should filter by dTagValue successfully', async () => {
       expect(
-        (
-          await observableToArray(
-            eventRepository.find({ dTagValues: ['test'] }),
-          )
-        ).map((event) => event.toEventDto()),
+        (await eventRepository.find({ dTagValues: ['test'] })).map((event) =>
+          event.toEventDto(),
+        ),
       ).toEqual(
         [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEventDto()),
       );
@@ -216,16 +201,14 @@ describe('EventRepository', () => {
     it('should filter by tag successfully', async () => {
       expect(
         (
-          await observableToArray(
-            eventRepository.find(
-              Filter.fromFilterDto({
-                tags: {
-                  p: [
-                    '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-                  ],
-                },
-              }),
-            ),
+          await eventRepository.find(
+            Filter.fromFilterDto({
+              tags: {
+                p: [
+                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+                ],
+              },
+            }),
           )
         ).map((event) => event.toEventDto()),
       ).toEqual(
@@ -261,19 +244,15 @@ describe('EventRepository', () => {
 
     it('should limit successfully', async () => {
       expect(
-        await observableToArray(
-          eventRepository.find({
-            authors: [REGULAR_EVENT.pubkey],
-            limit: 1,
-          }),
-        ),
+        await eventRepository.find({
+          authors: [REGULAR_EVENT.pubkey],
+          limit: 1,
+        }),
       ).toHaveLength(1);
     });
 
     it('should return empty', async () => {
-      expect(
-        await observableToArray(eventRepository.find({ limit: 0 })),
-      ).toEqual([]);
+      expect(await eventRepository.find({ limit: 0 })).toEqual([]);
     });
   });
 
