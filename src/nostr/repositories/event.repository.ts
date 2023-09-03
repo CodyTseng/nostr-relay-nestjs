@@ -1,3 +1,4 @@
+import { Observable, from, map } from 'rxjs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { chain } from 'lodash';
@@ -42,7 +43,7 @@ export class EventRepository {
     return true;
   }
 
-  async find(filter: EventRepositoryFilter) {
+  async find(filter: EventRepositoryFilter): Promise<Observable<Event>> {
     const qb = this.createQueryBuilder(filter);
 
     // HACK: deceive the query planner to use the index
@@ -50,17 +51,21 @@ export class EventRepository {
       const count = await qb.getCount();
       if (count < 1000) {
         const events = await qb.getMany();
-        return chain(events)
-          .sortBy((event) => -event.createdAt)
-          .take(this.getLimitFrom(filter))
-          .value();
+        return from(
+          chain(events)
+            .sortBy((event) => -event.createdAt)
+            .take(this.getLimitFrom(filter))
+            .value(),
+        );
       }
     }
 
-    return await qb
-      .take(this.getLimitFrom(filter))
-      .orderBy('event.createdAtStr', 'DESC')
-      .getMany();
+    return from(
+      await qb
+        .take(this.getLimitFrom(filter))
+        .orderBy('event.createdAtStr', 'DESC')
+        .stream(),
+    ).pipe(map(this.convertToEvent));
   }
 
   async findOne(filter: EventRepositoryFilter) {
@@ -95,6 +100,34 @@ export class EventRepository {
     }
 
     return this.create(event);
+  }
+
+  private convertToEvent(raw: {
+    event_id: string;
+    event_pubkey: string;
+    event_created_at: string;
+    event_kind: number;
+    event_tags: string[][];
+    event_generic_tags: string[];
+    event_content: string;
+    event_sig: string;
+    event_expired_at: string;
+    event_d_tag_value: string;
+    event_delegator: string;
+  }) {
+    const event = new Event();
+    event.id = raw.event_id;
+    event.pubkey = raw.event_pubkey;
+    event.createdAtStr = raw.event_created_at;
+    event.kind = raw.event_kind;
+    event.tags = raw.event_tags;
+    event.genericTags = raw.event_generic_tags;
+    event.content = raw.event_content;
+    event.sig = raw.event_sig;
+    event.expiredAtStr = raw.event_expired_at;
+    event.dTagValue = raw.event_d_tag_value;
+    event.delegator = raw.event_delegator;
+    return event;
   }
 
   private createQueryBuilder(filter: EventRepositoryFilter) {

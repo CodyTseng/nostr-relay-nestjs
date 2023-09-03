@@ -120,7 +120,7 @@ export class NostrGateway
 
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
-    const event$ = this.eventService.findByFilters(filters);
+    const event$ = await this.eventService.findByFilters(filters);
     return event$.pipe(
       filter((event) => event.checkPermission(client.pubkey)),
       map((event) => createEventResponse(subscriptionId, event)),

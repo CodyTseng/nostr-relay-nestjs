@@ -49,7 +49,7 @@ export class Event {
   delegator: string | null;
 
   @CreateDateColumn({ name: 'create_date', select: false })
-  createDate: Date;
+  _createDate: Date;
 
   get type() {
     if (!this[EVENT_TYPE_SYMBOL]) {

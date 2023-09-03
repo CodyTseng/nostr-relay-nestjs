@@ -1,5 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { from } from 'rxjs';
 import {
   createSignedEventMock,
   DELETION_EVENT,
@@ -12,10 +13,9 @@ import {
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
-import { createCommandResultResponse } from '../utils';
+import { createCommandResultResponse, observableToArray } from '../utils';
 import { EventService } from './event.service';
 import { StorageService } from './storage.service';
-import { lastValueFrom, Observable } from 'rxjs';
 
 describe('EventService', () => {
   describe('handleEvent', () => {
@@ -197,10 +197,10 @@ describe('EventService', () => {
       it('should return events', async () => {
         const events = [REGULAR_EVENT, REPLACEABLE_EVENT, DELETION_EVENT];
         const eventRepository = createMock<EventRepository>({
-          find: async () => events,
+          find: async () => from(events),
         });
         const eventSearchRepository = createMock<EventSearchRepository>({
-          find: async () => events,
+          find: async () => from(events),
         });
         (eventService as any).eventRepository = eventRepository;
         (eventService as any).eventSearchRepository = eventSearchRepository;
@@ -253,10 +253,3 @@ describe('EventService', () => {
     });
   });
 });
-
-async function observableToArray<T>(obs: Observable<T>): Promise<T[]> {
-  const array: T[] = [];
-  obs.subscribe((item) => array.push(item));
-  await lastValueFrom(obs);
-  return array;
-}
