@@ -17,14 +17,13 @@ export class NostrWsAdapter extends WsAdapter {
           createNoticeResponse('invalid: message must be a JSON array'),
         );
       }
-      const [type, ...data] = messageData;
+      const [type] = messageData;
       const messageHandler = handlers.find(
         (handler) => handler.message === type,
       );
       if (!messageHandler) {
         return transform(createNoticeResponse('invalid: unknown message type'));
       }
-      this.logger.log({ type, data });
       return transform(messageHandler.callback(messageData));
     } catch (error) {
       return transform(
