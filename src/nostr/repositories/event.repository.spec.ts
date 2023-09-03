@@ -269,6 +269,12 @@ describe('EventRepository', () => {
         ),
       ).toHaveLength(1);
     });
+
+    it('should return empty', async () => {
+      expect(
+        await observableToArray(eventRepository.find({ limit: 0 })),
+      ).toEqual([]);
+    });
   });
 
   describe('replace', () => {
@@ -321,6 +327,12 @@ describe('EventRepository', () => {
           EVENTS.map((e) => ({ id: e.id, score: e.createdAt })),
           (item) => -item.score,
         ),
+      );
+    });
+
+    it('should return empty', async () => {
+      expect(await eventRepository.findTopIdsWithScore({ limit: 0 })).toEqual(
+        [],
       );
     });
   });
