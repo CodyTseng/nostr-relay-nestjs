@@ -6,7 +6,8 @@ import { Config } from '../../config';
 import { Event, SearchFilter } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
-import { Observable, from, map } from 'rxjs';
+import { EMPTY, Observable, from, map } from 'rxjs';
+import { isNil } from 'lodash';
 
 type EventDocument = {
   id: string;
@@ -84,12 +85,15 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   async find(filter: EventSearchRepositoryFilter): Promise<Observable<Event>> {
-    if (!this.index) return from([]);
+    if (!this.index) return EMPTY;
+
+    const limit = this.getLimitFrom(filter);
+    if (limit === 0) return EMPTY;
 
     const searchFilters = this.buildSearchFilters(filter);
 
     const result = await this.index.search(filter.search, {
-      limit: this.getLimitFrom(filter),
+      limit,
       filter: searchFilters,
       sort: ['createdAt:desc'],
     });
@@ -102,10 +106,13 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   ): Promise<TEventIdWithScore[]> {
     if (!this.index) return [];
 
+    const limit = this.getLimitFrom(filter);
+    if (limit === 0) return [];
+
     const searchFilters = this.buildSearchFilters(filter);
 
     const result = await this.index.search(filter.search, {
-      limit: this.getLimitFrom(filter, 1000),
+      limit,
       filter: searchFilters,
       attributesToRetrieve: ['id', 'createdAt'],
       showRankingScore: true,
@@ -188,7 +195,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     filter: EventSearchRepositoryFilter,
     defaultLimit = 100,
   ) {
-    return Math.min(filter.limit ?? defaultLimit, 1000);
+    return Math.min(isNil(filter.limit) ? defaultLimit : filter.limit, 1000);
   }
 
   private toEventDocument(event: Event): EventDocument {

@@ -292,6 +292,12 @@ describe('EventSearchRepository', () => {
           limit: 10,
         },
       });
+
+      expect(
+        await observableToArray(
+          eventSearchRepositoryWithIndex.find({ search: '', limit: 0 }),
+        ),
+      ).toEqual([]);
     });
 
     it('has all filters', async () => {
@@ -344,6 +350,14 @@ describe('EventSearchRepository', () => {
           score: REGULAR_EVENT_DOCUMENT.createdAt * 2,
         },
       ]);
+    });
+
+    it('should return empty array', async () => {
+      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
+        search: 'test',
+        limit: 0,
+      });
+      expect(result).toEqual([]);
     });
   });
 
