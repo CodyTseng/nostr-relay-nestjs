@@ -7,6 +7,7 @@ import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
 import { StorageService } from './storage.service';
+import { Observable, distinct, merge, mergeMap } from 'rxjs';
 
 @Injectable()
 export class EventService {
@@ -17,15 +18,18 @@ export class EventService {
     private readonly storageService: StorageService,
   ) {}
 
-  async findByFilters(filters: Filter[]): Promise<Event[]> {
-    const collection = await Promise.all(
+  async findByFilters(filters: Filter[]): Promise<Observable<Event>> {
+    const source$ = await Promise.all(
       filters.map(async (filter) =>
         filter.isSearchFilter()
           ? this.eventSearchRepository.find(filter)
           : this.eventRepository.find(filter),
       ),
     );
-    return chain(collection).flatten().uniqBy('id').value();
+    return merge(source$).pipe(
+      mergeMap((event) => event),
+      distinct((event) => event.id),
+    );
   }
 
   async findTopIds(filters: Filter[]): Promise<string[]> {
