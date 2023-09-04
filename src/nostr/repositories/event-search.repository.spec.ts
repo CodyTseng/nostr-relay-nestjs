@@ -8,7 +8,6 @@ import {
 } from '../../../seeds';
 import { Event } from '../entities';
 import { EventSearchRepository } from './event-search.repository';
-import { observableToArray } from '../utils';
 
 jest.mock('../utils/time', () => ({
   getTimestampInSeconds: jest.fn(() => 1620000000),
@@ -136,20 +135,16 @@ describe('EventSearchRepository', () => {
 
   describe('find', () => {
     it('should return empty array if no index', async () => {
-      const result = await observableToArray(
-        eventSearchRepositoryWithoutIndex.find({
-          search: '',
-        }),
-      );
+      const result = await eventSearchRepositoryWithoutIndex.find({
+        search: '',
+      });
       expect(result).toEqual([]);
     });
 
     it('only has search filter', async () => {
-      const events = await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: 'search',
-        }),
-      );
+      const events = await eventSearchRepositoryWithIndex.find({
+        search: 'search',
+      });
       expect(searchInput).toEqual({
         query: 'search',
         options: {
@@ -162,12 +157,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has ids filter', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: '',
-          ids: ['id1', 'id2'],
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        ids: ['id1', 'id2'],
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -182,12 +175,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has kinds filter', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: '',
-          kinds: [1, 2],
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        kinds: [1, 2],
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -202,12 +193,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has since filter', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: '',
-          since: 1620000000,
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        since: 1620000000,
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -222,12 +211,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has until filter', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: '',
-          until: 1620000000,
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        until: 1620000000,
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -242,12 +229,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has authors filter', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: '',
-          authors: ['pubkey1', 'pubkey2'],
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        authors: ['pubkey1', 'pubkey2'],
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -262,12 +247,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has genericTagsCollection filter', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: '',
-          genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -283,9 +266,7 @@ describe('EventSearchRepository', () => {
     });
 
     it('has limit', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({ search: '', limit: 10 }),
-      );
+      await eventSearchRepositoryWithIndex.find({ search: '', limit: 10 });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -296,25 +277,21 @@ describe('EventSearchRepository', () => {
       });
 
       expect(
-        await observableToArray(
-          eventSearchRepositoryWithIndex.find({ search: '', limit: 0 }),
-        ),
+        await eventSearchRepositoryWithIndex.find({ search: '', limit: 0 }),
       ).toEqual([]);
     });
 
     it('has all filters', async () => {
-      await observableToArray(
-        eventSearchRepositoryWithIndex.find({
-          search: 'search',
-          ids: ['id1', 'id2'],
-          kinds: [1, 2],
-          since: 1620000000,
-          until: 1630000000,
-          authors: ['pubkey1', 'pubkey2'],
-          genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
-          limit: 10,
-        }),
-      );
+      await eventSearchRepositoryWithIndex.find({
+        search: 'search',
+        ids: ['id1', 'id2'],
+        kinds: [1, 2],
+        since: 1620000000,
+        until: 1630000000,
+        authors: ['pubkey1', 'pubkey2'],
+        genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
+        limit: 10,
+      });
       expect(searchInput).toEqual({
         query: 'search',
         options: {
