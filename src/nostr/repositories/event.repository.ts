@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { chain, isNil } from 'lodash';
-import { EMPTY, Observable, from, fromEvent, map, takeUntil } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  from,
+  fromEvent,
+  map,
+  merge,
+  takeUntil,
+  throwError,
+} from 'rxjs';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { ReadStream } from 'typeorm/platform/PlatformTools';
 import { Event, Filter } from '../entities';
@@ -108,7 +117,15 @@ export class EventRepository {
 
   private transformQueryStream(stream: ReadStream): Observable<Event> {
     const end$ = fromEvent(stream, 'end');
-    return from(stream).pipe(map(this.convertToEvent), takeUntil(end$));
+    const data$ = fromEvent(stream, 'data');
+
+    // FIXME: I'm not sure if this is correct lol
+    const error$ = fromEvent(stream, 'error').pipe(
+      map((error) => {
+        throw error;
+      }),
+    );
+    return merge(data$, error$).pipe(map(this.convertToEvent), takeUntil(end$));
   }
 
   private convertToEvent(raw: {
