@@ -42,6 +42,7 @@ import {
 } from './utils';
 
 @WebSocketGateway()
+@UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
 @UseInterceptors(LoggingInterceptor)
