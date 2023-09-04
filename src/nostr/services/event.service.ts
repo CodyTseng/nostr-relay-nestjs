@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { chain } from 'lodash';
-import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
 import { StorageService } from './storage.service';
+import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
 
 @Injectable()
 export class EventService {

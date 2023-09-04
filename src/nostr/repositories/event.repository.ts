@@ -1,7 +1,7 @@
-import { Observable, from, map } from 'rxjs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { chain } from 'lodash';
+import { chain, isNil } from 'lodash';
+import { EMPTY, Observable, from, map } from 'rxjs';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { Event, Filter } from '../entities';
 import { TEventIdWithScore } from '../types';
@@ -44,6 +44,9 @@ export class EventRepository {
   }
 
   async find(filter: EventRepositoryFilter): Promise<Observable<Event>> {
+    const limit = this.getLimitFrom(filter);
+    if (limit === 0) return EMPTY;
+
     const qb = this.createQueryBuilder(filter);
 
     // HACK: deceive the query planner to use the index
@@ -54,17 +57,14 @@ export class EventRepository {
         return from(
           chain(events)
             .sortBy((event) => -event.createdAt)
-            .take(this.getLimitFrom(filter))
+            .take(limit)
             .value(),
         );
       }
     }
 
     return from(
-      await qb
-        .take(this.getLimitFrom(filter))
-        .orderBy('event.createdAtStr', 'DESC')
-        .stream(),
+      await qb.take(limit).orderBy('event.createdAtStr', 'DESC').stream(),
     ).pipe(map(this.convertToEvent));
   }
 
@@ -77,9 +77,12 @@ export class EventRepository {
   async findTopIdsWithScore(
     filter: EventRepositoryFilter,
   ): Promise<TEventIdWithScore[]> {
+    const limit = this.getLimitFrom(filter, 1000);
+    if (limit === 0) return [];
+
     const partialEvents = await this.createQueryBuilder(filter)
       .select(['event.id', 'event.createdAtStr'])
-      .take(this.getLimitFrom(filter, 1000))
+      .take(limit)
       .orderBy('event.createdAtStr', 'DESC')
       .getMany();
 
@@ -199,6 +202,6 @@ export class EventRepository {
   }
 
   private getLimitFrom(filter: EventRepositoryFilter, defaultLimit = 100) {
-    return filter.limit ?? defaultLimit;
+    return Math.min(isNil(filter.limit) ? defaultLimit : filter.limit, 1000);
   }
 }
