@@ -45,7 +45,6 @@ import {
 @UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
-@UseInterceptors(LoggingInterceptor)
 export class NostrGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
