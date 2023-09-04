@@ -9,7 +9,6 @@ import {
   map,
   merge,
   takeUntil,
-  throwError,
 } from 'rxjs';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { ReadStream } from 'typeorm/platform/PlatformTools';
