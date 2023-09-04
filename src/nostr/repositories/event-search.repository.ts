@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { EMPTY, Observable, from, map } from 'rxjs';
 import { Config } from '../../config';
 import { Event, SearchFilter } from '../entities';
 import { TEventIdWithScore } from '../types';
@@ -83,11 +84,11 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     });
   }
 
-  async find(filter: EventSearchRepositoryFilter): Promise<Event[]> {
-    if (!this.index) return [];
+  async find(filter: EventSearchRepositoryFilter): Promise<Observable<Event>> {
+    if (!this.index) return EMPTY;
 
     const limit = this.getLimitFrom(filter);
-    if (limit === 0) return [];
+    if (limit === 0) return EMPTY;
 
     const searchFilters = this.buildSearchFilters(filter);
 
@@ -97,7 +98,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       sort: ['createdAt:desc'],
     });
 
-    return result.hits.map(this.toEvent);
+    return from(result.hits).pipe(map(this.toEvent));
   }
 
   async findTopIdsWithScore(

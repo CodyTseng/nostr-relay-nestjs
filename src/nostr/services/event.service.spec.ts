@@ -12,9 +12,10 @@ import {
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
-import { createCommandResultResponse } from '../utils';
+import { createCommandResultResponse, observableToArray } from '../utils';
 import { EventService } from './event.service';
 import { StorageService } from './storage.service';
+import { from } from 'rxjs';
 
 describe('EventService', () => {
   describe('handleEvent', () => {
@@ -196,27 +197,33 @@ describe('EventService', () => {
       it('should return events', async () => {
         const events = [REGULAR_EVENT, REPLACEABLE_EVENT, DELETION_EVENT];
         const eventRepository = createMock<EventRepository>({
-          find: async () => events,
+          find: async () => from(events),
         });
         const eventSearchRepository = createMock<EventSearchRepository>({
-          find: async () => events,
+          find: async () => from(events),
         });
         (eventService as any).eventRepository = eventRepository;
         (eventService as any).eventSearchRepository = eventSearchRepository;
 
         await expect(
-          eventService.findByFilters([{}].map(Filter.fromFilterDto)),
-        ).resolves.toEqual(events);
-
-        await expect(
-          eventService.findByFilters(
-            [{ search: 'test' }].map(Filter.fromFilterDto),
+          observableToArray(
+            eventService.findByFilters([{}].map(Filter.fromFilterDto)),
           ),
         ).resolves.toEqual(events);
 
         await expect(
-          eventService.findByFilters(
-            [{}, { search: 'test' }].map(Filter.fromFilterDto),
+          observableToArray(
+            eventService.findByFilters(
+              [{ search: 'test' }].map(Filter.fromFilterDto),
+            ),
+          ),
+        ).resolves.toEqual(events);
+
+        await expect(
+          observableToArray(
+            eventService.findByFilters(
+              [{}, { search: 'test' }].map(Filter.fromFilterDto),
+            ),
           ),
         ).resolves.toEqual(events);
       });

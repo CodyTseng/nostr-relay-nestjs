@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { chain, isNil } from 'lodash';
+import { EMPTY, Observable, from, fromEvent, map, takeUntil } from 'rxjs';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
+import { ReadStream } from 'typeorm/platform/PlatformTools';
 import { Event, Filter } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
@@ -42,9 +44,9 @@ export class EventRepository {
     return true;
   }
 
-  async find(filter: EventRepositoryFilter): Promise<Event[]> {
+  async find(filter: EventRepositoryFilter): Promise<Observable<Event>> {
     const limit = this.getLimitFrom(filter);
-    if (limit === 0) return [];
+    if (limit === 0) return EMPTY;
 
     const qb = this.createQueryBuilder(filter);
 
@@ -53,14 +55,18 @@ export class EventRepository {
       const count = await qb.getCount();
       if (count < 1000) {
         const events = await qb.getMany();
-        return chain(events)
-          .sortBy((event) => -event.createdAt)
-          .take(limit)
-          .value();
+        return from(
+          chain(events)
+            .sortBy((event) => -event.createdAt)
+            .take(limit)
+            .value(),
+        );
       }
     }
 
-    return await qb.take(limit).orderBy('event.createdAtStr', 'DESC').getMany();
+    return this.transformQueryStream(
+      await qb.take(limit).orderBy('event.createdAtStr', 'DESC').stream(),
+    );
   }
 
   async findOne(filter: EventRepositoryFilter) {
@@ -98,6 +104,39 @@ export class EventRepository {
     }
 
     return this.create(event);
+  }
+
+  private transformQueryStream(stream: ReadStream): Observable<Event> {
+    const end$ = fromEvent(stream, 'end');
+    return from(stream).pipe(map(this.convertToEvent), takeUntil(end$));
+  }
+
+  private convertToEvent(raw: {
+    event_id: string;
+    event_pubkey: string;
+    event_created_at: string;
+    event_kind: number;
+    event_tags: string[][];
+    event_generic_tags: string[];
+    event_content: string;
+    event_sig: string;
+    event_expired_at: string;
+    event_d_tag_value: string;
+    event_delegator: string;
+  }) {
+    const event = new Event();
+    event.id = raw.event_id;
+    event.pubkey = raw.event_pubkey;
+    event.createdAtStr = raw.event_created_at;
+    event.kind = raw.event_kind;
+    event.tags = raw.event_tags;
+    event.genericTags = raw.event_generic_tags;
+    event.content = raw.event_content;
+    event.sig = raw.event_sig;
+    event.expiredAtStr = raw.event_expired_at;
+    event.dTagValue = raw.event_d_tag_value;
+    event.delegator = raw.event_delegator;
+    return event;
   }
 
   private createQueryBuilder(filter: EventRepositoryFilter) {

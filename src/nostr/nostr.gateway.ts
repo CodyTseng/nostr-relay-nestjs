@@ -11,7 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { randomUUID } from 'crypto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { concatWith, filter, from, map, of } from 'rxjs';
+import { concatWith, filter, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RestrictedException } from '../common/exceptions';
 import { GlobalExceptionFilter } from '../common/filters';
@@ -20,7 +20,10 @@ import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
 import { Event, Filter } from './entities';
-import { CacheEventHandlingResultInterceptor } from './interceptors';
+import {
+  CacheEventHandlingResultInterceptor,
+  LoggingInterceptor,
+} from './interceptors';
 import {
   AuthMessageDto,
   CloseMessageDto,
@@ -41,6 +44,7 @@ import {
 @WebSocketGateway()
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
+@UseInterceptors(LoggingInterceptor)
 export class NostrGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -120,8 +124,8 @@ export class NostrGateway
 
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
-    const events = await this.eventService.findByFilters(filters);
-    return from(events).pipe(
+    const event$ = await this.eventService.findByFilters(filters);
+    return event$.pipe(
       filter((event) => event.checkPermission(client.pubkey)),
       map((event) => createEventResponse(subscriptionId, event)),
       concatWith(of(createEndOfStoredEventResponse(subscriptionId))),
