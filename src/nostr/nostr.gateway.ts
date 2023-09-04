@@ -20,7 +20,10 @@ import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
 import { Event, Filter } from './entities';
-import { CacheEventHandlingResultInterceptor } from './interceptors';
+import {
+  CacheEventHandlingResultInterceptor,
+  LoggingInterceptor,
+} from './interceptors';
 import {
   AuthMessageDto,
   CloseMessageDto,
@@ -39,6 +42,7 @@ import {
 } from './utils';
 
 @WebSocketGateway()
+@UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
 export class NostrGateway
