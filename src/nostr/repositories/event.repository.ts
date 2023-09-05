@@ -4,10 +4,11 @@ import { chain, isNil } from 'lodash';
 import {
   EMPTY,
   Observable,
+  first,
   from,
   fromEvent,
   map,
-  merge,
+  share,
   takeUntil,
 } from 'rxjs';
 import { Brackets, QueryFailedError, Repository } from 'typeorm';
@@ -115,16 +116,15 @@ export class EventRepository {
   }
 
   private transformQueryStream(stream: ReadStream): Observable<Event> {
-    const end$ = fromEvent(stream, 'end');
+    const end$ = fromEvent(stream, 'end').pipe(share(), first());
+    const error$ = fromEvent(stream, 'error').pipe(share(), first());
     const data$ = fromEvent(stream, 'data');
 
-    // FIXME: I'm not sure if this is correct lol
-    const error$ = fromEvent(stream, 'error').pipe(
-      map((error) => {
-        throw error;
-      }),
+    return data$.pipe(
+      map(this.convertToEvent),
+      takeUntil(end$),
+      takeUntil(error$),
     );
-    return merge(data$, error$).pipe(map(this.convertToEvent), takeUntil(end$));
   }
 
   private convertToEvent(raw: {
