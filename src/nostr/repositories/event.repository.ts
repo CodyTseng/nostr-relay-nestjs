@@ -130,17 +130,9 @@ export class EventRepository {
     }
 
     if (filter.authors?.length) {
-      queryBuilder.andWhere(
-        new Brackets((subQb) => {
-          subQb
-            .where('event.pubkey IN (:...authors)', {
-              authors: filter.authors,
-            })
-            .orWhere('event.delegator IN (:...authors)', {
-              authors: filter.authors,
-            });
-        }),
-      );
+      queryBuilder.andWhere('event.author IN (:...authors)', {
+        authors: filter.authors,
+      });
     }
 
     if (filter.kinds?.length) {

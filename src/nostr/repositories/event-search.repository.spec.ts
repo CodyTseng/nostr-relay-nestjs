@@ -32,7 +32,7 @@ describe('EventSearchRepository', () => {
     content: REGULAR_EVENT.content,
     sig: REGULAR_EVENT.sig,
     expiredAt: REGULAR_EVENT.expiredAt,
-    delegator: REGULAR_EVENT.delegator,
+    author: REGULAR_EVENT.author,
     dTagValue: REGULAR_EVENT.dTagValue,
   };
   const REPLACEABLE_EVENT_DOCUMENT = {
@@ -45,7 +45,7 @@ describe('EventSearchRepository', () => {
     content: REPLACEABLE_EVENT.content,
     sig: REPLACEABLE_EVENT.sig,
     expiredAt: REPLACEABLE_EVENT.expiredAt,
-    delegator: REPLACEABLE_EVENT.delegator,
+    author: REPLACEABLE_EVENT.author,
     dTagValue: REPLACEABLE_EVENT.dTagValue,
   };
   const addDocumentsFailError = new Error('addDocuments fail');
