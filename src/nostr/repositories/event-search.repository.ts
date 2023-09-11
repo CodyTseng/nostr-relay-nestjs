@@ -63,7 +63,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       searchableAttributes: ['content'],
       filterableAttributes: [
         'id',
-        'pubkey',
+        'author',
         'createdAt',
         'kind',
         'genericTags',
@@ -175,10 +175,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
 
     if (filter.authors?.length) {
-      const authorsStr = filter.authors.join(', ');
-      searchFilters.push(
-        `pubkey IN [${authorsStr}] OR delegator IN [${authorsStr}]`,
-      );
+      searchFilters.push(`author IN [${filter.authors.join(', ')}]`);
     }
 
     if (filter.genericTagsCollection?.length) {
