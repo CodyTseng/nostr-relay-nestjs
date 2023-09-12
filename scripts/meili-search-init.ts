@@ -16,7 +16,7 @@ async function run() {
   eventIndex.updateSettings({
     searchableAttributes: ['content'],
     filterableAttributes: [
-      'pubkey',
+      'author',
       'createdAt',
       'kind',
       'genericTags',
