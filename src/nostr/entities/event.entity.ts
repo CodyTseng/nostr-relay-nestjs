@@ -21,6 +21,9 @@ export class Event {
   @Column({ type: 'char', length: 64 })
   pubkey: string;
 
+  @Column({ type: 'char', length: 64 })
+  author: string;
+
   @Column({ type: 'bigint', name: 'created_at' })
   createdAtStr: string;
 
@@ -44,9 +47,6 @@ export class Event {
 
   @Column({ type: 'text', nullable: true, name: 'd_tag_value' })
   dTagValue: string | null;
-
-  @Column({ type: 'char', length: 64, nullable: true })
-  delegator: string | null;
 
   @CreateDateColumn({ name: 'create_date', select: false })
   _createDate: Date;
@@ -78,6 +78,7 @@ export class Event {
     const event = new Event();
     event.id = eventDto.id;
     event.pubkey = eventDto.pubkey;
+    event.author = eventDto.pubkey;
     event.createdAt = eventDto.created_at;
     event.kind = eventDto.kind;
     event.tags = eventDto.tags;
@@ -156,7 +157,7 @@ export class Event {
       return false;
     }
 
-    if ([this.pubkey, this.delegator].includes(pubkey)) {
+    if (this.author === pubkey) {
       return true;
     }
 
@@ -220,7 +221,7 @@ export class Event {
       if (!this.isDelegationTagValid(delegationTag)) {
         return 'invalid: delegation tag verification failed';
       }
-      this.delegator = delegationTag[1];
+      this.author = delegationTag[1];
     }
   }
 

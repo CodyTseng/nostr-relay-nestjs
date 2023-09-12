@@ -29,7 +29,7 @@ describe('Event entity', () => {
 
       const delegationEvent = Event.fromEventDto(DELEGATION_EVENT_DTO);
       expect(delegationEvent.validate()).toBeUndefined();
-      expect(delegationEvent.delegator).toBe(
+      expect(delegationEvent.author).toBe(
         'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac',
       );
     });

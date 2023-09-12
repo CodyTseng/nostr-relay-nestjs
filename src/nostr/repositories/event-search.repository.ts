@@ -11,6 +11,7 @@ import { getTimestampInSeconds } from '../utils';
 type EventDocument = {
   id: string;
   pubkey: string;
+  author: string;
   createdAt: number;
   kind: number;
   tags: string[][];
@@ -18,7 +19,6 @@ type EventDocument = {
   content: string;
   sig: string;
   expiredAt: number | null;
-  delegator: string | null;
   dTagValue: string | null;
 };
 
@@ -63,7 +63,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       searchableAttributes: ['content'],
       filterableAttributes: [
         'id',
-        'pubkey',
+        'author',
         'createdAt',
         'kind',
         'genericTags',
@@ -175,10 +175,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
 
     if (filter.authors?.length) {
-      const authorsStr = filter.authors.join(', ');
-      searchFilters.push(
-        `pubkey IN [${authorsStr}] OR delegator IN [${authorsStr}]`,
-      );
+      searchFilters.push(`author IN [${filter.authors.join(', ')}]`);
     }
 
     if (filter.genericTagsCollection?.length) {
@@ -208,7 +205,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       content: event.content,
       sig: event.sig,
       expiredAt: event.expiredAt,
-      delegator: event.delegator,
+      author: event.author,
       dTagValue: event.dTagValue,
     };
   }
@@ -225,7 +222,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     event.expiredAt = eventDocument.expiredAt;
     event.genericTags = eventDocument.genericTags;
     event.dTagValue = eventDocument.dTagValue;
-    event.delegator = eventDocument.delegator;
+    event.author = eventDocument.author;
 
     return event;
   }

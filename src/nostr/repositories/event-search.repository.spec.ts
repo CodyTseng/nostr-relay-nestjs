@@ -32,7 +32,7 @@ describe('EventSearchRepository', () => {
     content: REGULAR_EVENT.content,
     sig: REGULAR_EVENT.sig,
     expiredAt: REGULAR_EVENT.expiredAt,
-    delegator: REGULAR_EVENT.delegator,
+    author: REGULAR_EVENT.author,
     dTagValue: REGULAR_EVENT.dTagValue,
   };
   const REPLACEABLE_EVENT_DOCUMENT = {
@@ -45,7 +45,7 @@ describe('EventSearchRepository', () => {
     content: REPLACEABLE_EVENT.content,
     sig: REPLACEABLE_EVENT.sig,
     expiredAt: REPLACEABLE_EVENT.expiredAt,
-    delegator: REPLACEABLE_EVENT.delegator,
+    author: REPLACEABLE_EVENT.author,
     dTagValue: REPLACEABLE_EVENT.dTagValue,
   };
   const addDocumentsFailError = new Error('addDocuments fail');
@@ -112,7 +112,7 @@ describe('EventSearchRepository', () => {
         searchableAttributes: ['content'],
         filterableAttributes: [
           'id',
-          'pubkey',
+          'author',
           'createdAt',
           'kind',
           'genericTags',
@@ -238,7 +238,7 @@ describe('EventSearchRepository', () => {
         options: {
           filter: [
             `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
+            `author IN [pubkey1, pubkey2]`,
           ],
           sort: ['createdAt:desc'],
           limit: 100,
@@ -301,7 +301,7 @@ describe('EventSearchRepository', () => {
             `kind IN [1, 2]`,
             `createdAt >= 1620000000`,
             `createdAt <= 1630000000`,
-            `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
+            `author IN [pubkey1, pubkey2]`,
             `genericTags IN [a:genericTags]`,
             `genericTags IN [b:genericTags]`,
           ],
