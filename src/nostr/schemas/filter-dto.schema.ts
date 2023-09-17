@@ -13,6 +13,7 @@ const TagFilterValuesSchema = z
       message: 'must be less than or equal to 1024 characters',
     }),
   )
+  .min(1, { message: 'must be greater than or equal to 1 tagValues' })
   .max(256, { message: 'must be less than or equal to 256 tagValues' });
 
 const TagsFilterSchema = z.record(

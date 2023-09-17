@@ -16,11 +16,12 @@ import {
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
-import { Event, Filter } from '../entities';
+import { Event, Filter, GenericTag } from '../entities';
 import { EventRepository } from '../repositories';
 
 describe('EventRepository', () => {
   let rawEventRepository: Repository<Event>;
+  let rawGenericTagRepository: Repository<GenericTag>;
   let eventRepository: EventRepository;
   let dataSource: DataSource;
 
@@ -34,13 +35,15 @@ describe('EventRepository', () => {
           migrationsRun: true,
           migrations: ['dist/migrations/*.js'],
         }),
-        TypeOrmModule.forFeature([Event]),
+        TypeOrmModule.forFeature([Event, GenericTag]),
       ],
       providers: [EventRepository],
     }).compile();
 
     rawEventRepository = moduleRef.get(getRepositoryToken(Event));
+    rawGenericTagRepository = moduleRef.get(getRepositoryToken(GenericTag));
     eventRepository = moduleRef.get(EventRepository);
+
     dataSource = moduleRef.get(getDataSourceToken());
   });
 
@@ -49,7 +52,10 @@ describe('EventRepository', () => {
   });
 
   afterEach(async () => {
-    await rawEventRepository.delete({});
+    await Promise.all([
+      rawEventRepository.delete({}),
+      rawGenericTagRepository.delete({}),
+    ]);
   });
 
   describe('create', () => {
