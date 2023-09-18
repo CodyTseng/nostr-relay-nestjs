@@ -9,6 +9,12 @@ export class GenericTag {
   @Column({ type: 'text' })
   tag: string;
 
+  @Column({ type: 'char', length: 64 })
+  author: string;
+
+  @Column()
+  kind: number;
+
   @ManyToOne(() => Event, (event) => event.genericTags)
   event: Event;
 

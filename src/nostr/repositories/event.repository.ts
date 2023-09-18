@@ -234,16 +234,26 @@ export class EventRepository {
     }
 
     if (filter.authors?.length) {
-      queryBuilder.andWhere('event.author IN (:...authors)', {
+      queryBuilder.andWhere('genericTag.author IN (:...authors)', {
         authors: filter.authors,
       });
     }
 
     if (filter.kinds?.length) {
-      queryBuilder.andWhere('event.kind IN (:...kinds)', {
+      queryBuilder.andWhere('genericTag.kind IN (:...kinds)', {
         kinds: filter.kinds,
       });
     }
+
+    queryBuilder.andWhere(
+      new Brackets((subQb) => {
+        subQb
+          .where('event.expired_at IS NULL')
+          .orWhere('event.expired_at > :expiredAt', {
+            expiredAt: getTimestampInSeconds(),
+          });
+      }),
+    );
 
     return queryBuilder;
   }
