@@ -52,10 +52,8 @@ describe('EventRepository', () => {
   });
 
   afterEach(async () => {
-    await Promise.all([
-      rawEventRepository.delete({}),
-      rawGenericTagRepository.delete({}),
-    ]);
+    await rawGenericTagRepository.delete({});
+    await rawEventRepository.delete({});
   });
 
   describe('create', () => {
