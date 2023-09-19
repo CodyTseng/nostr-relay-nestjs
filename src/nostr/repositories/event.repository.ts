@@ -30,6 +30,15 @@ export class EventRepository {
   async create(event: Event) {
     try {
       await this.event.insert(event);
+      await this.genericTag.insert(
+        event.genericTags.map((tag) => ({
+          tag,
+          eventId: event.id,
+          kind: event.kind,
+          author: event.author,
+          createdAt: event.createdAtStr,
+        })),
+      );
     } catch (error) {
       if (
         error instanceof QueryFailedError &&
@@ -113,6 +122,7 @@ export class EventRepository {
     }
 
     if (oldEventId) {
+      await this.genericTag.delete({ eventId: oldEventId });
       await this.event.delete({ id: oldEventId });
     }
 
