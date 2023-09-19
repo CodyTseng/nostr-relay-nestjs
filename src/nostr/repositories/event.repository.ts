@@ -138,14 +138,6 @@ export class EventRepository {
       queryBuilder.andWhere('event.id IN (:...ids)', { ids: filter.ids });
     }
 
-    if (filter.genericTagsCollection) {
-      filter.genericTagsCollection.forEach((genericTags) => {
-        queryBuilder.andWhere('event.generic_tags && (:genericTags)', {
-          genericTags,
-        });
-      });
-    }
-
     if (filter.since) {
       queryBuilder.andWhere('event.created_at >= :since', {
         since: filter.since,

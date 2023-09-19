@@ -211,7 +211,12 @@ describe('EventRepository', () => {
                 p: [
                   '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
                 ],
+                d: ['test'],
               },
+              since: PARAMETERIZED_REPLACEABLE_EVENT.createdAt - 1,
+              until: PARAMETERIZED_REPLACEABLE_EVENT.createdAt + 1,
+              kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
+              authors: [PARAMETERIZED_REPLACEABLE_EVENT.pubkey],
             }),
           )
         ).map((event) => event.toEventDto()),
@@ -311,6 +316,23 @@ describe('EventRepository', () => {
           (item) => -item.score,
         ),
       );
+
+      expect(
+        await eventRepository.findTopIdsWithScore(
+          Filter.fromFilterDto({
+            tags: {
+              p: [
+                '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+              ],
+            },
+          }),
+        ),
+      ).toEqual([
+        {
+          id: PARAMETERIZED_REPLACEABLE_EVENT.id,
+          score: PARAMETERIZED_REPLACEABLE_EVENT.createdAt,
+        },
+      ]);
     });
 
     it('should return empty', async () => {
