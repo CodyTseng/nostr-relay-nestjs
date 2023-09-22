@@ -61,7 +61,7 @@ export class EventRepository {
     const limit = this.getLimitFrom(filter);
     if (limit === 0) return [];
 
-    if (filter.genericTagsCollection?.length && !filter.ids?.length) {
+    if (this.shouldQueryFromGenericTags(filter)) {
       const genericTags = await this.createGenericTagsQueryBuilder(filter)
         .take(limit)
         .orderBy('genericTag.createdAt', 'DESC')
@@ -76,7 +76,7 @@ export class EventRepository {
   }
 
   async findOne(filter: EventRepositoryFilter) {
-    if (filter.genericTagsCollection?.length && !filter.ids?.length) {
+    if (this.shouldQueryFromGenericTags(filter)) {
       const genericTag = await this.createGenericTagsQueryBuilder(filter)
         .orderBy('genericTag.createdAt', 'DESC')
         .getOne();
@@ -96,7 +96,7 @@ export class EventRepository {
 
     let partialEvents: Pick<Event, 'id' | 'createdAt'>[] = [];
 
-    if (filter.genericTagsCollection?.length && !filter.ids?.length) {
+    if (this.shouldQueryFromGenericTags(filter)) {
       const genericTags = await this.createGenericTagsQueryBuilder(filter, [
         'event.id',
         'event.createdAtStr',
@@ -187,16 +187,19 @@ export class EventRepository {
     return queryBuilder;
   }
 
-  private createGenericTagsQueryBuilder(
+  private shouldQueryFromGenericTags(
     filter: EventRepositoryFilter,
+  ): filter is EventRepositoryFilter & { genericTagsCollection: string[][] } {
+    return !!filter.genericTagsCollection?.length && !filter.ids?.length;
+  }
+
+  private createGenericTagsQueryBuilder(
+    filter: EventRepositoryFilter & { genericTagsCollection: string[][] },
     selection?: string[],
   ) {
-    if (!filter.genericTagsCollection?.length)
-      throw new Error('genericTagsCollection is required');
-
     // TODO: select more appropriate generic tags
-    const [firstGenericTags, ...restGenericTags] = filter.genericTagsCollection;
-    if (!firstGenericTags.length) throw new Error('genericTags is required');
+    const [mainGenericTagsFilter, ...restGenericTagsCollection] =
+      filter.genericTagsCollection;
 
     const queryBuilder = this.genericTag
       .createQueryBuilder('genericTag')
@@ -217,12 +220,12 @@ export class EventRepository {
       );
     }
 
-    queryBuilder.where('genericTag.tag IN (:...firstGenericTags)', {
-      firstGenericTags,
+    queryBuilder.where('genericTag.tag IN (:...mainGenericTagsFilter)', {
+      mainGenericTagsFilter,
     });
 
-    if (restGenericTags.length) {
-      restGenericTags.forEach((genericTags) => {
+    if (restGenericTagsCollection.length) {
+      restGenericTagsCollection.forEach((genericTags) => {
         queryBuilder.andWhere('event.generic_tags && (:genericTags)', {
           genericTags,
         });
