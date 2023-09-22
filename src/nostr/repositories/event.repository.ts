@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isNil } from 'lodash';
-import { Brackets, QueryFailedError, Repository } from 'typeorm';
+import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
 import { Event, Filter, GenericTag } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
@@ -25,20 +25,24 @@ export class EventRepository {
     private readonly event: Repository<Event>,
     @InjectRepository(GenericTag)
     private readonly genericTag: Repository<GenericTag>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(event: Event) {
     try {
-      await this.event.insert(event);
-      await this.genericTag.insert(
-        event.genericTags.map((tag) => ({
-          tag,
-          eventId: event.id,
-          kind: event.kind,
-          author: event.author,
-          createdAt: event.createdAtStr,
-        })),
-      );
+      await this.dataSource.transaction(async (manager) => {
+        await manager.insert(Event, event);
+        await manager.insert(
+          GenericTag,
+          event.genericTags.map((tag) => ({
+            tag,
+            eventId: event.id,
+            kind: event.kind,
+            author: event.author,
+            createdAt: event.createdAtStr,
+          })),
+        );
+      });
     } catch (error) {
       if (
         error instanceof QueryFailedError &&
@@ -122,8 +126,10 @@ export class EventRepository {
     }
 
     if (oldEventId) {
-      await this.genericTag.delete({ eventId: oldEventId });
-      await this.event.delete({ id: oldEventId });
+      await this.dataSource.transaction(async (manager) => {
+        await manager.delete(GenericTag, { eventId: oldEventId });
+        await manager.delete(Event, { id: oldEventId });
+      });
     }
 
     return this.create(event);
