@@ -16,11 +16,12 @@ import {
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
-import { Event, Filter } from '../entities';
+import { Event, Filter, GenericTag } from '../entities';
 import { EventRepository } from '../repositories';
 
 describe('EventRepository', () => {
   let rawEventRepository: Repository<Event>;
+  let rawGenericTagRepository: Repository<GenericTag>;
   let eventRepository: EventRepository;
   let dataSource: DataSource;
 
@@ -34,13 +35,15 @@ describe('EventRepository', () => {
           migrationsRun: true,
           migrations: ['dist/migrations/*.js'],
         }),
-        TypeOrmModule.forFeature([Event]),
+        TypeOrmModule.forFeature([Event, GenericTag]),
       ],
       providers: [EventRepository],
     }).compile();
 
     rawEventRepository = moduleRef.get(getRepositoryToken(Event));
+    rawGenericTagRepository = moduleRef.get(getRepositoryToken(GenericTag));
     eventRepository = moduleRef.get(EventRepository);
+
     dataSource = moduleRef.get(getDataSourceToken());
   });
 
@@ -49,6 +52,7 @@ describe('EventRepository', () => {
   });
 
   afterEach(async () => {
+    await rawGenericTagRepository.delete({});
     await rawEventRepository.delete({});
   });
 
@@ -207,7 +211,12 @@ describe('EventRepository', () => {
                 p: [
                   '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
                 ],
+                d: ['test'],
               },
+              since: PARAMETERIZED_REPLACEABLE_EVENT.createdAt - 1,
+              until: PARAMETERIZED_REPLACEABLE_EVENT.createdAt + 1,
+              kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
+              authors: [PARAMETERIZED_REPLACEABLE_EVENT.pubkey],
             }),
           )
         ).map((event) => event.toEventDto()),
@@ -307,6 +316,23 @@ describe('EventRepository', () => {
           (item) => -item.score,
         ),
       );
+
+      expect(
+        await eventRepository.findTopIdsWithScore(
+          Filter.fromFilterDto({
+            tags: {
+              p: [
+                '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+              ],
+            },
+          }),
+        ),
+      ).toEqual([
+        {
+          id: PARAMETERIZED_REPLACEABLE_EVENT.id,
+          score: PARAMETERIZED_REPLACEABLE_EVENT.createdAt,
+        },
+      ]);
     });
 
     it('should return empty', async () => {

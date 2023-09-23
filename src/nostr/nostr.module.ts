@@ -8,9 +8,10 @@ import { EventSearchRepository } from './repositories/event-search.repository';
 import { EventService } from './services/event.service';
 import { StorageService } from './services/storage.service';
 import { SubscriptionService } from './services/subscription.service';
+import { GenericTag } from './entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Event])],
+  imports: [TypeOrmModule.forFeature([Event, GenericTag])],
   controllers: [NostrController],
   providers: [
     EventRepository,

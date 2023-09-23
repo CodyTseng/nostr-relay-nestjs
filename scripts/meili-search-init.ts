@@ -55,7 +55,8 @@ async function run() {
       expired_at: string | null;
       d_tag_value: string | null;
     }>(
-      `SELECT * FROM events WHERE kind IN (${syncEventKinds}) AND created_at <= ${until} AND (expired_at IS NULL OR expired_at > ${now}) ORDER BY created_at DESC LIMIT ${limit}`,
+      `SELECT * FROM events WHERE kind IN ($1) AND created_at <= $2 AND (expired_at IS NULL OR expired_at > $3) ORDER BY created_at DESC LIMIT $4`,
+      [syncEventKinds, until, now, limit],
     );
     rowCount = result.rowCount;
     logger.info(`Fetched ${rowCount} events`);
