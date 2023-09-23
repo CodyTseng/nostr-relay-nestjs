@@ -50,10 +50,13 @@ describe('LoggingInterceptor', () => {
 
     await lastValueFrom(interceptor.intercept(context, next as any));
 
-    expect(infoSpy).toHaveBeenCalledWith({
-      data: 'test-data',
-      executionTime: expect.any(Number),
-    });
+    expect(infoSpy).toHaveBeenCalledWith(
+      {
+        data: 'test-data',
+        executionTime: expect.any(Number),
+      },
+      expect.any(String),
+    );
   });
 
   it('should log warn if execution time is greater than or equal to 10ms', async () => {
@@ -75,7 +78,7 @@ describe('LoggingInterceptor', () => {
         data: 'test-data',
         executionTime: expect.any(Number),
       },
-      'slow request',
+      expect.any(String),
     );
   });
 });

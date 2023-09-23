@@ -5,6 +5,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { get } from 'lodash';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, finalize } from 'rxjs';
 import { Config } from 'src/config';
@@ -34,10 +35,16 @@ export class LoggingInterceptor implements NestInterceptor {
     return next.handle().pipe(
       finalize(() => {
         const executionTime = Date.now() - start;
+        const msg = `${get(
+          data,
+          '0',
+          'UNKNOWN',
+        )} request took ${executionTime}ms to execute`;
+
         if (executionTime < this.slowRequestThreshold) {
-          this.logger.info({ data, executionTime });
+          this.logger.info({ data, executionTime }, msg);
         } else {
-          this.logger.warn({ data, executionTime }, 'slow request');
+          this.logger.warn({ data, executionTime }, `${msg} (slow)`);
         }
       }),
     );
