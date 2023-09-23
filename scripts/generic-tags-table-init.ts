@@ -30,7 +30,8 @@ async function run() {
       expired_at: string | null;
       d_tag_value: string | null;
     }>(
-      `SELECT * FROM events WHERE cardinality(generic_tags) > 0 AND created_at <= ${until} AND (expired_at IS NULL OR expired_at > ${now}) ORDER BY created_at DESC LIMIT ${limit}`,
+      `SELECT * FROM events WHERE cardinality(generic_tags) > 0 AND created_at <= $1 AND (expired_at IS NULL OR expired_at > $2) ORDER BY created_at DESC LIMIT $3`,
+      [until, now, limit],
     );
     rowCount = result.rowCount;
     logger.info(`Fetched ${rowCount} events`);
