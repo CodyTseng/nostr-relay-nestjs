@@ -11,7 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { randomUUID } from 'crypto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { concatWith, filter, from, map, of } from 'rxjs';
+import { concatWith, filter, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RestrictedException } from '../common/exceptions';
 import { GlobalExceptionFilter } from '../common/filters';
