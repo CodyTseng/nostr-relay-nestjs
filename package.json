@@ -44,7 +44,7 @@
     "lodash": "^4.17.21",
     "meilisearch": "^0.34.1",
     "nestjs-pino": "^3.3.0",
-    "pg": "^8.11.2",
+    "pg": "^8.11.3",
     "pino-http": "^8.4.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
