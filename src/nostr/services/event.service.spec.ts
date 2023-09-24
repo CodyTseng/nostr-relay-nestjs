@@ -12,7 +12,7 @@ import {
 import { Event, Filter } from '../entities';
 import { EventRepository } from '../repositories';
 import { EventSearchRepository } from '../repositories/event-search.repository';
-import { createCommandResultResponse } from '../utils';
+import { createCommandResultResponse, observableToArray } from '../utils';
 import { EventService } from './event.service';
 import { StorageService } from './storage.service';
 
@@ -205,18 +205,24 @@ describe('EventService', () => {
         (eventService as any).eventSearchRepository = eventSearchRepository;
 
         await expect(
-          eventService.findByFilters([{}].map(Filter.fromFilterDto)),
-        ).resolves.toEqual(events);
-
-        await expect(
-          eventService.findByFilters(
-            [{ search: 'test' }].map(Filter.fromFilterDto),
+          observableToArray(
+            eventService.findByFilters([{}].map(Filter.fromFilterDto)),
           ),
         ).resolves.toEqual(events);
 
         await expect(
-          eventService.findByFilters(
-            [{}, { search: 'test' }].map(Filter.fromFilterDto),
+          observableToArray(
+            eventService.findByFilters(
+              [{ search: 'test' }].map(Filter.fromFilterDto),
+            ),
+          ),
+        ).resolves.toEqual(events);
+
+        await expect(
+          observableToArray(
+            eventService.findByFilters(
+              [{}, { search: 'test' }].map(Filter.fromFilterDto),
+            ),
           ),
         ).resolves.toEqual(events);
       });
