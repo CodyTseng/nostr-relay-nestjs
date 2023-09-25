@@ -61,12 +61,18 @@ describe('NostrGateway', () => {
 
   describe('EVENT', () => {
     it('should handle event successfully', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(false);
       await expect(
         nostrGateway.event([MessageType.EVENT, REGULAR_EVENT_DTO]),
       ).resolves.toEqual([MessageType.OK, REGULAR_EVENT_DTO.id, true, '']);
     });
 
     it('should return validate error', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(false);
       await expect(
         nostrGateway.event([
           MessageType.EVENT,
@@ -81,6 +87,9 @@ describe('NostrGateway', () => {
     });
 
     it('should return an error', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(false);
       await expect(
         nostrGateway.event([MessageType.EVENT, CAUSE_ERROR_EVENT_DTO]),
       ).resolves.toEqual([
@@ -88,6 +97,20 @@ describe('NostrGateway', () => {
         CAUSE_ERROR_EVENT_DTO.id,
         false,
         'error: ' + ERROR_MSG,
+      ]);
+    });
+
+    it('should return duplicate message', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(true);
+      await expect(
+        nostrGateway.event([MessageType.EVENT, REGULAR_EVENT_DTO]),
+      ).resolves.toEqual([
+        MessageType.OK,
+        REGULAR_EVENT_DTO.id,
+        true,
+        'duplicate: the event already exists',
       ]);
     });
   });

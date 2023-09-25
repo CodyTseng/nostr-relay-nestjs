@@ -82,6 +82,15 @@ export class NostrGateway
     [, e]: EventMessageDto,
   ) {
     const event = Event.fromEventDto(e);
+    const exists = await this.eventService.checkEventExists(event);
+    if (exists) {
+      return createCommandResultResponse(
+        event.id,
+        true,
+        'duplicate: the event already exists',
+      );
+    }
+
     const validateErrorMsg = event.validate({
       createdAtUpperLimit: this.limitConfig.createdAt.upper,
       eventIdMinLeadingZeroBits: this.limitConfig.eventId.minLeadingZeroBits,
