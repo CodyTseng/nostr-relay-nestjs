@@ -111,6 +111,12 @@ describe('EventRepository', () => {
           await eventRepository.findOne({ ids: [REGULAR_EVENT.id] })
         )?.toEventDto(),
       ).toEqual(REGULAR_EVENT.toEventDto());
+
+      expect(
+        (
+          await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }, ['id'])
+        )?.toEventDto().id,
+      ).toEqual(REGULAR_EVENT.id);
     });
 
     it('should filter by kind successfully', async () => {
@@ -237,6 +243,21 @@ describe('EventRepository', () => {
           )
         )?.toEventDto(),
       ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
+
+      expect(
+        (
+          await eventRepository.findOne(
+            Filter.fromFilterDto({
+              tags: {
+                p: [
+                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+                ],
+              },
+            }),
+            ['id'],
+          )
+        )?.toEventDto().id,
+      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.id);
 
       const unStandardTagEventDto = createEventDtoMock({
         tags: [['z', 'test2']],

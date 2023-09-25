@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { chain } from 'lodash';
+import { chain, isNil } from 'lodash';
+import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
 import { Event, Filter } from '../entities';
-import { EventRepository } from '../repositories';
-import { EventSearchRepository } from '../repositories/event-search.repository';
+import { EventRepository, EventSearchRepository } from '../repositories';
 import { CommandResultResponse, createCommandResultResponse } from '../utils';
 import { StorageService } from './storage.service';
-import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
 
 @Injectable()
 export class EventService {
@@ -47,6 +46,32 @@ export class EventService {
       .map('id')
       .take(1000)
       .value();
+  }
+
+  async checkEventExists(event: Event): Promise<boolean> {
+    if (EventType.EPHEMERAL === event.type) return false;
+
+    if (
+      [EventType.REPLACEABLE, EventType.PARAMETERIZED_REPLACEABLE].includes(
+        event.type,
+      ) &&
+      !isNil(event.dTagValue)
+    ) {
+      const exists = await this.eventRepository.findOne(
+        {
+          authors: [event.pubkey],
+          kinds: [event.kind],
+          dTagValues: [event.dTagValue],
+        },
+        ['id'],
+      );
+      return !!exists;
+    }
+
+    const exists = await this.eventRepository.findOne({ ids: [event.id] }, [
+      'id',
+    ]);
+    return !!exists;
   }
 
   async handleEvent(event: Event): Promise<void | CommandResultResponse> {

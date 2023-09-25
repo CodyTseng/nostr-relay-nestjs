@@ -75,17 +75,26 @@ export class EventRepository {
       .getMany();
   }
 
-  async findOne(filter: EventRepositoryFilter) {
+  async findOne(filter: EventRepositoryFilter, selection?: string[]) {
     if (this.shouldQueryFromGenericTags(filter)) {
-      const genericTag = await this.createGenericTagsQueryBuilder(filter)
+      const genericTag = await this.createGenericTagsQueryBuilder(
+        filter,
+        selection?.length
+          ? selection.map((field) => `event.${field}`)
+          : undefined,
+      )
         .orderBy('genericTag.createdAt', 'DESC')
         .getOne();
       return genericTag?.event ?? null;
     }
 
-    return await this.createQueryBuilder(filter)
-      .orderBy('event.createdAtStr', 'DESC')
-      .getOne();
+    const qb = this.createQueryBuilder(filter);
+
+    if (selection?.length) {
+      qb.select(selection.map((field) => `event.${field}`));
+    }
+
+    return await qb.orderBy('event.createdAtStr', 'DESC').getOne();
   }
 
   async findTopIdsWithScore(

@@ -10,8 +10,7 @@ import {
   REPLACEABLE_EVENT_DTO,
 } from '../../../seeds';
 import { Event, Filter } from '../entities';
-import { EventRepository } from '../repositories';
-import { EventSearchRepository } from '../repositories/event-search.repository';
+import { EventRepository, EventSearchRepository } from '../repositories';
 import { createCommandResultResponse, observableToArray } from '../utils';
 import { EventService } from './event.service';
 import { StorageService } from './storage.service';
@@ -248,6 +247,42 @@ describe('EventService', () => {
             [{}, { search: 'test' }].map(Filter.fromFilterDto),
           ),
         ).toEqual([REGULAR_EVENT.id, REPLACEABLE_EVENT.id]);
+      });
+    });
+
+    describe('checkEventExists', () => {
+      it('should return false when the event is ephemeral', async () => {
+        expect(
+          await eventService.checkEventExists(EPHEMERAL_EVENT),
+        ).toBeFalsy();
+      });
+
+      it('should return false when the event does not exist', async () => {
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(null);
+
+        expect(
+          await eventService.checkEventExists(REPLACEABLE_EVENT),
+        ).toBeFalsy();
+        expect(
+          await eventService.checkEventExists(PARAMETERIZED_REPLACEABLE_EVENT),
+        ).toBeFalsy();
+        expect(await eventService.checkEventExists(REGULAR_EVENT)).toBeFalsy();
+      });
+
+      it('should return true when the event exists', async () => {
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue({} as Event);
+
+        expect(
+          await eventService.checkEventExists(REPLACEABLE_EVENT),
+        ).toBeTruthy();
+        expect(
+          await eventService.checkEventExists(PARAMETERIZED_REPLACEABLE_EVENT),
+        ).toBeTruthy();
+        expect(await eventService.checkEventExists(REGULAR_EVENT)).toBeTruthy();
       });
     });
   });
