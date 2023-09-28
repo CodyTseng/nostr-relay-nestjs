@@ -9,8 +9,13 @@ import {
 import { Event } from './event.entity';
 
 @Entity({ name: 'generic_tags' })
-@Index('g_tag_created_at_idx', ['tag', 'createdAt'])
-@Index('g_tag_kind_created_at_idx', ['tag', 'kind', 'createdAt'])
+@Index('g_tag_created_at_event_id_idx', ['tag', 'createdAt', 'eventId'])
+@Index('g_tag_kind_created_at_event_id_idx', [
+  'tag',
+  'kind',
+  'createdAt',
+  'eventId',
+])
 @Index('g_event_id_tag_idx', ['eventId', 'tag'], { unique: true })
 export class GenericTag {
   @PrimaryGeneratedColumn()
