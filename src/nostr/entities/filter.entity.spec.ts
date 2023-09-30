@@ -84,7 +84,7 @@ describe('filter', () => {
     it('should create filter successfully', () => {
       const filter = Filter.fromFilterDto({
         search: 'test1 test2 test3:test4 test5:test6',
-        tags: { a: ['test1', 'test2'], b: ['test3', 'test4'] },
+        tags: { a: ['test1', 'test2'], b: ['test3', 'test4'], d: ['test5'] },
       });
 
       expect(filter.search).toEqual('test1 test2');
@@ -96,6 +96,7 @@ describe('filter', () => {
         ['a:test1', 'a:test2'],
         ['b:test3', 'b:test4'],
       ]);
+      expect(filter.dTagValues).toEqual(['test5']);
     });
   });
 

@@ -196,15 +196,25 @@ describe('EventRepository', () => {
 
     it('should filter by dTagValue successfully', async () => {
       expect(
-        (await eventRepository.find({ dTagValues: ['test'] })).map((event) =>
-          event.toEventDto(),
-        ),
+        (
+          await eventRepository.find({
+            authors: [PARAMETERIZED_REPLACEABLE_EVENT.author],
+            kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
+            dTagValues: ['test'],
+          })
+        ).map((event) => event.toEventDto()),
       ).toEqual(
         [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEventDto()),
       );
 
       expect(
-        (await eventRepository.findOne({ dTagValues: ['test'] }))?.toEventDto(),
+        (
+          await eventRepository.findOne({
+            authors: [PARAMETERIZED_REPLACEABLE_EVENT.author],
+            kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
+            dTagValues: ['test'],
+          })
+        )?.toEventDto(),
       ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
     });
 

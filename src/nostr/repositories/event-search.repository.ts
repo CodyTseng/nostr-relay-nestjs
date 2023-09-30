@@ -4,9 +4,10 @@ import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
+import { TagName } from '../constants';
 import { Event, SearchFilter } from '../entities';
 import { TEventIdWithScore } from '../types';
-import { getTimestampInSeconds } from '../utils';
+import { getTimestampInSeconds, toGenericTag } from '../utils';
 
 type EventDocument = {
   id: string;
@@ -69,6 +70,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
         'genericTags',
         'delegator',
         'expiredAt',
+        'dTagValue',
       ],
       sortableAttributes: ['createdAt'],
       rankingRules: [
@@ -182,6 +184,10 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       filter.genericTagsCollection.forEach((genericTags) => {
         searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
       });
+    }
+
+    if (filter.dTagValues?.length) {
+      searchFilters.push(`dTagValue IN [${filter.dTagValues.join(', ')}]`);
     }
 
     return searchFilters;
