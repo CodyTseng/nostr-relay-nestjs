@@ -4,10 +4,9 @@ import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
-import { TagName } from '../constants';
 import { Event, SearchFilter } from '../entities';
 import { TEventIdWithScore } from '../types';
-import { getTimestampInSeconds, toGenericTag } from '../utils';
+import { getTimestampInSeconds } from '../utils';
 
 type EventDocument = {
   id: string;
