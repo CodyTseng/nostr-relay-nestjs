@@ -210,11 +210,7 @@ export class EventRepository {
     return (
       !!filter.genericTagsCollection?.length &&
       !filter.ids?.length &&
-      !(
-        filter.authors?.length &&
-        filter.kinds?.length &&
-        filter.dTagValues?.length
-      )
+      !filter.dTagValues?.length
     );
   }
 
