@@ -118,6 +118,7 @@ describe('EventSearchRepository', () => {
           'genericTags',
           'delegator',
           'expiredAt',
+          'dTagValue',
         ],
         sortableAttributes: ['createdAt'],
         rankingRules: [
@@ -265,6 +266,24 @@ describe('EventSearchRepository', () => {
       });
     });
 
+    it('has dTagValues filter', async () => {
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        dTagValues: ['dTagValue1', 'dTagValue2'],
+      });
+      expect(searchInput).toEqual({
+        query: '',
+        options: {
+          filter: [
+            `expiredAt IS NULL OR expiredAt >= 1620000000`,
+            `dTagValue IN [dTagValue1, dTagValue2]`,
+          ],
+          sort: ['createdAt:desc'],
+          limit: 100,
+        },
+      });
+    });
+
     it('has limit', async () => {
       await eventSearchRepositoryWithIndex.find({ search: '', limit: 10 });
       expect(searchInput).toEqual({
@@ -290,6 +309,7 @@ describe('EventSearchRepository', () => {
         until: 1630000000,
         authors: ['pubkey1', 'pubkey2'],
         genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
+        dTagValues: ['dTagValue1', 'dTagValue2'],
         limit: 10,
       });
       expect(searchInput).toEqual({
@@ -304,6 +324,7 @@ describe('EventSearchRepository', () => {
             `author IN [pubkey1, pubkey2]`,
             `genericTags IN [a:genericTags]`,
             `genericTags IN [b:genericTags]`,
+            `dTagValue IN [dTagValue1, dTagValue2]`,
           ],
           sort: ['createdAt:desc'],
           limit: 10,

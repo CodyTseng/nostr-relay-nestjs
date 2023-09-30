@@ -1,5 +1,5 @@
 import { intersection, uniq } from 'lodash';
-import { EventKind } from '../constants';
+import { EventKind, TagName } from '../constants';
 import { FilterDto } from '../schemas';
 import { toGenericTag } from '../utils';
 import { Event } from './event.entity';
@@ -26,11 +26,24 @@ export class Filter {
     filter.since = filterDto.since;
     filter.until = filterDto.until;
     filter.limit = filterDto.limit;
-    filter.genericTagsCollection = filterDto.tags
-      ? Object.entries(filterDto.tags).map(([key, values]) =>
+    filter.genericTagsCollection = undefined;
+
+    if (filterDto.tags) {
+      Object.entries(filterDto.tags).forEach(([key, values]) => {
+        if (key === TagName.D) {
+          filter.dTagValues = uniq(values);
+          return;
+        }
+
+        if (!filter.genericTagsCollection) {
+          filter.genericTagsCollection = [];
+        }
+
+        filter.genericTagsCollection.push(
           uniq(values.map((value) => toGenericTag(key, value))),
-        )
-      : undefined;
+        );
+      });
+    }
 
     if (filterDto.search) {
       const { search, searchOptions } = Filter.parseSearch(filterDto.search);

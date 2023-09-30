@@ -183,6 +183,14 @@ export class EventRepository {
       });
     }
 
+    if (filter.genericTagsCollection?.length) {
+      filter.genericTagsCollection.forEach((genericTags) => {
+        queryBuilder.andWhere('event.generic_tags && (:genericTags)', {
+          genericTags,
+        });
+      });
+    }
+
     queryBuilder.andWhere(
       new Brackets((subQb) => {
         subQb
@@ -199,7 +207,15 @@ export class EventRepository {
   private shouldQueryFromGenericTags(
     filter: EventRepositoryFilter,
   ): filter is EventRepositoryFilter & { genericTagsCollection: string[][] } {
-    return !!filter.genericTagsCollection?.length && !filter.ids?.length;
+    return (
+      !!filter.genericTagsCollection?.length &&
+      !filter.ids?.length &&
+      !(
+        filter.authors?.length &&
+        filter.kinds?.length &&
+        filter.dTagValues?.length
+      )
+    );
   }
 
   private createGenericTagsQueryBuilder(
@@ -262,6 +278,12 @@ export class EventRepository {
     if (filter.kinds?.length) {
       queryBuilder.andWhere('genericTag.kind IN (:...kinds)', {
         kinds: filter.kinds,
+      });
+    }
+
+    if (filter.dTagValues?.length) {
+      queryBuilder.andWhere('event.dTagValue IN (:...dTagValues)', {
+        dTagValues: filter.dTagValues,
       });
     }
 

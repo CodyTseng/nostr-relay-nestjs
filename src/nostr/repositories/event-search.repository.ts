@@ -69,6 +69,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
         'genericTags',
         'delegator',
         'expiredAt',
+        'dTagValue',
       ],
       sortableAttributes: ['createdAt'],
       rankingRules: [
@@ -182,6 +183,10 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       filter.genericTagsCollection.forEach((genericTags) => {
         searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
       });
+    }
+
+    if (filter.dTagValues?.length) {
+      searchFilters.push(`dTagValue IN [${filter.dTagValues.join(', ')}]`);
     }
 
     return searchFilters;
