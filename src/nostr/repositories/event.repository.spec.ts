@@ -268,6 +268,21 @@ describe('EventRepository', () => {
 
       expect(
         (
+          await eventRepository.find(
+            Filter.fromFilterDto({
+              tags: {
+                p: [
+                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
+                ],
+                d: ['fake'],
+              },
+            }),
+          )
+        ).map((event) => event.toEventDto()),
+      ).toEqual([]);
+
+      expect(
+        (
           await eventRepository.findOne(
             Filter.fromFilterDto({
               tags: {

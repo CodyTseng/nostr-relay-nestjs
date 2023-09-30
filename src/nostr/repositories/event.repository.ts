@@ -281,6 +281,12 @@ export class EventRepository {
       });
     }
 
+    if (filter.dTagValues?.length) {
+      queryBuilder.andWhere('event.dTagValue IN (:...dTagValues)', {
+        dTagValues: filter.dTagValues,
+      });
+    }
+
     queryBuilder.andWhere(
       new Brackets((subQb) => {
         subQb
