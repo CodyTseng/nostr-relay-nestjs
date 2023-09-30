@@ -95,8 +95,41 @@ describe('filter', () => {
       expect(filter.genericTagsCollection).toEqual([
         ['a:test1', 'a:test2'],
         ['b:test3', 'b:test4'],
+        ['d:test5'],
       ]);
-      expect(filter.dTagValues).toEqual(['test5']);
+
+      expect(
+        Filter.fromFilterDto({
+          kinds: [EventKind.PARAMETERIZED_REPLACEABLE_FIRST],
+          authors: ['test'],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toEqual(['test']);
+
+      expect(
+        Filter.fromFilterDto({
+          kinds: [
+            EventKind.TEXT_NOTE,
+            EventKind.PARAMETERIZED_REPLACEABLE_FIRST,
+          ],
+          authors: ['test'],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toBeUndefined();
+
+      expect(
+        Filter.fromFilterDto({
+          authors: ['test'],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toBeUndefined();
+
+      expect(
+        Filter.fromFilterDto({
+          kinds: [EventKind.PARAMETERIZED_REPLACEABLE_FIRST],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toBeUndefined();
     });
   });
 

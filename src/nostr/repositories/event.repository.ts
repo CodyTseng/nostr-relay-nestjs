@@ -210,11 +210,7 @@ export class EventRepository {
     return (
       !!filter.genericTagsCollection?.length &&
       !filter.ids?.length &&
-      !(
-        filter.authors?.length &&
-        filter.kinds?.length &&
-        filter.dTagValues?.length
-      )
+      !filter.dTagValues?.length
     );
   }
 
@@ -278,12 +274,6 @@ export class EventRepository {
     if (filter.kinds?.length) {
       queryBuilder.andWhere('genericTag.kind IN (:...kinds)', {
         kinds: filter.kinds,
-      });
-    }
-
-    if (filter.dTagValues?.length) {
-      queryBuilder.andWhere('event.dTagValue IN (:...dTagValues)', {
-        dTagValues: filter.dTagValues,
       });
     }
 

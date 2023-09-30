@@ -29,8 +29,17 @@ export class Filter {
     filter.genericTagsCollection = undefined;
 
     if (filterDto.tags) {
+      const shouldUseDTagValueIndex =
+        filter.authors?.length &&
+        filter.kinds?.length &&
+        filter.kinds.every(
+          (kind) =>
+            kind >= EventKind.PARAMETERIZED_REPLACEABLE_FIRST &&
+            kind <= EventKind.PARAMETERIZED_REPLACEABLE_LAST,
+        );
+
       Object.entries(filterDto.tags).forEach(([key, values]) => {
-        if (key === TagName.D) {
+        if (key === TagName.D && shouldUseDTagValueIndex) {
           filter.dTagValues = uniq(values);
           return;
         }
