@@ -219,6 +219,34 @@ describe('EventRepository', () => {
     });
 
     it('should filter by tag successfully', async () => {
+      const manyTagsEvent = Event.fromEventDto(
+        createEventDtoMock({
+          tags: [
+            ['a', 'test1'],
+            ['b', 'test2'],
+            ['c', 'test3'],
+          ],
+        }),
+      );
+      await eventRepository.create(manyTagsEvent);
+      expect(
+        (
+          await eventRepository.find(
+            Filter.fromFilterDto({
+              tags: {
+                a: ['test1'],
+                b: ['test2'],
+                c: ['test3'],
+              },
+              since: manyTagsEvent.createdAt - 1,
+              until: manyTagsEvent.createdAt + 1,
+              kinds: [manyTagsEvent.kind],
+              authors: [manyTagsEvent.pubkey],
+            }),
+          )
+        ).map((event) => event.toEventDto()),
+      ).toEqual([manyTagsEvent].map((event) => event.toEventDto()));
+
       expect(
         (
           await eventRepository.find(
@@ -229,8 +257,6 @@ describe('EventRepository', () => {
                 ],
                 d: ['test'],
               },
-              since: PARAMETERIZED_REPLACEABLE_EVENT.createdAt - 1,
-              until: PARAMETERIZED_REPLACEABLE_EVENT.createdAt + 1,
               kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
               authors: [PARAMETERIZED_REPLACEABLE_EVENT.pubkey],
             }),
