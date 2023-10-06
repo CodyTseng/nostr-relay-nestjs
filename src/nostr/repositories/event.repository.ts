@@ -135,10 +135,7 @@ export class EventRepository {
     }
 
     if (oldEventId) {
-      await this.dataSource.transaction(async (manager) => {
-        await manager.delete(GenericTag, { eventId: oldEventId });
-        await manager.delete(Event, { id: oldEventId });
-      });
+      await this.event.delete({ id: oldEventId });
     }
 
     return this.create(event);
