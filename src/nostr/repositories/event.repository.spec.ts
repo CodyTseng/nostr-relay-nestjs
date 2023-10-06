@@ -321,6 +321,12 @@ describe('EventRepository', () => {
           )
         )?.toEventDto(),
       ).toEqual(unStandardTagEventDto);
+
+      expect(
+        await eventRepository.findOne(
+          Filter.fromFilterDto({ tags: { f: ['fake'] } }),
+        ),
+      ).toBeNull();
     });
 
     it('should limit successfully', async () => {
