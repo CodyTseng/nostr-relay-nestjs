@@ -1,14 +1,14 @@
-# Use an official Node.js runtime as a parent image
-FROM node:18
+# Building layer
+FROM node:18-alpine as build
 
-# Set the working directory to /app
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the container
+# Copy configuration files
+COPY tsconfig*.json ./
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm ci
 
 # Copy the rest of the application code to the container
 COPY . .
@@ -16,5 +16,19 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Production layer
+FROM node:18-alpine as production
+
+WORKDIR /app
+
+# Copy dependencies files
+COPY package*.json ./
+
+# Install runtime dependecies (without dev/test dependecies)
+RUN npm ci --omit=dev
+
+# Copy production build
+COPY --from=build /app/dist .
+
 # Start the application
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "src/main"]
