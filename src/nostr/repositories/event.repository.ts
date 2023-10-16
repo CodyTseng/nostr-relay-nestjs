@@ -130,10 +130,6 @@ export class EventRepository {
   }
 
   async replace(event: Event, oldEventId?: string) {
-    if (event.id === oldEventId) {
-      return false;
-    }
-
     if (oldEventId) {
       await this.event.delete({ id: oldEventId });
     }
