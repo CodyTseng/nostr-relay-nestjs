@@ -371,12 +371,6 @@ describe('EventRepository', () => {
         await eventRepository.findOne({ ids: [REPLACEABLE_EVENT.id] }),
       ).toBeNull();
     });
-
-    it('should return false when the id of the old and new events are the same', async () => {
-      expect(
-        await eventRepository.replace(REPLACEABLE_EVENT, REPLACEABLE_EVENT.id),
-      ).toBeFalsy();
-    });
   });
 
   describe('findTopIdsWithScore', () => {

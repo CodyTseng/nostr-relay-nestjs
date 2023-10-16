@@ -164,7 +164,10 @@ export class EventService {
     event: Event,
     oldEvent: Event | null,
   ): Promise<CommandResultResponse> {
-    if (oldEvent && oldEvent.createdAt >= event.createdAt) {
+    if (
+      oldEvent &&
+      (oldEvent.createdAt > event.createdAt || oldEvent.id <= event.id)
+    ) {
       return createCommandResultResponse(
         event.id,
         true,
@@ -172,18 +175,14 @@ export class EventService {
       );
     }
 
-    const [success] = await Promise.all([
+    await Promise.all([
       this.eventRepository.replace(event, oldEvent?.id),
       this.eventSearchRepository.replace(event, oldEvent?.id),
     ]);
-    if (success) {
-      this.broadcastEvent(event);
-    }
-    return createCommandResultResponse(
-      event.id,
-      true,
-      success ? '' : 'duplicate: the event already exists',
-    );
+
+    this.broadcastEvent(event);
+
+    return createCommandResultResponse(event.id, true, '');
   }
 
   private broadcastEvent(event: Event) {

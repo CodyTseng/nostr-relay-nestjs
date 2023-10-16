@@ -125,6 +125,28 @@ describe('EventService', () => {
         expect(mockEmit).not.toBeCalled();
       });
 
+      it('should return duplicate when the event has the same timestamp but the ID is larger', async () => {
+        const eventRepository = createMock<EventRepository>({
+          findOne: async () =>
+            Event.fromEventDto({
+              ...REPLACEABLE_EVENT_DTO,
+              id: '0000000000000000000000000000000000000000000000000000000000000000',
+            }),
+          replace: async () => true,
+        });
+        (eventService as any).eventRepository = eventRepository;
+
+        await expect(
+          eventService.handleEvent(REPLACEABLE_EVENT),
+        ).resolves.toEqual(
+          createCommandResultResponse(
+            REPLACEABLE_EVENT.id,
+            true,
+            'duplicate: the event already exists',
+          ),
+        );
+      });
+
       it('should return rate-limited when acquiring the lock fails', async () => {
         (eventService as any).storageService = createMock<StorageService>({
           setNx: async () => false,
