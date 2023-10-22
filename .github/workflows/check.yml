@@ -10,6 +10,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 21.x]
+
     services:
       postgres:
         image: postgres:latest
@@ -24,10 +28,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Use Node.js 16.x
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
         run: npm ci
@@ -45,5 +49,19 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
-      - name: Coveralls
+      - name: Coveralls Parallel
         uses: coverallsapp/github-action@v2
+        with:
+          flag-name: node-${{ matrix.node-version }}
+          parallel: true
+
+  finish:
+    needs: check
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+          carryforward: 'node-16.x,node-18.x,node-21.x'
