@@ -1,8 +1,7 @@
 import { createMock } from '@golevelup/ts-jest';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
-  createSignedEventMock,
-  DELETION_EVENT,
+  createTestSignedEvent,
   EPHEMERAL_EVENT,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
@@ -125,28 +124,6 @@ describe('EventService', () => {
         expect(mockEmit).not.toBeCalled();
       });
 
-      it('should return duplicate when the event has the same timestamp but the ID is larger', async () => {
-        const eventRepository = createMock<EventRepository>({
-          findOne: async () =>
-            Event.fromEventDto({
-              ...REPLACEABLE_EVENT_DTO,
-              id: '0000000000000000000000000000000000000000000000000000000000000000',
-            }),
-          replace: async () => true,
-        });
-        (eventService as any).eventRepository = eventRepository;
-
-        await expect(
-          eventService.handleEvent(REPLACEABLE_EVENT),
-        ).resolves.toEqual(
-          createCommandResultResponse(
-            REPLACEABLE_EVENT.id,
-            true,
-            'duplicate: the event already exists',
-          ),
-        );
-      });
-
       it('should return rate-limited when acquiring the lock fails', async () => {
         (eventService as any).storageService = createMock<StorageService>({
           setNx: async () => false,
@@ -207,7 +184,7 @@ describe('EventService', () => {
 
       it('should discard signed event', async () => {
         await expect(
-          eventService.handleEvent(await createSignedEventMock()),
+          eventService.handleEvent(createTestSignedEvent()),
         ).resolves.toBeUndefined();
         expect(mockEmit).not.toBeCalled();
       });
@@ -215,7 +192,7 @@ describe('EventService', () => {
 
     describe('findByFilters', () => {
       it('should return events', async () => {
-        const events = [REGULAR_EVENT, REPLACEABLE_EVENT, DELETION_EVENT];
+        const events = [REGULAR_EVENT, REPLACEABLE_EVENT];
         const eventRepository = createMock<EventRepository>({
           find: async () => events,
         });

@@ -1,5 +1,5 @@
 import {
-  createEventDtoMock,
+  createTestEventDto,
   PARAMETERIZED_REPLACEABLE_EVENT,
   REGULAR_EVENT,
 } from '../../../seeds/event';
@@ -25,7 +25,7 @@ describe('filter', () => {
         }).isEventMatching(PARAMETERIZED_REPLACEABLE_EVENT),
       ).toBeTruthy();
 
-      const unStandardTagEvent = createEventDtoMock({
+      const unStandardTagEvent = createTestEventDto({
         tags: [['z', 'test1']],
       });
       expect(
@@ -38,7 +38,7 @@ describe('filter', () => {
 
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          Event.fromEventDto(createEventDtoMock({ content: 'abandon test' })),
+          Event.fromEventDto(createTestEventDto({ content: 'abandon test' })),
         ),
       ).toBeTruthy();
     });
@@ -74,7 +74,7 @@ describe('filter', () => {
       ).toBeFalsy();
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          Event.fromEventDto(createEventDtoMock({ content: 'abandon' })),
+          Event.fromEventDto(createTestEventDto({ content: 'abandon' })),
         ),
       ).toBeFalsy();
     });
