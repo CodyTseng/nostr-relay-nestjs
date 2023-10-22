@@ -1,5 +1,5 @@
 import { intersection, uniq } from 'lodash';
-import { EventKind } from '../constants';
+import { EventKind, TagName } from '../constants';
 import { FilterDto } from '../schemas';
 import { toGenericTag } from '../utils';
 import { Event } from './event.entity';
@@ -26,11 +26,33 @@ export class Filter {
     filter.since = filterDto.since;
     filter.until = filterDto.until;
     filter.limit = filterDto.limit;
-    filter.genericTagsCollection = filterDto.tags
-      ? Object.entries(filterDto.tags).map(([key, values]) =>
+    filter.genericTagsCollection = undefined;
+
+    if (filterDto.tags) {
+      const shouldUseDTagValueIndex =
+        filter.authors?.length &&
+        filter.kinds?.length &&
+        filter.kinds.every(
+          (kind) =>
+            kind >= EventKind.PARAMETERIZED_REPLACEABLE_FIRST &&
+            kind <= EventKind.PARAMETERIZED_REPLACEABLE_LAST,
+        );
+
+      Object.entries(filterDto.tags).forEach(([key, values]) => {
+        if (key === TagName.D && shouldUseDTagValueIndex) {
+          filter.dTagValues = uniq(values);
+          return;
+        }
+
+        if (!filter.genericTagsCollection) {
+          filter.genericTagsCollection = [];
+        }
+
+        filter.genericTagsCollection.push(
           uniq(values.map((value) => toGenericTag(key, value))),
-        )
-      : undefined;
+        );
+      });
+    }
 
     if (filterDto.search) {
       const { search, searchOptions } = Filter.parseSearch(filterDto.search);
@@ -60,8 +82,8 @@ export class Filter {
     };
   }
 
-  static isSearchFilter(filter: Filter): filter is SearchFilter {
-    return !!filter.search;
+  isSearchFilter(): this is SearchFilter {
+    return !!this.search;
   }
 
   hasEncryptedDirectMessageKind() {

@@ -84,7 +84,7 @@ describe('filter', () => {
     it('should create filter successfully', () => {
       const filter = Filter.fromFilterDto({
         search: 'test1 test2 test3:test4 test5:test6',
-        tags: { a: ['test1', 'test2'], b: ['test3', 'test4'] },
+        tags: { a: ['test1', 'test2'], b: ['test3', 'test4'], d: ['test5'] },
       });
 
       expect(filter.search).toEqual('test1 test2');
@@ -95,7 +95,41 @@ describe('filter', () => {
       expect(filter.genericTagsCollection).toEqual([
         ['a:test1', 'a:test2'],
         ['b:test3', 'b:test4'],
+        ['d:test5'],
       ]);
+
+      expect(
+        Filter.fromFilterDto({
+          kinds: [EventKind.PARAMETERIZED_REPLACEABLE_FIRST],
+          authors: ['test'],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toEqual(['test']);
+
+      expect(
+        Filter.fromFilterDto({
+          kinds: [
+            EventKind.TEXT_NOTE,
+            EventKind.PARAMETERIZED_REPLACEABLE_FIRST,
+          ],
+          authors: ['test'],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toBeUndefined();
+
+      expect(
+        Filter.fromFilterDto({
+          authors: ['test'],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toBeUndefined();
+
+      expect(
+        Filter.fromFilterDto({
+          kinds: [EventKind.PARAMETERIZED_REPLACEABLE_FIRST],
+          tags: { d: ['test'] },
+        }).dTagValues,
+      ).toBeUndefined();
     });
   });
 
@@ -120,13 +154,13 @@ describe('filter', () => {
   describe('isSearchFilter', () => {
     it('should return true', () => {
       expect(
-        Filter.isSearchFilter(Filter.fromFilterDto({ search: 'test' })),
+        Filter.fromFilterDto({ search: 'test' }).isSearchFilter(),
       ).toBeTruthy();
     });
 
     it('should return false', () => {
       expect(
-        Filter.isSearchFilter(Filter.fromFilterDto({ ids: ['test'] })),
+        Filter.fromFilterDto({ ids: ['test'] }).isSearchFilter(),
       ).toBeFalsy();
     });
   });

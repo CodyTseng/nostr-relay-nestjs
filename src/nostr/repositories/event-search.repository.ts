@@ -1,5 +1,6 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
@@ -10,6 +11,7 @@ import { getTimestampInSeconds } from '../utils';
 type EventDocument = {
   id: string;
   pubkey: string;
+  author: string;
   createdAt: number;
   kind: number;
   tags: string[][];
@@ -17,7 +19,6 @@ type EventDocument = {
   content: string;
   sig: string;
   expiredAt: number | null;
-  delegator: string | null;
   dTagValue: string | null;
 };
 
@@ -62,12 +63,13 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       searchableAttributes: ['content'],
       filterableAttributes: [
         'id',
-        'pubkey',
+        'author',
         'createdAt',
         'kind',
         'genericTags',
         'delegator',
         'expiredAt',
+        'dTagValue',
       ],
       sortableAttributes: ['createdAt'],
       rankingRules: [
@@ -82,13 +84,16 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     });
   }
 
-  async find(filter: EventSearchRepositoryFilter) {
+  async find(filter: EventSearchRepositoryFilter): Promise<Event[]> {
     if (!this.index) return [];
+
+    const limit = this.getLimitFrom(filter);
+    if (limit === 0) return [];
 
     const searchFilters = this.buildSearchFilters(filter);
 
     const result = await this.index.search(filter.search, {
-      limit: this.getLimitFrom(filter),
+      limit,
       filter: searchFilters,
       sort: ['createdAt:desc'],
     });
@@ -101,10 +106,13 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   ): Promise<TEventIdWithScore[]> {
     if (!this.index) return [];
 
+    const limit = this.getLimitFrom(filter);
+    if (limit === 0) return [];
+
     const searchFilters = this.buildSearchFilters(filter);
 
     const result = await this.index.search(filter.search, {
-      limit: this.getLimitFrom(filter, 1000),
+      limit,
       filter: searchFilters,
       attributesToRetrieve: ['id', 'createdAt'],
       showRankingScore: true,
@@ -168,16 +176,17 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
 
     if (filter.authors?.length) {
-      const authorsStr = filter.authors.join(', ');
-      searchFilters.push(
-        `pubkey IN [${authorsStr}] OR delegator IN [${authorsStr}]`,
-      );
+      searchFilters.push(`author IN [${filter.authors.join(', ')}]`);
     }
 
     if (filter.genericTagsCollection?.length) {
       filter.genericTagsCollection.forEach((genericTags) => {
         searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
       });
+    }
+
+    if (filter.dTagValues?.length) {
+      searchFilters.push(`dTagValue IN [${filter.dTagValues.join(', ')}]`);
     }
 
     return searchFilters;
@@ -187,7 +196,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     filter: EventSearchRepositoryFilter,
     defaultLimit = 100,
   ) {
-    return Math.min(filter.limit ?? defaultLimit, 1000);
+    return Math.min(isNil(filter.limit) ? defaultLimit : filter.limit, 1000);
   }
 
   private toEventDocument(event: Event): EventDocument {
@@ -201,7 +210,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       content: event.content,
       sig: event.sig,
       expiredAt: event.expiredAt,
-      delegator: event.delegator,
+      author: event.author,
       dTagValue: event.dTagValue,
     };
   }
@@ -218,11 +227,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     event.expiredAt = eventDocument.expiredAt;
     event.genericTags = eventDocument.genericTags;
     event.dTagValue = eventDocument.dTagValue;
-    event.delegator = eventDocument.delegator;
-
-    event.createDate = new Date(eventDocument.createdAt);
-    event.updateDate = new Date(eventDocument.createdAt);
-    event.deleteDate = null;
+    event.author = eventDocument.author;
 
     return event;
   }

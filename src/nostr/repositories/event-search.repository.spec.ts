@@ -32,7 +32,7 @@ describe('EventSearchRepository', () => {
     content: REGULAR_EVENT.content,
     sig: REGULAR_EVENT.sig,
     expiredAt: REGULAR_EVENT.expiredAt,
-    delegator: REGULAR_EVENT.delegator,
+    author: REGULAR_EVENT.author,
     dTagValue: REGULAR_EVENT.dTagValue,
   };
   const REPLACEABLE_EVENT_DOCUMENT = {
@@ -45,7 +45,7 @@ describe('EventSearchRepository', () => {
     content: REPLACEABLE_EVENT.content,
     sig: REPLACEABLE_EVENT.sig,
     expiredAt: REPLACEABLE_EVENT.expiredAt,
-    delegator: REPLACEABLE_EVENT.delegator,
+    author: REPLACEABLE_EVENT.author,
     dTagValue: REPLACEABLE_EVENT.dTagValue,
   };
   const addDocumentsFailError = new Error('addDocuments fail');
@@ -112,12 +112,13 @@ describe('EventSearchRepository', () => {
         searchableAttributes: ['content'],
         filterableAttributes: [
           'id',
-          'pubkey',
+          'author',
           'createdAt',
           'kind',
           'genericTags',
           'delegator',
           'expiredAt',
+          'dTagValue',
         ],
         sortableAttributes: ['createdAt'],
         rankingRules: [
@@ -175,7 +176,10 @@ describe('EventSearchRepository', () => {
     });
 
     it('has kinds filter', async () => {
-      await eventSearchRepositoryWithIndex.find({ search: '', kinds: [1, 2] });
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        kinds: [1, 2],
+      });
       expect(searchInput).toEqual({
         query: '',
         options: {
@@ -235,7 +239,7 @@ describe('EventSearchRepository', () => {
         options: {
           filter: [
             `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
+            `author IN [pubkey1, pubkey2]`,
           ],
           sort: ['createdAt:desc'],
           limit: 100,
@@ -262,6 +266,24 @@ describe('EventSearchRepository', () => {
       });
     });
 
+    it('has dTagValues filter', async () => {
+      await eventSearchRepositoryWithIndex.find({
+        search: '',
+        dTagValues: ['dTagValue1', 'dTagValue2'],
+      });
+      expect(searchInput).toEqual({
+        query: '',
+        options: {
+          filter: [
+            `expiredAt IS NULL OR expiredAt >= 1620000000`,
+            `dTagValue IN [dTagValue1, dTagValue2]`,
+          ],
+          sort: ['createdAt:desc'],
+          limit: 100,
+        },
+      });
+    });
+
     it('has limit', async () => {
       await eventSearchRepositoryWithIndex.find({ search: '', limit: 10 });
       expect(searchInput).toEqual({
@@ -272,6 +294,10 @@ describe('EventSearchRepository', () => {
           limit: 10,
         },
       });
+
+      expect(
+        await eventSearchRepositoryWithIndex.find({ search: '', limit: 0 }),
+      ).toEqual([]);
     });
 
     it('has all filters', async () => {
@@ -283,6 +309,7 @@ describe('EventSearchRepository', () => {
         until: 1630000000,
         authors: ['pubkey1', 'pubkey2'],
         genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
+        dTagValues: ['dTagValue1', 'dTagValue2'],
         limit: 10,
       });
       expect(searchInput).toEqual({
@@ -294,9 +321,10 @@ describe('EventSearchRepository', () => {
             `kind IN [1, 2]`,
             `createdAt >= 1620000000`,
             `createdAt <= 1630000000`,
-            `pubkey IN [pubkey1, pubkey2] OR delegator IN [pubkey1, pubkey2]`,
+            `author IN [pubkey1, pubkey2]`,
             `genericTags IN [a:genericTags]`,
             `genericTags IN [b:genericTags]`,
+            `dTagValue IN [dTagValue1, dTagValue2]`,
           ],
           sort: ['createdAt:desc'],
           limit: 10,
@@ -324,6 +352,14 @@ describe('EventSearchRepository', () => {
           score: REGULAR_EVENT_DOCUMENT.createdAt * 2,
         },
       ]);
+    });
+
+    it('should return empty array', async () => {
+      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
+        search: 'test',
+        limit: 0,
+      });
+      expect(result).toEqual([]);
     });
   });
 

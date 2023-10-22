@@ -2,10 +2,9 @@ import { isNil } from 'lodash';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
+  Index,
   PrimaryColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { EventKind, EventType, TagName } from '../constants';
 import { EventDto } from '../schemas';
@@ -21,12 +20,24 @@ import {
 const EVENT_TYPE_SYMBOL = Symbol('event:type');
 
 @Entity({ name: 'events' })
+@Index('e_author_kind_created_at_idx', ['author', 'kind', 'createdAtStr'])
+@Index('e_author_created_at_idx', ['author', 'createdAtStr'])
+@Index(
+  'e_author_kind_d_tag_value_created_at_idx',
+  ['author', 'kind', 'dTagValue', 'createdAtStr'],
+  { sparse: true, unique: true },
+)
+@Index('e_kind_created_at_idx', ['kind', 'createdAtStr'])
+@Index('e_created_at_idx', ['createdAtStr'])
 export class Event {
   @PrimaryColumn({ type: 'char', length: 64 })
   id: string;
 
   @Column({ type: 'char', length: 64 })
   pubkey: string;
+
+  @Column({ type: 'char', length: 64 })
+  author: string;
 
   @Column({ type: 'bigint', name: 'created_at' })
   createdAtStr: string;
@@ -52,17 +63,8 @@ export class Event {
   @Column({ type: 'text', nullable: true, name: 'd_tag_value' })
   dTagValue: string | null;
 
-  @Column({ type: 'char', length: 64, nullable: true })
-  delegator: string | null;
-
   @CreateDateColumn({ name: 'create_date', select: false })
-  createDate: Date;
-
-  @UpdateDateColumn({ name: 'update_date', select: false })
-  updateDate: Date;
-
-  @DeleteDateColumn({ name: 'delete_date', nullable: true, select: false })
-  deleteDate: Date | null;
+  _createDate: Date;
 
   get type() {
     if (!this[EVENT_TYPE_SYMBOL]) {
@@ -91,6 +93,7 @@ export class Event {
     const event = new Event();
     event.id = eventDto.id;
     event.pubkey = eventDto.pubkey;
+    event.author = eventDto.pubkey;
     event.createdAt = eventDto.created_at;
     event.kind = eventDto.kind;
     event.tags = eventDto.tags;
@@ -100,6 +103,8 @@ export class Event {
     event.dTagValue =
       event.type === EventType.PARAMETERIZED_REPLACEABLE
         ? Event.extractDTagValueFromEvent(eventDto)
+        : event.type === EventType.REPLACEABLE
+        ? ''
         : null;
 
     const genericTagSet = new Set<string>();
@@ -128,10 +133,6 @@ export class Event {
 
     if (kind >= EventKind.EPHEMERAL_FIRST && kind <= EventKind.EPHEMERAL_LAST) {
       return EventType.EPHEMERAL;
-    }
-
-    if (kind === EventKind.DELETION) {
-      return EventType.DELETION;
     }
 
     if (
@@ -173,7 +174,7 @@ export class Event {
       return false;
     }
 
-    if ([this.pubkey, this.delegator].includes(pubkey)) {
+    if (this.author === pubkey) {
       return true;
     }
 
@@ -237,7 +238,7 @@ export class Event {
       if (!this.isDelegationTagValid(delegationTag)) {
         return 'invalid: delegation tag verification failed';
       }
-      this.delegator = delegationTag[1];
+      this.author = delegationTag[1];
     }
   }
 

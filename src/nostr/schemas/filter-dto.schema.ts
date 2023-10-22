@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import {
-  EventIdPrefixSchema,
+  EventIdSchema,
   EventKindSchema,
-  PubkeyPrefixSchema,
+  PubkeySchema,
   SearchSchema,
   TimestampInSecSchema,
 } from './common.schema';
@@ -13,6 +13,7 @@ const TagFilterValuesSchema = z
       message: 'must be less than or equal to 1024 characters',
     }),
   )
+  .min(1, { message: 'must be greater than or equal to 1 tagValues' })
   .max(256, { message: 'must be less than or equal to 256 tagValues' });
 
 const TagsFilterSchema = z.record(
@@ -42,10 +43,10 @@ export const FilterDtoSchema = z.preprocess(
   z
     .object({
       ids: z
-        .array(EventIdPrefixSchema)
+        .array(EventIdSchema)
         .max(1000, { message: 'must be less than or equal to 1000 ids' }),
       authors: z
-        .array(PubkeyPrefixSchema)
+        .array(PubkeySchema)
         .max(1000, { message: 'must be less than or equal to 1000 authors' }),
       kinds: z
         .array(EventKindSchema)

@@ -21,11 +21,6 @@ export const CloseMessageDto = z.tuple([
 ]);
 export type CloseMessageDto = z.infer<typeof CloseMessageDto>;
 
-export const CountMessageDto = z
-  .tuple([z.literal(MessageType.COUNT), SubscriptionIdSchema, FilterDtoSchema])
-  .rest(FilterDtoSchema);
-export type CountMessageDto = z.infer<typeof CountMessageDto>;
-
 export const AuthMessageDto = z.tuple([
   z.literal(MessageType.AUTH),
   EventDtoSchema,

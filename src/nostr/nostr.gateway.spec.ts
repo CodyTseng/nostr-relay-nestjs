@@ -1,15 +1,15 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import { lastValueFrom } from 'rxjs';
+import { from, lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   CAUSE_ERROR_EVENT_DTO,
-  createEncryptedDirectMessageEventMock,
-  createSignedEventDtoMock,
   REGULAR_EVENT_DTO,
   REPLACEABLE_EVENT_DTO,
   TEST_PUBKEY,
+  createEncryptedDirectMessageEventMock,
+  createSignedEventDtoMock,
 } from '../../seeds';
 import { EventKind, MessageType } from './constants';
 import { Event } from './entities';
@@ -18,9 +18,9 @@ import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
 import {
   CommandResultResponse,
-  createCommandResultResponse,
   EndOfStoredEventResponse,
   EventResponse,
+  createCommandResultResponse,
 } from './utils';
 
 describe('NostrGateway', () => {
@@ -48,8 +48,7 @@ describe('NostrGateway', () => {
         }
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
-      findByFilters: async () => FIND_EVENTS.map(Event.fromEventDto),
-      countByFilters: async () => FIND_EVENTS.length,
+      findByFilters: () => from(FIND_EVENTS.map(Event.fromEventDto)),
       findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(
@@ -62,12 +61,18 @@ describe('NostrGateway', () => {
 
   describe('EVENT', () => {
     it('should handle event successfully', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(false);
       await expect(
         nostrGateway.event([MessageType.EVENT, REGULAR_EVENT_DTO]),
       ).resolves.toEqual([MessageType.OK, REGULAR_EVENT_DTO.id, true, '']);
     });
 
     it('should return validate error', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(false);
       await expect(
         nostrGateway.event([
           MessageType.EVENT,
@@ -82,6 +87,9 @@ describe('NostrGateway', () => {
     });
 
     it('should return an error', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(false);
       await expect(
         nostrGateway.event([MessageType.EVENT, CAUSE_ERROR_EVENT_DTO]),
       ).resolves.toEqual([
@@ -89,6 +97,20 @@ describe('NostrGateway', () => {
         CAUSE_ERROR_EVENT_DTO.id,
         false,
         'error: ' + ERROR_MSG,
+      ]);
+    });
+
+    it('should return duplicate message', async () => {
+      jest
+        .spyOn(nostrGateway['eventService'], 'checkEventExists')
+        .mockResolvedValue(true);
+      await expect(
+        nostrGateway.event([MessageType.EVENT, REGULAR_EVENT_DTO]),
+      ).resolves.toEqual([
+        MessageType.OK,
+        REGULAR_EVENT_DTO.id,
+        true,
+        'duplicate: the event already exists',
       ]);
     });
   });
@@ -132,7 +154,7 @@ describe('NostrGateway', () => {
       const encryptedDirectMessageEvent =
         createEncryptedDirectMessageEventMock();
       (nostrGateway as any).eventService = createMock<EventService>({
-        findByFilters: async () => [encryptedDirectMessageEvent],
+        findByFilters: () => from([encryptedDirectMessageEvent]),
       });
       const subscriptionId = 'test:req';
       const responses: (EventResponse | EndOfStoredEventResponse)[] = [];
@@ -177,36 +199,6 @@ describe('NostrGateway', () => {
       expect(() =>
         nostrGateway.close({} as any, [MessageType.CLOSE, subscriptionId]),
       ).not.toThrowError();
-    });
-  });
-
-  describe('COUNT', () => {
-    it('should count successfully', async () => {
-      const subscriptionId = 'test:count';
-
-      expect(
-        await nostrGateway.count({} as any, [
-          MessageType.COUNT,
-          subscriptionId,
-          {},
-        ]),
-      ).toEqual([
-        MessageType.COUNT,
-        subscriptionId,
-        { count: FIND_EVENTS.length },
-      ]);
-    });
-
-    it('should reject when unauthenticated and count DM events', async () => {
-      await expect(
-        nostrGateway.count({} as any, [
-          MessageType.COUNT,
-          'test:req',
-          { kinds: [EventKind.ENCRYPTED_DIRECT_MESSAGE] },
-        ]),
-      ).rejects.toThrowError(
-        "restricted: we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-      );
     });
   });
 

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { randomUUID } from 'crypto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { concatWith, filter, from, map, of } from 'rxjs';
+import { concatWith, filter, map, of } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RestrictedException } from '../common/exceptions';
 import { GlobalExceptionFilter } from '../common/filters';
@@ -20,11 +20,13 @@ import { ZodValidationPipe } from '../common/pipes';
 import { Config, LimitConfig } from '../config';
 import { MessageType } from './constants';
 import { Event, Filter } from './entities';
-import { CacheEventHandlingResultInterceptor } from './interceptors';
+import {
+  CacheEventHandlingResultInterceptor,
+  LoggingInterceptor,
+} from './interceptors';
 import {
   AuthMessageDto,
   CloseMessageDto,
-  CountMessageDto,
   EventMessageDto,
   ReqMessageDto,
   TopMessageDto,
@@ -34,13 +36,13 @@ import { SubscriptionService } from './services/subscription.service';
 import {
   createAuthResponse,
   createCommandResultResponse,
-  createCountResponse,
   createEndOfStoredEventResponse,
   createEventResponse,
   createTopResponse,
 } from './utils';
 
 @WebSocketGateway()
+@UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
 export class NostrGateway
@@ -80,6 +82,15 @@ export class NostrGateway
     [, e]: EventMessageDto,
   ) {
     const event = Event.fromEventDto(e);
+    const exists = await this.eventService.checkEventExists(event);
+    if (exists) {
+      return createCommandResultResponse(
+        event.id,
+        true,
+        'duplicate: the event already exists',
+      );
+    }
+
     const validateErrorMsg = event.validate({
       createdAtUpperLimit: this.limitConfig.createdAt.upper,
       eventIdMinLeadingZeroBits: this.limitConfig.eventId.minLeadingZeroBits,
@@ -122,8 +133,8 @@ export class NostrGateway
 
     this.subscriptionService.subscribe(client, subscriptionId, filters);
 
-    const events = await this.eventService.findByFilters(filters);
-    return from(events).pipe(
+    const event$ = this.eventService.findByFilters(filters);
+    return event$.pipe(
       filter((event) => event.checkPermission(client.pubkey)),
       map((event) => createEventResponse(subscriptionId, event)),
       concatWith(of(createEndOfStoredEventResponse(subscriptionId))),
@@ -137,26 +148,6 @@ export class NostrGateway
     [, subscriptionId]: CloseMessageDto,
   ) {
     this.subscriptionService.unSubscribe(client, subscriptionId);
-  }
-
-  @SubscribeMessage(MessageType.COUNT)
-  async count(
-    @ConnectedSocket() client: WebSocket,
-    @MessageBody(new ZodValidationPipe(CountMessageDto))
-    [, subscriptionId, ...filtersDto]: CountMessageDto,
-  ) {
-    const filters = filtersDto.map(Filter.fromFilterDto);
-    if (
-      filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
-      !client.pubkey
-    ) {
-      throw new RestrictedException(
-        "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-      );
-    }
-
-    const count = await this.eventService.countByFilters(filters);
-    return createCountResponse(subscriptionId, count);
   }
 
   @SubscribeMessage(MessageType.AUTH)

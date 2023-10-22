@@ -16,7 +16,7 @@ async function run() {
   eventIndex.updateSettings({
     searchableAttributes: ['content'],
     filterableAttributes: [
-      'pubkey',
+      'author',
       'createdAt',
       'kind',
       'genericTags',
@@ -45,6 +45,7 @@ async function run() {
     const result = await pg.query<{
       id: string;
       pubkey: string;
+      author: string;
       created_at: string;
       kind: number;
       tags: string[][];
@@ -52,10 +53,10 @@ async function run() {
       content: string;
       sig: string;
       expired_at: string | null;
-      delegator: string | null;
       d_tag_value: string | null;
     }>(
-      `SELECT * FROM events WHERE kind IN (${syncEventKinds}) AND created_at <= ${until} AND (expired_at IS NULL OR expired_at > ${now}) AND delete_date IS NULL ORDER BY created_at DESC LIMIT ${limit}`,
+      `SELECT * FROM events WHERE kind IN ($1) AND created_at <= $2 AND (expired_at IS NULL OR expired_at > $3) ORDER BY created_at DESC LIMIT $4`,
+      [syncEventKinds, until, now, limit],
     );
     rowCount = result.rowCount;
     logger.info(`Fetched ${rowCount} events`);
@@ -67,6 +68,7 @@ async function run() {
     const eventDocuments = result.rows.slice(startIndex).map((row) => ({
       id: row.id,
       pubkey: row.pubkey,
+      author: row.author,
       createdAt: parseInt(row.created_at),
       kind: row.kind,
       tags: row.tags,
@@ -74,7 +76,6 @@ async function run() {
       content: row.content,
       sig: row.sig,
       expiredAt: row.expired_at ? parseInt(row.expired_at) : null,
-      delegator: row.delegator,
       dTagValue: row.d_tag_value,
     }));
 
