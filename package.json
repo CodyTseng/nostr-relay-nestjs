@@ -37,7 +37,7 @@
     "@nestjs/throttler": "^4.2.1",
     "@nestjs/typeorm": "^10.0.0",
     "@nestjs/websockets": "^10.2.5",
-    "@noble/curves": "^1.1.0",
+    "@noble/curves": "^1.2.0",
     "@types/ws": "^8.5.5",
     "dayjs": "^1.11.10",
     "helmet": "^7.0.0",
