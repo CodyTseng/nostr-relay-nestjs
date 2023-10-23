@@ -25,10 +25,11 @@ describe('WsThrottlerGuard', () => {
 
   it('should be fine', async () => {
     const guard = new WsThrottlerGuard(
-      [{ limit: 2, ttl: 2 }],
+      [{ limit: 2, ttl: 2000 }],
       storageService,
       new Reflector(),
     );
+    await guard.onModuleInit();
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     await expect(guard.canActivate(context)).resolves.toBe(true);
