@@ -12,11 +12,7 @@ export class WsThrottlerGuard extends ThrottlerGuard {
     throttler: ThrottlerOptions,
   ): Promise<boolean> {
     const client = context.switchToWs().getClient<WebSocket>();
-    const key = this.generateKey(
-      context,
-      client.id,
-      throttler.name ?? 'default',
-    );
+    const key = this.generateKey(context, client.id, throttler.name!);
     const { totalHits } = await this.storageService.increment(key, ttl);
 
     if (totalHits > limit) {
