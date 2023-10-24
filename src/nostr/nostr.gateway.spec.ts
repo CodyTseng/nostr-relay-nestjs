@@ -4,12 +4,13 @@ import { PinoLogger } from 'nestjs-pino';
 import { from, lastValueFrom } from 'rxjs';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  CAUSE_ERROR_EVENT_DTO,
+  PUBKEY_A,
+  PUBKEY_B,
   REGULAR_EVENT_DTO,
   REPLACEABLE_EVENT_DTO,
-  TEST_PUBKEY,
-  createEncryptedDirectMessageEventMock,
-  createSignedEventDtoMock,
+  createTestEncryptedDirectMessageEvent,
+  createTestEventDto,
+  createTestSignedEventDto,
 } from '../../seeds';
 import { EventKind, MessageType } from './constants';
 import { Event } from './entities';
@@ -24,18 +25,15 @@ import {
 } from './utils';
 
 describe('NostrGateway', () => {
-  const ERROR_MSG = 'test';
   const FIND_EVENTS = [REGULAR_EVENT_DTO, REPLACEABLE_EVENT_DTO];
 
   let nostrGateway: NostrGateway;
-  let mockSubscriptionServiceSetServer: jest.Mock;
-  let mockSubscriptionServiceClear: jest.Mock;
+  const mockSubscriptionServiceSetServer = jest.fn();
+  const mockSubscriptionServiceClear = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     const mockLogger = createMock<PinoLogger>();
-    mockSubscriptionServiceSetServer = jest.fn();
-    mockSubscriptionServiceClear = jest.fn();
     const mockConfigService = createMock<ConfigService>();
     const mockSubscriptionService = createMock<SubscriptionService>({
       setServer: mockSubscriptionServiceSetServer,
@@ -43,9 +41,6 @@ describe('NostrGateway', () => {
     });
     const mockEventService = createMock<EventService>({
       handleEvent: async (event: Event) => {
-        if (event.id === CAUSE_ERROR_EVENT_DTO.id) {
-          throw new Error(ERROR_MSG);
-        }
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
       findByFilters: () => from(FIND_EVENTS.map(Event.fromEventDto)),
@@ -57,6 +52,10 @@ describe('NostrGateway', () => {
       mockEventService,
       mockConfigService,
     );
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('EVENT', () => {
@@ -87,14 +86,23 @@ describe('NostrGateway', () => {
     });
 
     it('should return an error', async () => {
+      const ERROR_MSG = 'test';
+
       jest
         .spyOn(nostrGateway['eventService'], 'checkEventExists')
         .mockResolvedValue(false);
+      jest
+        .spyOn(nostrGateway['eventService'], 'handleEvent')
+        .mockImplementation(async () => {
+          throw new Error(ERROR_MSG);
+        });
+
+      const event = createTestEventDto({});
       await expect(
-        nostrGateway.event([MessageType.EVENT, CAUSE_ERROR_EVENT_DTO]),
+        nostrGateway.event([MessageType.EVENT, event]),
       ).resolves.toEqual([
         MessageType.OK,
-        CAUSE_ERROR_EVENT_DTO.id,
+        event.id,
         false,
         'error: ' + ERROR_MSG,
       ]);
@@ -152,7 +160,7 @@ describe('NostrGateway', () => {
 
     it('should filter out unauthorized events', async () => {
       const encryptedDirectMessageEvent =
-        createEncryptedDirectMessageEventMock();
+        createTestEncryptedDirectMessageEvent();
       (nostrGateway as any).eventService = createMock<EventService>({
         findByFilters: () => from([encryptedDirectMessageEvent]),
       });
@@ -173,8 +181,7 @@ describe('NostrGateway', () => {
 
       const response2$ = await nostrGateway.req(
         {
-          pubkey:
-            'a734cca70ca3c08511e3c2d5a80827182e2804401fb28013a8f79da4dd6465ac',
+          pubkey: PUBKEY_B,
         } as any,
         [MessageType.REQ, subscriptionId, {}],
       );
@@ -210,21 +217,20 @@ describe('NostrGateway', () => {
     it('should auth successfully', async () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
-      const event = createSignedEventDtoMock({ challenge });
+      const event = createTestSignedEventDto({ challenge });
       expect(
         await nostrGateway.auth(client, [MessageType.AUTH, event]),
       ).toEqual(createCommandResultResponse(event.id, true));
 
-      expect(client.pubkey).toBe(TEST_PUBKEY);
+      expect(client.pubkey).toBe(PUBKEY_A);
     });
 
-    it('should auth failed', async () => {
+    it('should auth failed', () => {
       const challenge = 'challenge';
       const client = { id: challenge } as any;
-      await nostrGateway.auth(client, [
-        MessageType.AUTH,
-        createSignedEventDtoMock({ pubkey: 'fake-pubkey', challenge }),
-      ]);
+      const signedEvent = createTestSignedEventDto({ challenge });
+      signedEvent.pubkey = 'fake-pubkey';
+      nostrGateway.auth(client, [MessageType.AUTH, signedEvent]);
 
       expect(client.pubkey).toBeUndefined();
     });

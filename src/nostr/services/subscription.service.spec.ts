@@ -2,7 +2,7 @@ import { createMock } from '@golevelup/ts-jest';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  createEncryptedDirectMessageEventMock,
+  createTestEncryptedDirectMessageEvent,
   REGULAR_EVENT,
 } from '../../../seeds';
 import { Filter } from '../entities';
@@ -156,7 +156,7 @@ describe('SubscriptionService', () => {
         createMock<WebSocketServer>({ clients: new Set([client]) }),
       );
       subscriptionService.subscribe(client, subscriptionId, filters);
-      subscriptionService.broadcast(createEncryptedDirectMessageEventMock());
+      subscriptionService.broadcast(createTestEncryptedDirectMessageEvent());
 
       expect(mockClientSend).not.toBeCalled();
     });

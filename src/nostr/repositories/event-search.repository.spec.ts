@@ -2,11 +2,10 @@ import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
 import {
-  CAUSE_ERROR_EVENT_DTO,
   REGULAR_EVENT,
   REPLACEABLE_EVENT,
+  createTestEvent,
 } from '../../../seeds';
-import { Event } from '../entities';
 import { EventSearchRepository } from './event-search.repository';
 
 jest.mock('../utils/time', () => ({
@@ -16,11 +15,11 @@ jest.mock('../utils/time', () => ({
 describe('EventSearchRepository', () => {
   let eventSearchRepositoryWithIndex: EventSearchRepository,
     eventSearchRepositoryWithoutIndex: EventSearchRepository;
-  let updateSettingsInput: any,
-    searchInput: any,
-    addDocumentsInput: any,
-    deleteDocumentsInput: any;
-  let logError: Error | undefined;
+  const mockUpdateSettings = jest.fn();
+  const mockSearch = jest.fn();
+  const mockAddDocuments = jest.fn();
+  const mockDeleteDocuments = jest.fn();
+  const logError = jest.fn();
 
   const REGULAR_EVENT_DOCUMENT = {
     id: REGULAR_EVENT.id,
@@ -48,33 +47,11 @@ describe('EventSearchRepository', () => {
     author: REPLACEABLE_EVENT.author,
     dTagValue: REPLACEABLE_EVENT.dTagValue,
   };
-  const addDocumentsFailError = new Error('addDocuments fail');
-  const deleteDocumentsFailError = new Error('deleteDocuments fail');
-  const loggerMock = createMock<PinoLogger>({
-    error: jest.fn((e: Error) => (logError = e)),
-  });
-  const indexMock = {
-    updateSettings: (input) => (updateSettingsInput = input),
-    search: (query, options) => {
-      searchInput = {
-        query,
-        options,
-      };
-      return { hits: [{ ...REGULAR_EVENT_DOCUMENT, _rankingScore: 1 }] };
-    },
-    addDocuments: (eventDocuments) => {
-      if (eventDocuments[0]?.id === CAUSE_ERROR_EVENT_DTO.id) {
-        throw addDocumentsFailError;
-      }
-      addDocumentsInput = eventDocuments;
-    },
-    deleteDocuments: (ids) => {
-      if (ids[0] === 'throwError') throw deleteDocumentsFailError;
-      deleteDocumentsInput = ids;
-    },
-  };
 
   beforeEach(() => {
+    const loggerMock = createMock<PinoLogger>({
+      error: logError,
+    });
     eventSearchRepositoryWithIndex = new EventSearchRepository(
       loggerMock,
       createMock<ConfigService>({
@@ -85,7 +62,14 @@ describe('EventSearchRepository', () => {
         }),
       }),
     );
-    (eventSearchRepositoryWithIndex as any).index = indexMock;
+    (eventSearchRepositoryWithIndex as any).index = {
+      updateSettings: mockUpdateSettings,
+      search: mockSearch.mockResolvedValue({
+        hits: [{ ...REGULAR_EVENT_DOCUMENT, _rankingScore: 1 }],
+      }),
+      addDocuments: mockAddDocuments,
+      deleteDocuments: mockDeleteDocuments,
+    };
     eventSearchRepositoryWithoutIndex = new EventSearchRepository(
       loggerMock,
       createMock<ConfigService>({ get: () => ({}) }),
@@ -93,22 +77,18 @@ describe('EventSearchRepository', () => {
   });
 
   afterEach(() => {
-    updateSettingsInput = undefined;
-    searchInput = undefined;
-    addDocumentsInput = undefined;
-    deleteDocumentsInput = undefined;
-    logError = undefined;
+    jest.clearAllMocks();
   });
 
   describe('onApplicationBootstrap', () => {
     it('should not update index settings if no index', () => {
       eventSearchRepositoryWithoutIndex.onApplicationBootstrap();
-      expect(updateSettingsInput).toBeUndefined();
+      expect(mockUpdateSettings).not.toBeCalled();
     });
 
     it('should update index settings if has index', () => {
       eventSearchRepositoryWithIndex.onApplicationBootstrap();
-      expect(updateSettingsInput).toEqual({
+      expect(mockUpdateSettings).toBeCalledWith({
         searchableAttributes: ['content'],
         filterableAttributes: [
           'id',
@@ -146,13 +126,10 @@ describe('EventSearchRepository', () => {
       const events = await eventSearchRepositoryWithIndex.find({
         search: 'search',
       });
-      expect(searchInput).toEqual({
-        query: 'search',
-        options: {
-          filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('search', {
+        filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
       expect(events[0].id).toEqual(REGULAR_EVENT.id);
     });
@@ -162,16 +139,13 @@ describe('EventSearchRepository', () => {
         search: '',
         ids: ['id1', 'id2'],
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `id IN [id1, id2]`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `id IN [id1, id2]`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
@@ -180,16 +154,13 @@ describe('EventSearchRepository', () => {
         search: '',
         kinds: [1, 2],
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `kind IN [1, 2]`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `kind IN [1, 2]`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
@@ -198,16 +169,13 @@ describe('EventSearchRepository', () => {
         search: '',
         since: 1620000000,
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `createdAt >= 1620000000`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `createdAt >= 1620000000`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
@@ -216,16 +184,13 @@ describe('EventSearchRepository', () => {
         search: '',
         until: 1620000000,
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `createdAt <= 1620000000`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `createdAt <= 1620000000`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
@@ -234,16 +199,13 @@ describe('EventSearchRepository', () => {
         search: '',
         authors: ['pubkey1', 'pubkey2'],
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `author IN [pubkey1, pubkey2]`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `author IN [pubkey1, pubkey2]`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
@@ -252,17 +214,14 @@ describe('EventSearchRepository', () => {
         search: '',
         genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `genericTags IN [a:genericTags]`,
-            `genericTags IN [b:genericTags]`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `genericTags IN [a:genericTags]`,
+          `genericTags IN [b:genericTags]`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
@@ -271,28 +230,22 @@ describe('EventSearchRepository', () => {
         search: '',
         dTagValues: ['dTagValue1', 'dTagValue2'],
       });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `dTagValue IN [dTagValue1, dTagValue2]`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 100,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `dTagValue IN [dTagValue1, dTagValue2]`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 100,
       });
     });
 
     it('has limit', async () => {
       await eventSearchRepositoryWithIndex.find({ search: '', limit: 10 });
-      expect(searchInput).toEqual({
-        query: '',
-        options: {
-          filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
-          sort: ['createdAt:desc'],
-          limit: 10,
-        },
+      expect(mockSearch).toBeCalledWith('', {
+        filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
+        sort: ['createdAt:desc'],
+        limit: 10,
       });
 
       expect(
@@ -312,23 +265,20 @@ describe('EventSearchRepository', () => {
         dTagValues: ['dTagValue1', 'dTagValue2'],
         limit: 10,
       });
-      expect(searchInput).toEqual({
-        query: 'search',
-        options: {
-          filter: [
-            `expiredAt IS NULL OR expiredAt >= 1620000000`,
-            `id IN [id1, id2]`,
-            `kind IN [1, 2]`,
-            `createdAt >= 1620000000`,
-            `createdAt <= 1630000000`,
-            `author IN [pubkey1, pubkey2]`,
-            `genericTags IN [a:genericTags]`,
-            `genericTags IN [b:genericTags]`,
-            `dTagValue IN [dTagValue1, dTagValue2]`,
-          ],
-          sort: ['createdAt:desc'],
-          limit: 10,
-        },
+      expect(mockSearch).toBeCalledWith('search', {
+        filter: [
+          `expiredAt IS NULL OR expiredAt >= 1620000000`,
+          `id IN [id1, id2]`,
+          `kind IN [1, 2]`,
+          `createdAt >= 1620000000`,
+          `createdAt <= 1630000000`,
+          `author IN [pubkey1, pubkey2]`,
+          `genericTags IN [a:genericTags]`,
+          `genericTags IN [b:genericTags]`,
+          `dTagValue IN [dTagValue1, dTagValue2]`,
+        ],
+        sort: ['createdAt:desc'],
+        limit: 10,
       });
     });
   });
@@ -366,44 +316,48 @@ describe('EventSearchRepository', () => {
   describe('add', () => {
     it('should not add documents if no index', async () => {
       await eventSearchRepositoryWithoutIndex.add(REGULAR_EVENT);
-      expect(addDocumentsInput).toBeUndefined();
+      expect(mockAddDocuments).not.toBeCalled();
     });
 
     it('should add documents if has index', async () => {
       await eventSearchRepositoryWithIndex.add(REGULAR_EVENT);
-      expect(addDocumentsInput).toEqual([REGULAR_EVENT_DOCUMENT]);
+      expect(mockAddDocuments).toBeCalledWith([REGULAR_EVENT_DOCUMENT]);
     });
 
     it('should throw error if addDocuments failed', async () => {
-      await eventSearchRepositoryWithIndex.add(
-        Event.fromEventDto(CAUSE_ERROR_EVENT_DTO),
-      );
-      expect(logError).toEqual(addDocumentsFailError);
+      const addDocumentsFailError = new Error('addDocuments fail');
+      jest
+        .spyOn(eventSearchRepositoryWithIndex['index'] as any, 'addDocuments')
+        .mockRejectedValue(addDocumentsFailError);
+      await eventSearchRepositoryWithIndex.add(createTestEvent({}));
+      expect(logError).toBeCalledWith(addDocumentsFailError);
     });
   });
 
   describe('deleteMany', () => {
     it('should not delete documents if no index', async () => {
       await eventSearchRepositoryWithoutIndex.deleteMany(['id']);
-      expect(deleteDocumentsInput).toBeUndefined();
+      expect(mockDeleteDocuments).not.toBeCalled();
     });
 
     it('should delete documents if has index', async () => {
       await eventSearchRepositoryWithIndex.deleteMany(['id']);
-      expect(deleteDocumentsInput).toEqual(['id']);
+      expect(mockDeleteDocuments).toBeCalledWith(['id']);
     });
 
     it('should throw error if deleteDocuments failed', async () => {
+      const deleteDocumentsFailError = new Error('deleteDocuments fail');
+      mockDeleteDocuments.mockRejectedValue(deleteDocumentsFailError);
       await eventSearchRepositoryWithIndex.deleteMany(['throwError']);
-      expect(logError).toEqual(deleteDocumentsFailError);
+      expect(logError).toBeCalledWith(deleteDocumentsFailError);
     });
   });
 
   describe('replace', () => {
     it('should do nothing if no index', async () => {
       await eventSearchRepositoryWithoutIndex.replace(REGULAR_EVENT);
-      expect(deleteDocumentsInput).toBeUndefined();
-      expect(addDocumentsInput).toBeUndefined();
+      expect(mockDeleteDocuments).not.toBeCalled();
+      expect(mockAddDocuments).not.toBeCalled();
     });
 
     it('should delete and add documents if has index', async () => {
@@ -411,14 +365,14 @@ describe('EventSearchRepository', () => {
         REPLACEABLE_EVENT,
         'oldEventId',
       );
-      expect(deleteDocumentsInput).toEqual(['oldEventId']);
-      expect(addDocumentsInput).toEqual([REPLACEABLE_EVENT_DOCUMENT]);
+      expect(mockDeleteDocuments).toBeCalledWith(['oldEventId']);
+      expect(mockAddDocuments).toBeCalledWith([REPLACEABLE_EVENT_DOCUMENT]);
     });
 
     it('should not delete if no oldEventId', async () => {
       await eventSearchRepositoryWithIndex.replace(REPLACEABLE_EVENT);
-      expect(deleteDocumentsInput).toBeUndefined();
-      expect(addDocumentsInput).toEqual([REPLACEABLE_EVENT_DOCUMENT]);
+      expect(mockDeleteDocuments).not.toBeCalled();
+      expect(mockAddDocuments).toBeCalledWith([REPLACEABLE_EVENT_DOCUMENT]);
     });
   });
 });
