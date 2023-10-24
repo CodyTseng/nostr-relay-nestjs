@@ -50,7 +50,7 @@
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.17",
     "zod": "^3.22.4",
-    "zod-validation-error": "^1.5.0"
+    "zod-validation-error": "^2.0.0"
   },
   "devDependencies": {
     "@golevelup/ts-jest": "^0.4.0",
