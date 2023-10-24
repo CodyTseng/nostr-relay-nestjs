@@ -24,6 +24,9 @@ WORKDIR /app
 # Copy dependencies files
 COPY package*.json ./
 
+# Copy resources files
+COPY resources ./resources
+
 # Install runtime dependecies (without dev/test dependecies)
 RUN npm ci --omit=dev
 
