@@ -90,7 +90,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at>1681822248',
               '5f57fd20390510f7efb2d686d37d2733fb86d4dd3c1f901a3de0db0ce9b86fc6ff32a6806a230efab62ffc65315ed30a78d25ef353a21727cbccce1dcaa019b6',
             ],
@@ -104,7 +104,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at>1681822248',
               '5fd4050a572bc9cec54797e170c653831c60478bdccaffa7086a29066a4beb33dbfe4c0add041a4c757c7db9e846029164a257f43a63981af45045b715dac710',
             ],
@@ -118,7 +118,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at>1681822248',
               '7d5cba60ce41ceec2f721770df0f39309bccb5dc4d9cf7779b771cfc66634a313c30b9a3a356b60af5a18ad0b7a24843f4106df39f985c176cec9fad90a6ef91',
             ],
@@ -133,7 +133,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at>1681822248',
             ],
           ],
@@ -146,7 +146,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at>1681822248',
               'fake-sig',
             ],
@@ -159,7 +159,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at',
               '41961e074bafe480da5a364a326872fb072a121ae69e807efafb2a125574af989a77b521e08b75d0e5d8a7ae8c1f5fe9b564ef486e82d9c3bce1241ebb74195b',
             ],
@@ -171,7 +171,7 @@ describe('Event entity', () => {
           tags: [
             [
               'delegation',
-              PUBKEY_B,
+              PUBKEY_C,
               'kind=1&created_at<9999999999&created_at>NaN',
               'f7c19c73aea476b5f7ec78743f57f96ccac42d0ec9cc67e72c791fbc70a172ff7a6792b6def5aaedb28929fd5e5974a2259b70a8f6122fb95331dffedf54b4ca',
             ],
