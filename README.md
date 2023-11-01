@@ -23,7 +23,7 @@ Try here: wss://nostr-relay.app
 | [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                      |   🔴   | No real deletion in a distributed system |
 | [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)          |   🟢   |                                          |
 | [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)                       |   🟢   |                                          |
-| [NIP-22: Event created_at Limits](https://github.com/nostr-protocol/nips/blob/master/22.md)             |   🟡   | Restrict future events only              |
+| [NIP-22: Event created_at Limits](https://github.com/nostr-protocol/nips/blob/master/22.md)             |   🟢   |                                          |
 | [NIP-26: Delegated Event Signing](https://github.com/nostr-protocol/nips/blob/master/26.md)             |   🟢   |                                          |
 | [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)                         |   🟢   |                                          |
 | [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)                |   🟢   |                                          |

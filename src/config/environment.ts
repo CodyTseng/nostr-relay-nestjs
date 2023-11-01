@@ -39,6 +39,10 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((upperLimit) => parseInt(upperLimit))
     .optional(),
+  EVENT_CREATED_AT_LOWER_LIMIT: z
+    .string()
+    .transform((lowerLimit) => parseInt(lowerLimit))
+    .optional(),
   EVENT_ID_MIN_LEADING_ZERO_BITS: z
     .string()
     .transform((minLeadingZeroBits) => parseInt(minLeadingZeroBits))

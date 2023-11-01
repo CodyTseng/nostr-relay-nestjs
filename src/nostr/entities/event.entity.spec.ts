@@ -47,6 +47,15 @@ describe('Event entity', () => {
       ).toBe(
         'invalid: created_at must not be later than 60 seconds from the current time',
       );
+
+      expect(
+        createTestEvent({
+          created_at: getTimestampInSeconds() - 100,
+          content: 'hello',
+        }).validate({ createdAtLowerLimit: 60 }),
+      ).toBe(
+        'invalid: created_at must not be earlier than 60 seconds from the current time',
+      );
     });
 
     it('should handle successfully when event pow is enough', () => {
