@@ -185,6 +185,7 @@ export class Event {
   validate(
     options: {
       createdAtUpperLimit?: number;
+      createdAtLowerLimit?: number;
       eventIdMinLeadingZeroBits?: number;
     } = {},
   ): string | undefined {
@@ -207,6 +208,13 @@ export class Event {
       this.createdAt - now > options.createdAtUpperLimit
     ) {
       return `invalid: created_at must not be later than ${options.createdAtUpperLimit} seconds from the current time`;
+    }
+
+    if (
+      !isNil(options.createdAtLowerLimit) &&
+      now - this.createdAt > options.createdAtLowerLimit
+    ) {
+      return `invalid: created_at must not be earlier than ${options.createdAtLowerLimit} seconds from the current time`;
     }
 
     if (
