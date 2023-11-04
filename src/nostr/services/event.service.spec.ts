@@ -1,4 +1,5 @@
 import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   createTestSignedEvent,
@@ -33,6 +34,7 @@ describe('EventService', () => {
         eventSearchRepository,
         eventEmitter,
         storageService,
+        createMock<ConfigService>(),
       );
     });
 
@@ -190,7 +192,7 @@ describe('EventService', () => {
       });
     });
 
-    describe('findByFilters', () => {
+    describe('find', () => {
       it('should return events', async () => {
         const events = [REGULAR_EVENT, REPLACEABLE_EVENT];
         const eventRepository = createMock<EventRepository>({
@@ -203,22 +205,18 @@ describe('EventService', () => {
         (eventService as any).eventSearchRepository = eventSearchRepository;
 
         await expect(
+          observableToArray(eventService.find([{}].map(Filter.fromFilterDto))),
+        ).resolves.toEqual(events);
+
+        await expect(
           observableToArray(
-            eventService.findByFilters([{}].map(Filter.fromFilterDto)),
+            eventService.find([{ search: 'test' }].map(Filter.fromFilterDto)),
           ),
         ).resolves.toEqual(events);
 
         await expect(
           observableToArray(
-            eventService.findByFilters(
-              [{ search: 'test' }].map(Filter.fromFilterDto),
-            ),
-          ),
-        ).resolves.toEqual(events);
-
-        await expect(
-          observableToArray(
-            eventService.findByFilters(
+            eventService.find(
               [{}, { search: 'test' }].map(Filter.fromFilterDto),
             ),
           ),
