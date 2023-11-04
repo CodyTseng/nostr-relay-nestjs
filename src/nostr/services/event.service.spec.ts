@@ -19,22 +19,26 @@ describe('EventService', () => {
   describe('handleEvent', () => {
     let mockEmit: jest.Mock;
     let eventService: EventService;
+    let storageService: StorageService;
 
     beforeEach(() => {
       mockEmit = jest.fn();
+      storageService = new StorageService();
       eventService = new EventService(
         createMock<EventRepository>(),
         createMock<EventSearchRepository>(),
         createMock<EventEmitter2>({
           emit: mockEmit,
         }),
-        new StorageService(),
+        storageService,
         createMock<ConfigService>(),
       );
+      (eventService as any).filterResultCacheTtl = 0;
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       jest.restoreAllMocks();
+      await storageService.onApplicationShutdown();
     });
 
     describe('handleRegularEvent', () => {
