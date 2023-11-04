@@ -65,6 +65,10 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((ttl) => parseInt(ttl))
     .optional(),
+  FILTER_RESULT_CACHE_TTL: z
+    .string()
+    .transform((ttl) => parseInt(ttl))
+    .optional(),
 });
 export type Environment = z.infer<typeof EnvironmentSchema>;
 

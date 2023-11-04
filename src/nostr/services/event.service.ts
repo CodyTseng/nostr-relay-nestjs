@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { chain, isNil } from 'lodash';
-import { Observable, distinct, from, merge, mergeMap } from 'rxjs';
+import { LRUCache } from 'lru-cache';
+import { Observable, distinct, merge, mergeMap } from 'rxjs';
+import { Config } from 'src/config';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
 import { Event, Filter } from '../entities';
 import { EventRepository, EventSearchRepository } from '../repositories';
@@ -10,20 +13,31 @@ import { StorageService } from './storage.service';
 
 @Injectable()
 export class EventService {
+  private readonly filterResultCache:
+    | LRUCache<string, Promise<Event[]>>
+    | undefined;
+
   constructor(
     private readonly eventRepository: EventRepository,
     private readonly eventSearchRepository: EventSearchRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly storageService: StorageService,
-  ) {}
+    configService: ConfigService<Config, true>,
+  ) {
+    const { filterResultCacheTtl } = configService.get('cache', {
+      infer: true,
+    });
+    if (filterResultCacheTtl > 0) {
+      this.filterResultCache = new LRUCache({
+        max: 1000,
+        ttl: filterResultCacheTtl,
+      });
+    }
+  }
 
-  findByFilters(filters: Filter[]): Observable<Event> {
+  find(filters: Filter[]): Observable<Event> {
     return merge(
-      ...filters.map((filter) =>
-        filter.isSearchFilter()
-          ? from(this.eventSearchRepository.find(filter))
-          : from(this.eventRepository.find(filter)),
-      ),
+      ...filters.map((filter) => this.findByFilterFromCache(filter)),
     ).pipe(
       mergeMap((events) => events),
       distinct((event) => event.id),
@@ -85,6 +99,36 @@ export class EventService {
       default:
         return this.handleRegularEvent(event);
     }
+  }
+
+  private async findByFilter(filter: Filter): Promise<Event[]> {
+    return filter.isSearchFilter()
+      ? this.eventSearchRepository.find(filter)
+      : this.eventRepository.find(filter);
+  }
+
+  private async findByFilterFromCache(filter: Filter): Promise<Event[]> {
+    if (!this.filterResultCache) {
+      return this.findByFilter(filter);
+    }
+
+    let resolve: (value: Event[]) => void;
+    const promise = new Promise<Event[]>((res) => {
+      resolve = res;
+    });
+
+    const cacheKey = JSON.stringify(filter);
+    const cache = this.filterResultCache.get(cacheKey);
+    if (cache) {
+      return cache;
+    }
+    this.filterResultCache.set(cacheKey, promise);
+
+    const events = await this.findByFilter(filter);
+
+    process.nextTick(() => resolve(events));
+
+    return events;
   }
 
   private async handleReplaceableEvent(

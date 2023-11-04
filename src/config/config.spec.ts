@@ -23,6 +23,7 @@ describe('config', () => {
         THROTTLER_TTL: '1',
         EVENT_HANDLING_RESULT_CACHE_ENABLED: 'false',
         EVENT_HANDLING_RESULT_CACHE_TTL: '300000',
+        FILTER_RESULT_CACHE_TTL: '10000',
         MEILI_SEARCH_SYNC_EVENT_KINDS: '0,1,30023',
       }),
     ).toEqual({
@@ -39,6 +40,7 @@ describe('config', () => {
       THROTTLER_TTL: 1,
       EVENT_HANDLING_RESULT_CACHE_ENABLED: false,
       EVENT_HANDLING_RESULT_CACHE_TTL: 300000,
+      FILTER_RESULT_CACHE_TTL: 10000,
       MEILI_SEARCH_SYNC_EVENT_KINDS: [0, 1, 30023],
     });
   });

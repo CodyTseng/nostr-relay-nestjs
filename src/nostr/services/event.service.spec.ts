@@ -1,4 +1,5 @@
 import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   createTestSignedEvent,
@@ -16,44 +17,42 @@ import { StorageService } from './storage.service';
 
 describe('EventService', () => {
   describe('handleEvent', () => {
-    let eventEmitter: EventEmitter2, mockEmit: jest.Mock;
-    let storageService: StorageService;
+    let mockEmit: jest.Mock;
     let eventService: EventService;
 
     beforeEach(() => {
       mockEmit = jest.fn();
-      eventEmitter = createMock<EventEmitter2>({
-        emit: mockEmit,
-      });
-      storageService = new StorageService();
-      const eventRepository = createMock<EventRepository>();
-      const eventSearchRepository = createMock<EventSearchRepository>();
       eventService = new EventService(
-        eventRepository,
-        eventSearchRepository,
-        eventEmitter,
-        storageService,
+        createMock<EventRepository>(),
+        createMock<EventSearchRepository>(),
+        createMock<EventEmitter2>({
+          emit: mockEmit,
+        }),
+        createMock<StorageService>(),
+        createMock<ConfigService>(),
       );
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
     });
 
     describe('handleRegularEvent', () => {
       it('should save the event successfully', async () => {
-        const eventRepository = createMock<EventRepository>({
-          create: async () => true,
-        });
-        (eventService as any).eventRepository = eventRepository;
+        jest
+          .spyOn(eventService['eventRepository'], 'create')
+          .mockResolvedValue(true);
 
         await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
           createCommandResultResponse(REGULAR_EVENT.id, true),
         );
-        expect(mockEmit).toBeCalled();
+        expect(mockEmit).toHaveBeenCalled();
       });
 
       it('should return duplicate when the event already exists', async () => {
-        const eventRepository = createMock<EventRepository>({
-          create: async () => false,
-        });
-        (eventService as any).eventRepository = eventRepository;
+        jest
+          .spyOn(eventService['eventRepository'], 'create')
+          .mockResolvedValue(false);
 
         await expect(eventService.handleEvent(REGULAR_EVENT)).resolves.toEqual(
           createCommandResultResponse(
@@ -62,32 +61,34 @@ describe('EventService', () => {
             'duplicate: the event already exists',
           ),
         );
-        expect(mockEmit).not.toBeCalled();
+        expect(mockEmit).not.toHaveBeenCalled();
       });
     });
 
     describe('handleReplaceableEvent', () => {
       it('should replace the event successfully', async () => {
-        const eventRepository = createMock<EventRepository>({
-          findOne: async () => null,
-          replace: async () => true,
-        });
-        (eventService as any).eventRepository = eventRepository;
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(null);
+        jest
+          .spyOn(eventService['eventRepository'], 'replace')
+          .mockResolvedValue(true);
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
         ).resolves.toEqual(
           createCommandResultResponse(REPLACEABLE_EVENT.id, true),
         );
-        expect(mockEmit).toBeCalled();
+        expect(mockEmit).toHaveBeenCalled();
       });
 
       it('should return duplicate when the event already exists', async () => {
-        const eventRepository = createMock<EventRepository>({
-          findOne: async () => REPLACEABLE_EVENT,
-          replace: async () => false,
-        });
-        (eventService as any).eventRepository = eventRepository;
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(REPLACEABLE_EVENT);
+        jest
+          .spyOn(eventService['eventRepository'], 'replace')
+          .mockResolvedValue(false);
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -98,19 +99,21 @@ describe('EventService', () => {
             'duplicate: the event already exists',
           ),
         );
-        expect(mockEmit).not.toBeCalled();
+        expect(mockEmit).not.toHaveBeenCalled();
       });
 
       it('should return duplicate when the event older than a similar event that already exists', async () => {
-        const eventRepository = createMock<EventRepository>({
-          findOne: async () =>
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(
             Event.fromEventDto({
               ...REPLACEABLE_EVENT_DTO,
               created_at: REPLACEABLE_EVENT.createdAt + 1,
             }),
-          replace: async () => true,
-        });
-        (eventService as any).eventRepository = eventRepository;
+          );
+        jest
+          .spyOn(eventService['eventRepository'], 'replace')
+          .mockResolvedValue(true);
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -121,13 +124,13 @@ describe('EventService', () => {
             'duplicate: the event already exists',
           ),
         );
-        expect(mockEmit).not.toBeCalled();
+        expect(mockEmit).not.toHaveBeenCalled();
       });
 
       it('should return rate-limited when acquiring the lock fails', async () => {
-        (eventService as any).storageService = createMock<StorageService>({
-          setNx: async () => false,
-        });
+        jest
+          .spyOn(eventService['storageService'], 'setNx')
+          .mockResolvedValue(false);
 
         await expect(
           eventService.handleEvent(REPLACEABLE_EVENT),
@@ -143,24 +146,25 @@ describe('EventService', () => {
 
     describe('handleParameterizedReplaceableEvent', () => {
       it('should replace the event successfully', async () => {
-        const eventRepository = createMock<EventRepository>({
-          findOne: async () => null,
-          replace: async () => true,
-        });
-        (eventService as any).eventRepository = eventRepository;
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(null);
+        jest
+          .spyOn(eventService['eventRepository'], 'replace')
+          .mockResolvedValue(true);
 
         await expect(
           eventService.handleEvent(PARAMETERIZED_REPLACEABLE_EVENT),
         ).resolves.toEqual(
           createCommandResultResponse(PARAMETERIZED_REPLACEABLE_EVENT.id, true),
         );
-        expect(mockEmit).toBeCalled();
+        expect(mockEmit).toHaveBeenCalled();
       });
 
       it('should return rate-limited when acquiring the lock fails', async () => {
-        (eventService as any).storageService = createMock<StorageService>({
-          setNx: async () => false,
-        });
+        jest
+          .spyOn(eventService['storageService'], 'setNx')
+          .mockResolvedValue(false);
 
         await expect(
           eventService.handleEvent(PARAMETERIZED_REPLACEABLE_EVENT),
@@ -179,67 +183,92 @@ describe('EventService', () => {
         await expect(
           eventService.handleEvent(EPHEMERAL_EVENT),
         ).resolves.toBeUndefined();
-        expect(mockEmit).toBeCalled();
+        expect(mockEmit).toHaveBeenCalled();
       });
 
       it('should discard signed event', async () => {
         await expect(
           eventService.handleEvent(createTestSignedEvent()),
         ).resolves.toBeUndefined();
-        expect(mockEmit).not.toBeCalled();
+        expect(mockEmit).not.toHaveBeenCalled();
       });
     });
 
-    describe('findByFilters', () => {
+    describe('find', () => {
       it('should return events', async () => {
         const events = [REGULAR_EVENT, REPLACEABLE_EVENT];
-        const eventRepository = createMock<EventRepository>({
-          find: async () => events,
-        });
-        const eventSearchRepository = createMock<EventSearchRepository>({
-          find: async () => events,
-        });
-        (eventService as any).eventRepository = eventRepository;
-        (eventService as any).eventSearchRepository = eventSearchRepository;
+        jest
+          .spyOn(eventService['eventSearchRepository'], 'find')
+          .mockResolvedValue(events);
+        jest
+          .spyOn(eventService['eventRepository'], 'find')
+          .mockResolvedValue(events);
+
+        await expect(
+          observableToArray(eventService.find([{}].map(Filter.fromFilterDto))),
+        ).resolves.toEqual(events);
 
         await expect(
           observableToArray(
-            eventService.findByFilters([{}].map(Filter.fromFilterDto)),
+            eventService.find([{ search: 'test' }].map(Filter.fromFilterDto)),
           ),
         ).resolves.toEqual(events);
 
         await expect(
           observableToArray(
-            eventService.findByFilters(
-              [{ search: 'test' }].map(Filter.fromFilterDto),
-            ),
-          ),
-        ).resolves.toEqual(events);
-
-        await expect(
-          observableToArray(
-            eventService.findByFilters(
+            eventService.find(
               [{}, { search: 'test' }].map(Filter.fromFilterDto),
             ),
           ),
         ).resolves.toEqual(events);
       });
+
+      it('should cache result', async () => {
+        eventService = new EventService(
+          createMock<EventRepository>(),
+          createMock<EventSearchRepository>(),
+          createMock<EventEmitter2>({
+            emit: mockEmit,
+          }),
+          createMock<StorageService>(),
+          createMock<ConfigService>({
+            get: jest.fn().mockReturnValue({ filterResultCacheTtl: 1000 }),
+          }),
+        );
+
+        const events = [REGULAR_EVENT, REPLACEABLE_EVENT];
+        const findSpy = jest
+          .spyOn(eventService['eventRepository'], 'find')
+          .mockResolvedValue(events);
+
+        await expect(
+          observableToArray(
+            eventService.find([{}, {}].map(Filter.fromFilterDto)),
+          ),
+        ).resolves.toEqual(events);
+
+        await expect(
+          observableToArray(
+            eventService.find([{}, {}].map(Filter.fromFilterDto)),
+          ),
+        ).resolves.toEqual(events);
+
+        expect(findSpy).toHaveBeenCalledTimes(1);
+      });
     });
 
     describe('findTopIdsWithScore', () => {
       it('should return top ids', async () => {
-        const eventSearchRepository = createMock<EventSearchRepository>({
-          findTopIdsWithScore: async () => [
+        jest
+          .spyOn(eventService['eventSearchRepository'], 'findTopIdsWithScore')
+          .mockResolvedValue([
             { id: REGULAR_EVENT.id, score: REGULAR_EVENT.createdAt },
-          ],
-        });
-        const eventRepository = createMock<EventRepository>({
-          findTopIdsWithScore: async () => [
+          ]);
+        jest
+          .spyOn(eventService['eventRepository'], 'findTopIdsWithScore')
+          .mockResolvedValue([
             { id: REPLACEABLE_EVENT.id, score: REPLACEABLE_EVENT.createdAt },
-          ],
-        });
-        (eventService as any).eventSearchRepository = eventSearchRepository;
-        (eventService as any).eventRepository = eventRepository;
+          ]);
 
         expect(
           await eventService.findTopIds(
