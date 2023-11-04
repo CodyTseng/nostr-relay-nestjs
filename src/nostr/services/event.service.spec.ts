@@ -1,7 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { LRUCache } from 'lru-cache';
 import {
   createTestSignedEvent,
   EPHEMERAL_EVENT,
@@ -225,11 +224,19 @@ describe('EventService', () => {
       });
 
       it('should cache result', async () => {
+        eventService = new EventService(
+          createMock<EventRepository>(),
+          createMock<EventSearchRepository>(),
+          createMock<EventEmitter2>({
+            emit: mockEmit,
+          }),
+          createMock<StorageService>(),
+          createMock<ConfigService>({
+            get: jest.fn().mockReturnValue({ filterResultCacheTtl: 1000 }),
+          }),
+        );
+
         const events = [REGULAR_EVENT, REPLACEABLE_EVENT];
-        (eventService as any).filterResultCache = new LRUCache({
-          max: 1000,
-          ttl: 1000,
-        });
         const findSpy = jest
           .spyOn(eventService['eventRepository'], 'find')
           .mockResolvedValue(events);
