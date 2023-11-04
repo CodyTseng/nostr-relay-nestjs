@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { chain, isNil } from 'lodash';
+import { LRUCache } from 'lru-cache';
 import { Observable, distinct, merge, mergeMap } from 'rxjs';
 import { Config } from 'src/config';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
@@ -12,7 +13,9 @@ import { StorageService } from './storage.service';
 
 @Injectable()
 export class EventService {
-  private readonly filterResultCacheTtl: number;
+  private readonly filterResultCache:
+    | LRUCache<string, Promise<Event[]>>
+    | undefined;
 
   constructor(
     private readonly eventRepository: EventRepository,
@@ -24,7 +27,12 @@ export class EventService {
     const { filterResultCacheTtl } = configService.get('cache', {
       infer: true,
     });
-    this.filterResultCacheTtl = filterResultCacheTtl;
+    if (filterResultCacheTtl > 0) {
+      this.filterResultCache = new LRUCache({
+        max: 1000,
+        ttl: filterResultCacheTtl,
+      });
+    }
   }
 
   find(filters: Filter[]): Observable<Event> {
@@ -100,7 +108,7 @@ export class EventService {
   }
 
   private async findByFilterFromCache(filter: Filter): Promise<Event[]> {
-    if (this.filterResultCacheTtl <= 0) {
+    if (!this.filterResultCache) {
       return this.findByFilter(filter);
     }
 
@@ -109,16 +117,12 @@ export class EventService {
       resolve = res;
     });
 
-    const cacheKey = `FilterResult:${JSON.stringify(filter)}`;
-    const lock = await this.storageService.setNx(
-      cacheKey,
-      promise,
-      this.filterResultCacheTtl,
-    );
-    if (!lock) {
-      const cache = await this.storageService.get<Event[]>(cacheKey);
-      return cache ?? this.findByFilter(filter);
+    const cacheKey = JSON.stringify(filter);
+    const cache = this.filterResultCache.get(cacheKey);
+    if (cache) {
+      return cache;
     }
+    this.filterResultCache.set(cacheKey, promise);
 
     const events = await this.findByFilter(filter);
 
