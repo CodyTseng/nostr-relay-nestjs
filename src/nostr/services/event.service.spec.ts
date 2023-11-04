@@ -222,6 +222,28 @@ describe('EventService', () => {
           ),
         ).resolves.toEqual(events);
       });
+
+      it('should cache result', async () => {
+        const events = [REGULAR_EVENT, REPLACEABLE_EVENT];
+        (eventService as any).filterResultCacheTtl = 10000;
+        const findSpy = jest
+          .spyOn(eventService['eventRepository'], 'find')
+          .mockResolvedValue(events);
+
+        await expect(
+          observableToArray(
+            eventService.find([{}, {}].map(Filter.fromFilterDto)),
+          ),
+        ).resolves.toEqual(events);
+
+        await expect(
+          observableToArray(
+            eventService.find([{}, {}].map(Filter.fromFilterDto)),
+          ),
+        ).resolves.toEqual(events);
+
+        expect(findSpy).toHaveBeenCalledTimes(1);
+      });
     });
 
     describe('findTopIdsWithScore', () => {
