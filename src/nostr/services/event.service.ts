@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { chain, isNil } from 'lodash';
 import { LRUCache } from 'lru-cache';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, distinct, merge, mergeMap } from 'rxjs';
 import { Config } from 'src/config';
 import { E_EVENT_BROADCAST, EventKind, EventType } from '../constants';
@@ -22,6 +23,8 @@ export class EventService {
     private readonly eventSearchRepository: EventSearchRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly storageService: StorageService,
+    @InjectPinoLogger(EventService.name)
+    private readonly logger: PinoLogger,
     configService: ConfigService<Config, true>,
   ) {
     const { filterResultCacheTtl } = configService.get('cache', {
@@ -108,8 +111,20 @@ export class EventService {
   }
 
   private async findByFilterFromCache(filter: Filter): Promise<Event[]> {
+    const start = Date.now();
+    const logExecutionDetail = (cacheHit = false) => {
+      const executionTime = Date.now() - start;
+      let msg = `findByFilter ${filter.toString()} took ${executionTime}ms to execute`;
+      if (cacheHit) {
+        msg += ' (cache hit)';
+      }
+      this.logger.info(msg);
+    };
+
     if (!this.filterResultCache) {
-      return this.findByFilter(filter);
+      const events = await this.findByFilter(filter);
+      logExecutionDetail();
+      return events;
     }
 
     let resolve: (value: Event[]) => void;
@@ -120,7 +135,9 @@ export class EventService {
     const cacheKey = JSON.stringify(filter);
     const cache = this.filterResultCache.get(cacheKey);
     if (cache) {
-      return cache;
+      const events = cache instanceof Promise ? await cache : cache;
+      logExecutionDetail(true);
+      return events;
     }
     this.filterResultCache.set(cacheKey, promise);
 
@@ -128,6 +145,7 @@ export class EventService {
 
     process.nextTick(() => resolve(events));
 
+    logExecutionDetail();
     return events;
   }
 

@@ -1,6 +1,7 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PinoLogger } from 'nestjs-pino';
 import {
   createTestSignedEvent,
   EPHEMERAL_EVENT,
@@ -29,6 +30,7 @@ describe('EventService', () => {
           emit: mockEmit,
         }),
         createMock<StorageService>(),
+        createMock<PinoLogger>(),
         createMock<ConfigService>(),
       );
     });
@@ -231,6 +233,7 @@ describe('EventService', () => {
             emit: mockEmit,
           }),
           createMock<StorageService>(),
+          createMock<PinoLogger>(),
           createMock<ConfigService>({
             get: jest.fn().mockReturnValue({ filterResultCacheTtl: 1000 }),
           }),
