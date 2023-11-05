@@ -112,18 +112,18 @@ export class EventService {
 
   private async findByFilterFromCache(filter: Filter): Promise<Event[]> {
     const start = Date.now();
-    const logExecutionDetail = (cacheHit = false) => {
+    const logExecutionDetails = (cacheHit = false) => {
       const executionTime = Date.now() - start;
-      let msg = `findByFilter ${filter.toString()} took ${executionTime}ms to execute`;
+      let msg = `find operation took ${executionTime}ms to execute`;
       if (cacheHit) {
         msg += ' (cache hit)';
       }
-      this.logger.info(msg);
+      this.logger.info({ data: filter, executionTime }, msg);
     };
 
     if (!this.filterResultCache) {
       const events = await this.findByFilter(filter);
-      logExecutionDetail();
+      logExecutionDetails();
       return events;
     }
 
@@ -136,7 +136,7 @@ export class EventService {
     const cache = this.filterResultCache.get(cacheKey);
     if (cache) {
       const events = cache instanceof Promise ? await cache : cache;
-      logExecutionDetail(true);
+      logExecutionDetails(true);
       return events;
     }
     this.filterResultCache.set(cacheKey, promise);
@@ -145,7 +145,7 @@ export class EventService {
 
     process.nextTick(() => resolve(events));
 
-    logExecutionDetail();
+    logExecutionDetails();
     return events;
   }
 
