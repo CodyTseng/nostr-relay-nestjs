@@ -4,6 +4,6 @@ export function loggerConfig(env: Environment) {
   return {
     dir: env.LOG_DIR,
     level: env.LOG_LEVEL ?? 'info',
-    slowRequestThreshold: env.LOG_SLOW_REQUEST_THRESHOLD ?? 500,
+    slowExecutionThreshold: env.LOG_SLOW_EXECUTION_THRESHOLD ?? 500,
   };
 }

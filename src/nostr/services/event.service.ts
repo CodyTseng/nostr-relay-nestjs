@@ -17,6 +17,7 @@ export class EventService {
   private readonly filterResultCache:
     | LRUCache<string, Promise<Event[]>>
     | undefined;
+  private readonly slowExecutionThreshold: number;
 
   constructor(
     private readonly eventRepository: EventRepository,
@@ -30,6 +31,10 @@ export class EventService {
     const { filterResultCacheTtl } = configService.get('cache', {
       infer: true,
     });
+    this.slowExecutionThreshold = configService.get('logger', {
+      infer: true,
+    }).slowExecutionThreshold;
+
     if (filterResultCacheTtl > 0) {
       this.filterResultCache = new LRUCache({
         max: 1000,
@@ -118,7 +123,11 @@ export class EventService {
       if (cacheHit) {
         msg += ' (cache hit)';
       }
-      this.logger.info({ data: filter, executionTime }, msg);
+      if (executionTime > this.slowExecutionThreshold) {
+        this.logger.warn({ data: filter, executionTime }, msg + ' (slow)');
+      } else {
+        this.logger.info({ data: filter, executionTime }, msg);
+      }
     };
 
     if (!this.filterResultCache) {

@@ -13,7 +13,7 @@ export const EnvironmentSchema = z.object({
 
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
-  LOG_SLOW_REQUEST_THRESHOLD: z
+  LOG_SLOW_EXECUTION_THRESHOLD: z
     .string()
     .transform((threshold) => parseInt(threshold))
     .optional(),

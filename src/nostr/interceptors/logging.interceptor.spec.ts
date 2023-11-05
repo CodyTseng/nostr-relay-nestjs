@@ -17,7 +17,7 @@ describe('LoggingInterceptor', () => {
     interceptor = new LoggingInterceptor(
       logger,
       createMock<ConfigService>({
-        get: jest.fn().mockReturnValue({ slowRequestThreshold: 10 }),
+        get: jest.fn().mockReturnValue({ slowExecutionThreshold: 10 }),
       }),
     );
   });

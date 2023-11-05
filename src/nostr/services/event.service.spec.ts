@@ -31,7 +31,9 @@ describe('EventService', () => {
         }),
         createMock<StorageService>(),
         createMock<PinoLogger>(),
-        createMock<ConfigService>(),
+        createMock<ConfigService>({
+          get: jest.fn().mockReturnValue({ slowExecutionThreshold: 100 }),
+        }),
       );
     });
 
@@ -257,6 +259,22 @@ describe('EventService', () => {
         ).resolves.toEqual(events);
 
         expect(findSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it('should log warn if execution time is greater than `slowExecutionThreshold`', async () => {
+        jest
+          .spyOn(eventService['eventRepository'], 'find')
+          .mockImplementation(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            return [];
+          });
+        const warnLoggerSpy = jest.spyOn(eventService['logger'], 'warn');
+
+        await expect(
+          observableToArray(eventService.find([Filter.fromFilterDto({})])),
+        ).resolves.toEqual([]);
+
+        expect(warnLoggerSpy).toHaveBeenCalled();
       });
     });
 
