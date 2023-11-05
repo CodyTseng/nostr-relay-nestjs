@@ -1,6 +1,7 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PinoLogger } from 'nestjs-pino';
 import {
   createTestSignedEvent,
   EPHEMERAL_EVENT,
@@ -29,7 +30,10 @@ describe('EventService', () => {
           emit: mockEmit,
         }),
         createMock<StorageService>(),
-        createMock<ConfigService>(),
+        createMock<PinoLogger>(),
+        createMock<ConfigService>({
+          get: jest.fn().mockReturnValue({ slowExecutionThreshold: 100 }),
+        }),
       );
     });
 
@@ -231,6 +235,7 @@ describe('EventService', () => {
             emit: mockEmit,
           }),
           createMock<StorageService>(),
+          createMock<PinoLogger>(),
           createMock<ConfigService>({
             get: jest.fn().mockReturnValue({ filterResultCacheTtl: 1000 }),
           }),
@@ -254,6 +259,22 @@ describe('EventService', () => {
         ).resolves.toEqual(events);
 
         expect(findSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it('should log warn if execution time is greater than `slowExecutionThreshold`', async () => {
+        jest
+          .spyOn(eventService['eventRepository'], 'find')
+          .mockImplementation(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            return [];
+          });
+        const warnLoggerSpy = jest.spyOn(eventService['logger'], 'warn');
+
+        await expect(
+          observableToArray(eventService.find([Filter.fromFilterDto({})])),
+        ).resolves.toEqual([]);
+
+        expect(warnLoggerSpy).toHaveBeenCalled();
       });
     });
 

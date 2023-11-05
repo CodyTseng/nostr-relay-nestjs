@@ -12,15 +12,15 @@ import { Config } from 'src/config';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  private readonly slowRequestThreshold: number;
+  private readonly slowExecutionThreshold: number;
   constructor(
     @InjectPinoLogger(LoggingInterceptor.name)
     private readonly logger: PinoLogger,
     configService: ConfigService<Config, true>,
   ) {
-    this.slowRequestThreshold = configService.get('logger', {
+    this.slowExecutionThreshold = configService.get('logger', {
       infer: true,
-    }).slowRequestThreshold;
+    }).slowExecutionThreshold;
   }
 
   intercept(
@@ -41,7 +41,7 @@ export class LoggingInterceptor implements NestInterceptor {
           'UNKNOWN',
         )} request took ${executionTime}ms to execute`;
 
-        if (executionTime < this.slowRequestThreshold) {
+        if (executionTime < this.slowExecutionThreshold) {
           this.logger.info({ data, executionTime }, msg);
         } else {
           this.logger.warn({ data, executionTime }, `${msg} (slow)`);
