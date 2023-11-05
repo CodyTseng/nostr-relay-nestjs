@@ -144,7 +144,7 @@ export class EventService {
     const cacheKey = JSON.stringify(filter);
     const cache = this.filterResultCache.get(cacheKey);
     if (cache) {
-      const events = cache instanceof Promise ? await cache : cache;
+      const events = await cache;
       logExecutionDetails(true);
       return events;
     }
