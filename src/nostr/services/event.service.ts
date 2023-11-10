@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { chain, isNil } from 'lodash';
+import { chain } from 'lodash';
 import { LRUCache } from 'lru-cache';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, distinct, merge, mergeMap } from 'rxjs';
