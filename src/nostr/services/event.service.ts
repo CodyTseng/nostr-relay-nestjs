@@ -237,7 +237,8 @@ export class EventService {
   ): Promise<CommandResultResponse> {
     if (
       oldEvent &&
-      (oldEvent.createdAt > event.createdAt || oldEvent.id <= event.id)
+      (oldEvent.createdAt > event.createdAt ||
+        (oldEvent.createdAt === event.createdAt && oldEvent.id <= event.id))
     ) {
       return createCommandResultResponse(
         event.id,
