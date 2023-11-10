@@ -15,6 +15,7 @@ import { EventRepository, EventSearchRepository } from '../repositories';
 import { createCommandResultResponse, observableToArray } from '../utils';
 import { EventService } from './event.service';
 import { StorageService } from './storage.service';
+import { EventKind } from '../constants';
 
 describe('EventService', () => {
   describe('handleEvent', () => {
@@ -84,6 +85,60 @@ describe('EventService', () => {
           createCommandResultResponse(REPLACEABLE_EVENT.id, true),
         );
         expect(mockEmit).toHaveBeenCalled();
+      });
+
+      it('should replace the old event successfully', async () => {
+        const now = Date.now();
+        const oldEvent = new Event();
+        oldEvent.id = 'a';
+        oldEvent.createdAt = now - 1000;
+        oldEvent.kind = EventKind.SET_METADATA;
+        oldEvent.pubkey = 'pubkey';
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(oldEvent);
+        jest
+          .spyOn(eventService['eventRepository'], 'replace')
+          .mockResolvedValue(true);
+
+        const newEvent = new Event();
+        newEvent.id = 'b';
+        newEvent.createdAt = now;
+        newEvent.kind = EventKind.SET_METADATA;
+        newEvent.pubkey = 'pubkey';
+        await expect(eventService.handleEvent(newEvent)).resolves.toEqual(
+          createCommandResultResponse(newEvent.id, true),
+        );
+        expect(mockEmit).toHaveBeenCalled();
+      });
+
+      it('should return duplicate when the created_at of the old event is the same as the new event and the id of the old event is less than the new event', async () => {
+        const now = Date.now();
+        const oldEvent = new Event();
+        oldEvent.id = 'a';
+        oldEvent.createdAt = now;
+        oldEvent.kind = EventKind.SET_METADATA;
+        oldEvent.pubkey = 'pubkey';
+        jest
+          .spyOn(eventService['eventRepository'], 'findOne')
+          .mockResolvedValue(oldEvent);
+        jest
+          .spyOn(eventService['eventRepository'], 'replace')
+          .mockResolvedValue(true);
+
+        const newEvent = new Event();
+        newEvent.id = 'b';
+        newEvent.createdAt = now;
+        newEvent.kind = EventKind.SET_METADATA;
+        newEvent.pubkey = 'pubkey';
+        await expect(eventService.handleEvent(newEvent)).resolves.toEqual(
+          createCommandResultResponse(
+            newEvent.id,
+            true,
+            'duplicate: the event already exists',
+          ),
+        );
+        expect(mockEmit).not.toHaveBeenCalled();
       });
 
       it('should return duplicate when the event already exists', async () => {
