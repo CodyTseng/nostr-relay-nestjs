@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { chain, isNil } from 'lodash';
+import { chain } from 'lodash';
 import { LRUCache } from 'lru-cache';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, distinct, merge, mergeMap } from 'rxjs';
@@ -72,23 +72,6 @@ export class EventService {
 
   async checkEventExists(event: Event): Promise<boolean> {
     if (EventType.EPHEMERAL === event.type) return false;
-
-    if (
-      [EventType.REPLACEABLE, EventType.PARAMETERIZED_REPLACEABLE].includes(
-        event.type,
-      ) &&
-      !isNil(event.dTagValue)
-    ) {
-      const exists = await this.eventRepository.findOne(
-        {
-          authors: [event.pubkey],
-          kinds: [event.kind],
-          dTagValues: [event.dTagValue],
-        },
-        ['id'],
-      );
-      return !!exists;
-    }
 
     const exists = await this.eventRepository.findOne({ ids: [event.id] }, [
       'id',
