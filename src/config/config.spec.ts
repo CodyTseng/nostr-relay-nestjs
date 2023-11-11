@@ -25,6 +25,11 @@ describe('config', () => {
         EVENT_HANDLING_RESULT_CACHE_TTL: '300000',
         FILTER_RESULT_CACHE_TTL: '10000',
         MEILI_SEARCH_SYNC_EVENT_KINDS: '0,1,30023',
+        EVENT_MESSAGE_HANDLING_ENABLED: 'false',
+        REQ_MESSAGE_HANDLING_ENABLED: 'false',
+        CLOSE_MESSAGE_HANDLING_ENABLED: 'false',
+        TOP_MESSAGE_HANDLING_ENABLED: 'false',
+        AUTH_MESSAGE_HANDLING_ENABLED: 'false',
       }),
     ).toEqual({
       DOMAIN: 'localhost',
@@ -42,6 +47,11 @@ describe('config', () => {
       EVENT_HANDLING_RESULT_CACHE_TTL: 300000,
       FILTER_RESULT_CACHE_TTL: 10000,
       MEILI_SEARCH_SYNC_EVENT_KINDS: [0, 1, 30023],
+      EVENT_MESSAGE_HANDLING_ENABLED: false,
+      REQ_MESSAGE_HANDLING_ENABLED: false,
+      CLOSE_MESSAGE_HANDLING_ENABLED: false,
+      TOP_MESSAGE_HANDLING_ENABLED: false,
+      AUTH_MESSAGE_HANDLING_ENABLED: false,
     });
   });
 });

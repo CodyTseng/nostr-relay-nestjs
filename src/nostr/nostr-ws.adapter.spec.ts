@@ -3,9 +3,10 @@ import { MessageMappingProperties } from '@nestjs/websockets';
 import { MessageEvent } from 'ws';
 import { NostrWsAdapter } from './nostr-ws.adapter';
 import { createNoticeResponse } from './utils';
+import { INestApplication } from '@nestjs/common';
 
 describe('NostrWsAdapter', () => {
-  const EVENT_TYPE = 'TEST';
+  const EVENT_TYPE = 'EVENT';
   const handlers = [
     {
       message: EVENT_TYPE,
@@ -19,7 +20,15 @@ describe('NostrWsAdapter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockTransForm = jest.fn();
-    nostrWsAdapter = new NostrWsAdapter();
+    nostrWsAdapter = new NostrWsAdapter(
+      createMock<INestApplication>({
+        get: jest.fn().mockReturnValue({
+          get: jest.fn().mockReturnValue({
+            event: true,
+          }),
+        }),
+      }),
+    );
   });
 
   it('should handle message successfully', () => {
@@ -51,6 +60,26 @@ describe('NostrWsAdapter', () => {
     );
   });
 
+  it('should return empty when message type is disabled', () => {
+    nostrWsAdapter = new NostrWsAdapter(
+      createMock<INestApplication>({
+        get: jest.fn().mockReturnValue({
+          get: jest.fn().mockReturnValue({
+            event: false,
+          }),
+        }),
+      }),
+    );
+
+    nostrWsAdapter.bindMessageHandler(
+      createMock<MessageEvent>({ data: JSON.stringify([EVENT_TYPE, 'hello']) }),
+      handlers,
+      mockTransForm,
+    );
+
+    expect(mockTransForm).not.toHaveBeenCalled();
+  });
+
   function testBindMessageHandler(data: any, response: any) {
     nostrWsAdapter.bindMessageHandler(
       createMock<MessageEvent>({ data }),
@@ -58,6 +87,6 @@ describe('NostrWsAdapter', () => {
       mockTransForm,
     );
 
-    expect(mockTransForm).toBeCalledWith(response);
+    expect(mockTransForm).toHaveBeenCalledWith(response);
   }
 });
