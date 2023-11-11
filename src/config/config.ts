@@ -4,6 +4,7 @@ import { validateEnvironment } from './environment';
 import { limitConfig } from './limit.config';
 import { loggerConfig } from './logger.config';
 import { meiliSearchConfig } from './meili-search';
+import { messageHandlingConfig } from './message-handling.config';
 import { relayInfoDocConfig } from './relay-info-doc.config';
 import { throttlerConfig } from './throttler.config';
 
@@ -19,6 +20,7 @@ export function config() {
     logger: loggerConfig(env),
     throttler: throttlerConfig(env),
     cache: cacheConfig(env),
+    messageHandling: messageHandlingConfig(env),
   };
 }
 export type Config = ReturnType<typeof config>;

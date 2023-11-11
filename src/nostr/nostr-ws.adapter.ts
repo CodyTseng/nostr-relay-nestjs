@@ -1,10 +1,22 @@
+import { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { MessageMappingProperties } from '@nestjs/websockets/gateway-metadata-explorer';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable } from 'rxjs';
+import { Config } from 'src/config';
+import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { MessageEvent } from 'ws';
 import { createNoticeResponse } from './utils';
 
 export class NostrWsAdapter extends WsAdapter {
+  private readonly messageHandlingConfig: MessageHandlingConfig;
+
+  constructor(app: INestApplication) {
+    super(app);
+    const config = app.get(ConfigService<Config, true>);
+    this.messageHandlingConfig = config.get('messageHandling', { infer: true });
+  }
+
   public bindMessageHandler(
     message: MessageEvent,
     handlers: MessageMappingProperties[],
@@ -18,12 +30,18 @@ export class NostrWsAdapter extends WsAdapter {
         );
       }
       const [type] = messageData;
+
       const messageHandler = handlers.find(
         (handler) => handler.message === type,
       );
       if (!messageHandler) {
         return transform(createNoticeResponse('invalid: unknown message type'));
       }
+
+      if (!this.messageHandlingConfig[type.toLowerCase()]) {
+        return EMPTY;
+      }
+
       return transform(messageHandler.callback(messageData));
     } catch (error) {
       return transform(

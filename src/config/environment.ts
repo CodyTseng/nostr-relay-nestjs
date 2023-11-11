@@ -69,6 +69,27 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((ttl) => parseInt(ttl))
     .optional(),
+
+  EVENT_MESSAGE_HANDLING_ENABLED: z
+    .string()
+    .transform((enabled) => enabled === 'true')
+    .optional(),
+  REQ_MESSAGE_HANDLING_ENABLED: z
+    .string()
+    .transform((enabled) => enabled === 'true')
+    .optional(),
+  CLOSE_MESSAGE_HANDLING_ENABLED: z
+    .string()
+    .transform((enabled) => enabled === 'true')
+    .optional(),
+  TOP_MESSAGE_HANDLING_ENABLED: z
+    .string()
+    .transform((enabled) => enabled === 'true')
+    .optional(),
+  AUTH_MESSAGE_HANDLING_ENABLED: z
+    .string()
+    .transform((enabled) => enabled === 'true')
+    .optional(),
 });
 export type Environment = z.infer<typeof EnvironmentSchema>;
 
