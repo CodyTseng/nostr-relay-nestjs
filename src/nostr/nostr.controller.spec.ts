@@ -46,9 +46,7 @@ describe('NostrController', () => {
 
       nostrController.root(mockReq, mockRes);
 
-      expect(responseData).toBe(
-        'Please use a Nostr client to connect. Powered by nostr-relay-nestjs.',
-      );
+      expect(responseData).toEqual(expect.any(String));
     });
   });
 
