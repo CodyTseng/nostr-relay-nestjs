@@ -10,6 +10,7 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((port) => parseInt(port))
     .optional(),
+  GIT_COMMIT_SHA: z.string().optional(),
 
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),

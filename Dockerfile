@@ -19,6 +19,10 @@ RUN npm run build
 # Production layer
 FROM node:18-alpine as production
 
+# Set environment variables
+ARG GIT_COMMIT_SHA
+ENV GIT_COMMIT_SHA $GIT_COMMIT_SHA
+
 WORKDIR /app
 
 # Copy dependencies files
