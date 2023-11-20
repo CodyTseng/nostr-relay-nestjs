@@ -7,7 +7,7 @@
 
 A Nostr relay with a clear architecture and high test coverage
 
-Try here: wss://nostr-relay.app
+If you'd like to help me test the reliability of this relay implementation, you can add wss://nostr-relay.app to your relay list (it's free) 💜⚡️
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
 
@@ -62,20 +62,20 @@ Example:
 Build image
 
 ```bash
-docker build -t nostr-relay-nestjs .
+./scripts/build.sh
 ```
 
 Create `.env` file based on `.env.example` file
 
 ```.env
 DOMAIN=localhost
-DATABASE_URL="postgresql://username:xxxxxxxxxx@host:port/database"
+DATABASE_URL=postgresql://username:xxxxxxxxxx@host:port/database
 ```
 
 Run container
 
 ```bash
-docker run -d -p 3000:3000 --env-file .env --name nostr-relay-nestjs nostr-relay-nestjs
+./scripts/run.sh
 ```
 
 ## TODO

@@ -9,6 +9,7 @@ export function relayInfoDocConfig(env: Environment) {
     contact: env.RELAY_CONTACT,
     software: packageJson.repository.url,
     version: packageJson.version,
+    gitCommitSha: env.GIT_COMMIT_SHA,
   };
 }
 export type RelayInfoDoc = ReturnType<typeof relayInfoDocConfig>;
