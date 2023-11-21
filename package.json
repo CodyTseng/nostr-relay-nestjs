@@ -38,7 +38,7 @@
     "@nestjs/typeorm": "^10.0.0",
     "@nestjs/websockets": "^10.2.9",
     "@noble/curves": "^1.2.0",
-    "@types/ws": "^8.5.8",
+    "@types/ws": "^8.5.10",
     "dayjs": "^1.11.10",
     "helmet": "^7.1.0",
     "lodash": "^4.17.21",
