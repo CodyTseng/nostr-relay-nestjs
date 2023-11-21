@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
 import * as path from 'path';
 import { TransportTargetOptions } from 'pino';
 import { Config } from '../../config';
@@ -9,6 +10,13 @@ export function loggerModuleFactory(
   const { dir, level } = configService.get('logger', { infer: true });
   const targets: TransportTargetOptions[] = [];
   if (dir) {
+    const dirStat = statSync(dir);
+    if (!dirStat) {
+      fs.mkdirSync(dir, { recursive: true });
+    } else if (!dirStat.isDirectory()) {
+      throw new Error(`Log directory '${dir}' is not a directory`);
+    }
+
     targets.push({
       level,
       target: 'pino/file',
@@ -23,4 +31,12 @@ export function loggerModuleFactory(
       },
     },
   };
+}
+
+function statSync(dirPath: string) {
+  try {
+    return fs.statSync(dirPath);
+  } catch {
+    return false;
+  }
 }
