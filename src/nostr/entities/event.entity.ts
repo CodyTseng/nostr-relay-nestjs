@@ -104,8 +104,8 @@ export class Event {
       event.type === EventType.PARAMETERIZED_REPLACEABLE
         ? Event.extractDTagValueFromEvent(eventDto)
         : event.type === EventType.REPLACEABLE
-        ? ''
-        : null;
+          ? ''
+          : null;
 
     const genericTagSet = new Set<string>();
     eventDto.tags.forEach(([tagName, tagValue]) => {
