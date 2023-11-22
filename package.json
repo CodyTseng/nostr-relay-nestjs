@@ -42,7 +42,7 @@
     "dayjs": "^1.11.10",
     "helmet": "^7.1.0",
     "lodash": "^4.17.21",
-    "lru-cache": "^10.0.1",
+    "lru-cache": "^10.0.3",
     "meilisearch": "^0.36.0",
     "nestjs-pino": "^3.5.0",
     "pg": "^8.11.3",
