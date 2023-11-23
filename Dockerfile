@@ -38,4 +38,4 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist .
 
 # Start the application
-CMD ["node", "src/main"]
+CMD npm run migration:run && node src/main
