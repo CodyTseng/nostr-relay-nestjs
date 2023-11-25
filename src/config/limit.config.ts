@@ -9,6 +9,9 @@ export function limitConfig(env: Environment) {
     eventId: {
       minLeadingZeroBits: env.EVENT_ID_MIN_LEADING_ZERO_BITS ?? 0,
     },
+    subscription: {
+      maxSubscriptionsPerClient: env.MAX_SUBSCRIPTIONS_PER_CLIENT ?? 20,
+    },
   };
 }
 export type LimitConfig = ReturnType<typeof limitConfig>;

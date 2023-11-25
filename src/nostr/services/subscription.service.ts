@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
+import { LRUCache } from 'lru-cache';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
+import { Config } from '../../config';
 import { E_EVENT_BROADCAST } from '../constants';
 import { Event, Filter } from '../entities';
 import { createEventResponse } from '../utils';
@@ -10,14 +13,23 @@ import { createEventResponse } from '../utils';
 export class SubscriptionService {
   private readonly subscriptionsMap = new WeakMap<
     WebSocket,
-    Map<string, Filter[]>
+    LRUCache<string, Filter[]>
   >();
   private server?: WebSocketServer;
+  private readonly maxSubscriptionsPerClient: number;
 
   constructor(
     @InjectPinoLogger(SubscriptionService.name)
     private readonly logger: PinoLogger,
-  ) {}
+    configService: ConfigService<Config, true>,
+  ) {
+    this.maxSubscriptionsPerClient = configService.get(
+      'limit.subscription.maxSubscriptionsPerClient',
+      {
+        infer: true,
+      },
+    );
+  }
 
   setServer(server: WebSocketServer) {
     this.server = server;
@@ -26,7 +38,11 @@ export class SubscriptionService {
   subscribe(client: WebSocket, subscriptionId: string, filters: Filter[]) {
     const subscriptions = this.subscriptionsMap.get(client);
     if (!subscriptions) {
-      this.subscriptionsMap.set(client, new Map([[subscriptionId, filters]]));
+      const lruCache = new LRUCache<string, Filter[]>({
+        max: this.maxSubscriptionsPerClient,
+      });
+      lruCache.set(subscriptionId, filters);
+      this.subscriptionsMap.set(client, lruCache);
       return;
     }
     subscriptions.set(subscriptionId, filters);

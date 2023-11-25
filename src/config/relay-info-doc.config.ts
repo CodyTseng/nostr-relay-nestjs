@@ -12,6 +12,7 @@ export function relayInfoDocConfig(env: Environment) {
     git_commit_sha: env.GIT_COMMIT_SHA,
     limitation: {
       max_message_length: 128 * 1024, // 128 KB
+      max_subscriptions: env.MAX_SUBSCRIPTIONS_PER_CLIENT ?? 20,
       max_filters: 10,
       max_limit: 1000,
       max_subid_length: 128,
