@@ -1,9 +1,10 @@
 import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  createTestEncryptedDirectMessageEvent,
   REGULAR_EVENT,
+  createTestEncryptedDirectMessageEvent,
 } from '../../../seeds';
 import { Filter } from '../entities';
 import { SubscriptionService } from './subscription.service';
@@ -12,7 +13,12 @@ describe('SubscriptionService', () => {
   let subscriptionService: SubscriptionService;
 
   beforeEach(() => {
-    subscriptionService = new SubscriptionService(createMock<PinoLogger>());
+    subscriptionService = new SubscriptionService(
+      createMock<PinoLogger>(),
+      createMock<ConfigService>({
+        get: jest.fn().mockReturnValue(20),
+      }),
+    );
   });
 
   it('should subscribe successfully', () => {

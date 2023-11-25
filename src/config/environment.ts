@@ -48,6 +48,10 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((minLeadingZeroBits) => parseInt(minLeadingZeroBits))
     .optional(),
+  MAX_SUBSCRIPTIONS_PER_CLIENT: z
+    .string()
+    .transform((limit) => parseInt(limit))
+    .optional(),
 
   THROTTLER_LIMIT: z
     .string()
