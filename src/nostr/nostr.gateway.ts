@@ -41,7 +41,9 @@ import {
   createTopResponse,
 } from './utils';
 
-@WebSocketGateway()
+@WebSocketGateway({
+  maxPayload: 128 * 1024, // 128 KB
+})
 @UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
