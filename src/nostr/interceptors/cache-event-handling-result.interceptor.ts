@@ -12,7 +12,6 @@ import { Config } from 'src/config';
 
 @Injectable()
 export class CacheEventHandlingResultInterceptor implements NestInterceptor {
-  private readonly cacheEnabled: boolean;
   private readonly cacheTtl: number;
 
   constructor(
@@ -20,7 +19,6 @@ export class CacheEventHandlingResultInterceptor implements NestInterceptor {
     configService: ConfigService<Config, true>,
   ) {
     const cacheConfig = configService.get('cache', { infer: true });
-    this.cacheEnabled = cacheConfig.eventHandlingResultCacheEnabled;
     this.cacheTtl = cacheConfig.eventHandlingResultCacheTtl;
   }
 
@@ -28,7 +26,7 @@ export class CacheEventHandlingResultInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler<any>,
   ): Promise<Observable<any>> {
-    if (!this.cacheEnabled) return next.handle();
+    if (this.cacheTtl <= 0) return next.handle();
 
     try {
       const cacheKey = this.getEventHandlingResultCacheKey(context);

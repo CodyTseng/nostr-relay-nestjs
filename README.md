@@ -65,7 +65,7 @@ Build image
 ./scripts/build.sh
 ```
 
-Create `.env` file based on `.env.example` file
+Create `.env` file based on [example.env](./example.env) file
 
 ```.env
 DOMAIN=localhost

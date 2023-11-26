@@ -61,13 +61,13 @@ describe('Event entity', () => {
     it('should handle successfully when event pow is enough', () => {
       expect(
         LEADING_8_ZERO_BITS_REGULAR_EVENT.validate({
-          eventIdMinLeadingZeroBits: 8,
+          minPowDifficulty: 8,
         }),
       ).toBeUndefined();
 
       expect(
         LEADING_4_ZERO_BITS_WITHOUT_NONCE_TAG_REGULAR_EVENT.validate({
-          eventIdMinLeadingZeroBits: 4,
+          minPowDifficulty: 4,
         }),
       ).toBeUndefined();
     });
@@ -75,13 +75,13 @@ describe('Event entity', () => {
     it('should return pow is less', () => {
       expect(
         LEADING_8_ZERO_BITS_REGULAR_EVENT.validate({
-          eventIdMinLeadingZeroBits: 16,
+          minPowDifficulty: 16,
         }),
       ).toBe('pow: difficulty 8 is less than 16');
 
       expect(
         LEADING_16_ZERO_BITS_8_TARGET_REGULAR_EVENT.validate({
-          eventIdMinLeadingZeroBits: 16,
+          minPowDifficulty: 16,
         }),
       ).toBe('pow: difficulty 8 is less than 16');
     });

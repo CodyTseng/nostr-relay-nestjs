@@ -94,9 +94,9 @@ export class NostrGateway
     }
 
     const validateErrorMsg = event.validate({
-      createdAtUpperLimit: this.limitConfig.createdAt.upper,
-      createdAtLowerLimit: this.limitConfig.createdAt.lower,
-      eventIdMinLeadingZeroBits: this.limitConfig.eventId.minLeadingZeroBits,
+      createdAtUpperLimit: this.limitConfig.createdAtUpperLimit,
+      createdAtLowerLimit: this.limitConfig.createdAtLowerLimit,
+      minPowDifficulty: this.limitConfig.minPowDifficulty,
     });
     if (validateErrorMsg) {
       return createCommandResultResponse(event.id, false, validateErrorMsg);

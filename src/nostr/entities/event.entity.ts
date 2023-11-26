@@ -186,7 +186,7 @@ export class Event {
     options: {
       createdAtUpperLimit?: number;
       createdAtLowerLimit?: number;
-      eventIdMinLeadingZeroBits?: number;
+      minPowDifficulty?: number;
     } = {},
   ): string | undefined {
     if (!this.isEventIdValid()) {
@@ -217,13 +217,10 @@ export class Event {
       return `invalid: created_at must not be earlier than ${options.createdAtLowerLimit} seconds from the current time`;
     }
 
-    if (
-      options.eventIdMinLeadingZeroBits &&
-      options.eventIdMinLeadingZeroBits > 0
-    ) {
+    if (options.minPowDifficulty && options.minPowDifficulty > 0) {
       const pow = countLeadingZeroBits(this.id);
-      if (pow < options.eventIdMinLeadingZeroBits) {
-        return `pow: difficulty ${pow} is less than ${options.eventIdMinLeadingZeroBits}`;
+      if (pow < options.minPowDifficulty) {
+        return `pow: difficulty ${pow} is less than ${options.minPowDifficulty}`;
       }
 
       const nonceTag = this.tags.find(
@@ -234,8 +231,8 @@ export class Event {
       }
 
       const targetPow = parseInt(nonceTag[2]);
-      if (isNaN(targetPow) || targetPow < options.eventIdMinLeadingZeroBits) {
-        return `pow: difficulty ${targetPow} is less than ${options.eventIdMinLeadingZeroBits}`;
+      if (isNaN(targetPow) || targetPow < options.minPowDifficulty) {
+        return `pow: difficulty ${targetPow} is less than ${options.minPowDifficulty}`;
       }
     }
 
