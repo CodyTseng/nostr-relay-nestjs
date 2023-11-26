@@ -23,7 +23,7 @@ describe('NostrController', () => {
     it('should return relay information document', () => {
       const nostrController = new NostrController({
         get: (key: string) =>
-          key === 'relayInfoDoc' ? { name: 'nostr-relay-nestjs' } : {},
+          key === 'relayInfo' ? { name: 'nostr-relay-nestjs' } : {},
       } as any);
       const mockReq = createMock<Request>({
         headers: { accept: 'application/nostr+json' },

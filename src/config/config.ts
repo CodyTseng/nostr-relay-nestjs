@@ -3,9 +3,9 @@ import { databaseConfig } from './database.config';
 import { validateEnvironment } from './environment';
 import { limitConfig } from './limit.config';
 import { loggerConfig } from './logger.config';
-import { meiliSearchConfig } from './meili-search';
+import { meiliSearchConfig } from './meili-search.config';
 import { messageHandlingConfig } from './message-handling.config';
-import { relayInfoDocConfig } from './relay-info-doc.config';
+import { relayInfoConfig } from './relay-info.config';
 import { throttlerConfig } from './throttler.config';
 
 export function config() {
@@ -16,7 +16,7 @@ export function config() {
     database: databaseConfig(env),
     meiliSearch: meiliSearchConfig(env),
     limit: limitConfig(env),
-    relayInfoDoc: relayInfoDocConfig(env),
+    relayInfo: relayInfoConfig(env),
     logger: loggerConfig(env),
     throttler: throttlerConfig(env),
     cache: cacheConfig(env),

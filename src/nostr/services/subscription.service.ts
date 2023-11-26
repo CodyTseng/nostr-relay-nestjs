@@ -24,7 +24,7 @@ export class SubscriptionService {
     configService: ConfigService<Config, true>,
   ) {
     this.maxSubscriptionsPerClient = configService.get(
-      'limit.subscription.maxSubscriptionsPerClient',
+      'limit.maxSubscriptionsPerClient',
       {
         infer: true,
       },

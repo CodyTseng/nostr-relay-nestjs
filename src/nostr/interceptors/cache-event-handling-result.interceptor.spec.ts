@@ -29,7 +29,7 @@ describe('CacheEventHandlingResult', () => {
       const next = {
         handle: () => of('test-response'),
       };
-      (interceptor as any).cacheEnabled = false;
+      (interceptor as any).cacheTtl = 0;
       const spy = jest.spyOn(interceptor, 'getEventHandlingResultCacheKey');
 
       const result = await lastValueFrom(
