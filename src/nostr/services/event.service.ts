@@ -99,46 +99,31 @@ export class EventService {
   }
 
   private async findByFilterFromCache(filter: Filter): Promise<Event[]> {
-    const start = Date.now();
-    const logExecutionDetails = (cacheHit = false) => {
+    const callback = async () => {
+      const start = Date.now();
+
+      const events = await this.findByFilter(filter);
+
       const executionTime = Date.now() - start;
-      let msg = `find operation took ${executionTime}ms to execute`;
-      if (cacheHit) {
-        msg += ' (cache hit)';
-      }
+      const msg = `find operation took ${executionTime}ms to execute`;
       if (executionTime > this.slowExecutionThreshold) {
         this.logger.warn({ data: filter, executionTime }, msg + ' (slow)');
       } else {
         this.logger.info({ data: filter, executionTime }, msg);
       }
+
+      return events;
     };
 
     if (!this.filterResultCache) {
-      const events = await this.findByFilter(filter);
-      logExecutionDetails();
-      return events;
+      return callback();
     }
-
-    let resolve: (value: Event[]) => void;
-    const promise = new Promise<Event[]>((res) => {
-      resolve = res;
-    });
 
     const cacheKey = JSON.stringify(filter);
-    const cache = this.filterResultCache.get(cacheKey);
-    if (cache) {
-      const events = await cache;
-      logExecutionDetails(true);
-      return events;
+    if (!this.filterResultCache.has(cacheKey)) {
+      this.filterResultCache.set(cacheKey, callback());
     }
-    this.filterResultCache.set(cacheKey, promise);
-
-    const events = await this.findByFilter(filter);
-
-    process.nextTick(() => resolve(events));
-
-    logExecutionDetails();
-    return events;
+    return this.filterResultCache.get(cacheKey)!;
   }
 
   private async handleReplaceableEvent(
