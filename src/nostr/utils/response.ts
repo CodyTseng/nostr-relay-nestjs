@@ -1,5 +1,5 @@
 import { MessageType } from '../constants';
-import { Event } from '../entities';
+import { EventEntity } from '../entities';
 import { EventDto } from '../schemas';
 
 export type CommandResultResponse = [MessageType.OK, string, boolean, string];
@@ -14,9 +14,9 @@ export function createCommandResultResponse(
 export type EventResponse = [MessageType.EVENT, string, EventDto];
 export function createEventResponse(
   subscriptionId: string,
-  event: Event,
+  event: EventEntity,
 ): EventResponse {
-  return [MessageType.EVENT, subscriptionId, event.toEventDto()];
+  return [MessageType.EVENT, subscriptionId, event.toEvent()];
 }
 
 export type EndOfStoredEventResponse = [MessageType.EOSE, string];

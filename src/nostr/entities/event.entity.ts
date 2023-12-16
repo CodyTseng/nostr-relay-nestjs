@@ -1,3 +1,4 @@
+import { Event } from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import {
   Column,
@@ -29,7 +30,7 @@ const EVENT_TYPE_SYMBOL = Symbol('event:type');
 )
 @Index('e_kind_created_at_idx', ['kind', 'createdAtStr'])
 @Index('e_created_at_idx', ['createdAtStr'])
-export class Event {
+export class EventEntity {
   @PrimaryColumn({ type: 'char', length: 64 })
   id: string;
 
@@ -68,7 +69,7 @@ export class Event {
 
   get type() {
     if (!this[EVENT_TYPE_SYMBOL]) {
-      this[EVENT_TYPE_SYMBOL] = Event.getEventType(this);
+      this[EVENT_TYPE_SYMBOL] = EventEntity.getEventType(this);
     }
     return this[EVENT_TYPE_SYMBOL];
   }
@@ -90,7 +91,7 @@ export class Event {
   }
 
   static fromEventDto(eventDto: EventDto) {
-    const event = new Event();
+    const event = new EventEntity();
     event.id = eventDto.id;
     event.pubkey = eventDto.pubkey;
     event.author = eventDto.pubkey;
@@ -99,10 +100,10 @@ export class Event {
     event.tags = eventDto.tags;
     event.content = eventDto.content;
     event.sig = eventDto.sig;
-    event.expiredAt = Event.extractExpirationTimestamp(eventDto);
+    event.expiredAt = EventEntity.extractExpirationTimestamp(eventDto);
     event.dTagValue =
       event.type === EventType.PARAMETERIZED_REPLACEABLE
-        ? Event.extractDTagValueFromEvent(eventDto)
+        ? EventEntity.extractDTagValueFromEvent(eventDto)
         : event.type === EventType.REPLACEABLE
           ? ''
           : null;
@@ -118,7 +119,7 @@ export class Event {
     return event;
   }
 
-  static getEventType({ kind }: Pick<Event, 'kind'>) {
+  static getEventType({ kind }: Pick<EventEntity, 'kind'>) {
     if (
       [
         EventKind.SET_METADATA,
@@ -145,7 +146,7 @@ export class Event {
     return EventType.REGULAR;
   }
 
-  static extractDTagValueFromEvent(event: Pick<Event, 'tags'>) {
+  static extractDTagValueFromEvent(event: Pick<EventEntity, 'tags'>) {
     const [, dTagValue] = event.tags.find(
       ([tagName, tagValue]) => tagName === TagName.D && !!tagValue,
     ) ?? [TagName.D, ''];
@@ -153,7 +154,9 @@ export class Event {
     return dTagValue;
   }
 
-  static extractExpirationTimestamp(event: Pick<Event, 'tags'>): number | null {
+  static extractExpirationTimestamp(
+    event: Pick<EventEntity, 'tags'>,
+  ): number | null {
     const expirationTag = event.tags.find(
       ([tagName]) => tagName === TagName.EXPIRATION,
     );
@@ -284,7 +287,7 @@ export class Event {
     }
   }
 
-  toEventDto(): EventDto {
+  toEvent(): Event {
     return {
       id: this.id,
       pubkey: this.pubkey,

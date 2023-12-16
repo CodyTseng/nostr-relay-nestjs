@@ -14,7 +14,7 @@ import {
   createTestSignedEvent,
 } from '../../../seeds';
 import { getTimestampInSeconds } from '../utils';
-import { Event } from './event.entity';
+import { EventEntity } from './event.entity';
 
 describe('Event entity', () => {
   describe('validate', () => {
@@ -26,12 +26,15 @@ describe('Event entity', () => {
     });
 
     it('should return event id is wrong', () => {
-      const event = Event.fromEventDto({ ...REGULAR_EVENT_DTO, id: 'fake-id' });
+      const event = EventEntity.fromEventDto({
+        ...REGULAR_EVENT_DTO,
+        id: 'fake-id',
+      });
       expect(event.validate()).toBe('invalid: id is wrong');
     });
 
     it('should return signature is wrong', () => {
-      const event = Event.fromEventDto({
+      const event = EventEntity.fromEventDto({
         ...REGULAR_EVENT_DTO,
         sig: 'fake-sig',
       });
@@ -193,29 +196,29 @@ describe('Event entity', () => {
   describe('extractDTagValueFromEvent', () => {
     it('should return dTagValue', () => {
       expect(
-        Event.extractDTagValueFromEvent({ tags: [['d', 'dTagValue']] }),
+        EventEntity.extractDTagValueFromEvent({ tags: [['d', 'dTagValue']] }),
       ).toBe('dTagValue');
     });
 
     it('should return empty string when dTag not found', () => {
-      expect(Event.extractDTagValueFromEvent({ tags: [] })).toBe('');
+      expect(EventEntity.extractDTagValueFromEvent({ tags: [] })).toBe('');
     });
   });
 
   describe('extractExpirationTimestamp', () => {
     it('should return expiration timestamp', () => {
       expect(
-        Event.extractExpirationTimestamp({
+        EventEntity.extractExpirationTimestamp({
           tags: [['expiration', '1681224755']],
         }),
       ).toBe(1681224755);
     });
 
     it('should return MAX_TIMESTAMP', () => {
-      expect(Event.extractExpirationTimestamp({ tags: [] })).toBeNull();
+      expect(EventEntity.extractExpirationTimestamp({ tags: [] })).toBeNull();
 
       expect(
-        Event.extractExpirationTimestamp({ tags: [['expiration']] }),
+        EventEntity.extractExpirationTimestamp({ tags: [['expiration']] }),
       ).toBeNull();
     });
   });

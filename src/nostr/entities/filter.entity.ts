@@ -2,7 +2,7 @@ import { intersection, uniq } from 'lodash';
 import { EventKind, TagName } from '../constants';
 import { FilterDto } from '../schemas';
 import { toGenericTag } from '../utils';
-import { Event } from './event.entity';
+import { EventEntity } from './event.entity';
 
 export type SearchFilter = Filter & { search: string };
 
@@ -92,7 +92,7 @@ export class Filter {
     );
   }
 
-  isEventMatching(event: Event) {
+  isEventMatching(event: EventEntity) {
     if (this.ids && !this.ids.some((id) => event.id.startsWith(id))) {
       return false;
     }

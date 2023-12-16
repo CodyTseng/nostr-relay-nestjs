@@ -32,7 +32,7 @@ export class NostrWsAdapter extends WsAdapter {
       const [type] = messageData;
 
       const messageHandler = handlers.find(
-        (handler) => handler.message === type,
+        (handler) => handler.message === 'default',
       );
       if (!messageHandler) {
         return transform(createNoticeResponse('invalid: unknown message type'));

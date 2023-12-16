@@ -17,13 +17,13 @@ import {
   REPLACEABLE_EVENT,
   REPLACEABLE_EVENT_NEW,
 } from '../../../seeds';
-import { Event, Filter, GenericTag } from '../entities';
-import { EventRepository } from '../repositories';
+import { EventEntity, Filter, GenericTagEntity } from '../entities';
+import { PgEventRepository } from '../repositories';
 
 describe('EventRepository', () => {
-  let rawEventRepository: Repository<Event>;
-  let rawGenericTagRepository: Repository<GenericTag>;
-  let eventRepository: EventRepository;
+  let rawEventRepository: Repository<EventEntity>;
+  let rawGenericTagRepository: Repository<GenericTagEntity>;
+  let eventRepository: PgEventRepository;
   let dataSource: DataSource;
 
   beforeAll(async () => {
@@ -36,14 +36,16 @@ describe('EventRepository', () => {
           migrationsRun: true,
           migrations: ['dist/migrations/*.js'],
         }),
-        TypeOrmModule.forFeature([Event, GenericTag]),
+        TypeOrmModule.forFeature([EventEntity, GenericTagEntity]),
       ],
-      providers: [EventRepository],
+      providers: [PgEventRepository],
     }).compile();
 
-    rawEventRepository = moduleRef.get(getRepositoryToken(Event));
-    rawGenericTagRepository = moduleRef.get(getRepositoryToken(GenericTag));
-    eventRepository = moduleRef.get(EventRepository);
+    rawEventRepository = moduleRef.get(getRepositoryToken(EventEntity));
+    rawGenericTagRepository = moduleRef.get(
+      getRepositoryToken(GenericTagEntity),
+    );
+    eventRepository = moduleRef.get(PgEventRepository);
 
     dataSource = moduleRef.get(getDataSourceToken());
   });
@@ -62,10 +64,8 @@ describe('EventRepository', () => {
       expect(await eventRepository.create(REGULAR_EVENT)).toBeTruthy();
 
       expect(
-        (
-          await eventRepository.findOne({ ids: [REGULAR_EVENT.id] })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT.toEventDto());
+        (await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }))?.toEvent(),
+      ).toEqual(REGULAR_EVENT.toEvent());
     });
 
     it('should return false when the event already exists', async () => {
@@ -80,7 +80,10 @@ describe('EventRepository', () => {
     it('should throw error', async () => {
       await expect(
         eventRepository.create(
-          Event.fromEventDto({ ...REGULAR_EVENT_DTO, id: undefined } as any),
+          EventEntity.fromEventDto({
+            ...REGULAR_EVENT_DTO,
+            id: undefined,
+          } as any),
         ),
       ).rejects.toThrowError();
     });
@@ -105,19 +108,17 @@ describe('EventRepository', () => {
           })
         ).map((event) => event.toEventDto()),
       ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEventDto()),
+        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEvent()),
       );
 
       expect(
-        (
-          await eventRepository.findOne({ ids: [REGULAR_EVENT.id] })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT.toEventDto());
+        (await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }))?.toEvent(),
+      ).toEqual(REGULAR_EVENT.toEvent());
 
       expect(
         (
           await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }, ['id'])
-        )?.toEventDto().id,
+        )?.toEvent().id,
       ).toEqual(REGULAR_EVENT.id);
     });
 
@@ -130,15 +131,15 @@ describe('EventRepository', () => {
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REGULAR_EVENT_B, REGULAR_EVENT, REPLACEABLE_EVENT].map((event) =>
-          event.toEventDto(),
+          event.toEvent(),
         ),
       );
 
       expect(
         (
           await eventRepository.findOne({ kinds: [REGULAR_EVENT.kind] })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT_B.toEventDto());
+        )?.toEvent(),
+      ).toEqual(REGULAR_EVENT_B.toEvent());
     });
 
     it('should filter by authors successfully', async () => {
@@ -146,13 +147,13 @@ describe('EventRepository', () => {
         (await eventRepository.find({ authors: [REGULAR_EVENT_B.author] })).map(
           (event) => event.toEventDto(),
         ),
-      ).toEqual([REGULAR_EVENT_B].map((event) => event.toEventDto()));
+      ).toEqual([REGULAR_EVENT_B].map((event) => event.toEvent()));
 
       expect(
         (
           await eventRepository.findOne({ authors: [REGULAR_EVENT_B.pubkey] })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT_B.toEventDto());
+        )?.toEvent(),
+      ).toEqual(REGULAR_EVENT_B.toEvent());
     });
 
     it('should filter by created_at successfully', async () => {
@@ -162,7 +163,7 @@ describe('EventRepository', () => {
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REGULAR_EVENT_B, REGULAR_EVENT, REPLACEABLE_EVENT].map((event) =>
-          event.toEventDto(),
+          event.toEvent(),
         ),
       );
 
@@ -172,7 +173,7 @@ describe('EventRepository', () => {
         ).map((event) => event.toEventDto()),
       ).toEqual(
         [REPLACEABLE_EVENT, PARAMETERIZED_REPLACEABLE_EVENT].map((event) =>
-          event.toEventDto(),
+          event.toEvent(),
         ),
       );
 
@@ -183,19 +184,19 @@ describe('EventRepository', () => {
             until: REPLACEABLE_EVENT.createdAt,
           })
         ).map((event) => event.toEventDto()),
-      ).toEqual([REPLACEABLE_EVENT].map((event) => event.toEventDto()));
+      ).toEqual([REPLACEABLE_EVENT].map((event) => event.toEvent()));
 
       expect(
         (
           await eventRepository.findOne({ until: REGULAR_EVENT.createdAt })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT.toEventDto());
+        )?.toEvent(),
+      ).toEqual(REGULAR_EVENT.toEvent());
 
       expect(
         (
           await eventRepository.findOne({ since: REPLACEABLE_EVENT.createdAt })
-        )?.toEventDto(),
-      ).toEqual(REGULAR_EVENT_B.toEventDto());
+        )?.toEvent(),
+      ).toEqual(REGULAR_EVENT_B.toEvent());
     });
 
     it('should filter by dTagValue successfully', async () => {
@@ -208,7 +209,7 @@ describe('EventRepository', () => {
           })
         ).map((event) => event.toEventDto()),
       ).toEqual(
-        [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEventDto()),
+        [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEvent()),
       );
 
       expect(
@@ -218,12 +219,12 @@ describe('EventRepository', () => {
             kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
             dTagValues: ['test'],
           })
-        )?.toEventDto(),
-      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
+        )?.toEvent(),
+      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEvent());
     });
 
     it('should filter by tag successfully', async () => {
-      const manyTagsEvent = Event.fromEventDto(
+      const manyTagsEvent = EventEntity.fromEventDto(
         createTestEventDto({
           tags: [
             ['a', 'test1'],
@@ -249,7 +250,7 @@ describe('EventRepository', () => {
             }),
           )
         ).map((event) => event.toEventDto()),
-      ).toEqual([manyTagsEvent].map((event) => event.toEventDto()));
+      ).toEqual([manyTagsEvent].map((event) => event.toEvent()));
 
       expect(
         (
@@ -267,7 +268,7 @@ describe('EventRepository', () => {
           )
         ).map((event) => event.toEventDto()),
       ).toEqual(
-        [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEventDto()),
+        [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEvent()),
       );
 
       expect(
@@ -296,8 +297,8 @@ describe('EventRepository', () => {
               },
             }),
           )
-        )?.toEventDto(),
-      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEventDto());
+        )?.toEvent(),
+      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEvent());
 
       expect(
         (
@@ -311,19 +312,21 @@ describe('EventRepository', () => {
             }),
             ['id'],
           )
-        )?.toEventDto().id,
+        )?.toEvent().id,
       ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.id);
 
       const unStandardTagEventDto = createTestEventDto({
         tags: [['z', 'test2']],
       });
-      await eventRepository.create(Event.fromEventDto(unStandardTagEventDto));
+      await eventRepository.create(
+        EventEntity.fromEventDto(unStandardTagEventDto),
+      );
       expect(
         (
           await eventRepository.findOne(
             Filter.fromFilterDto({ tags: { z: ['test1', 'test2'] } }),
           )
-        )?.toEventDto(),
+        )?.toEvent(),
       ).toEqual(unStandardTagEventDto);
 
       expect(
@@ -355,8 +358,8 @@ describe('EventRepository', () => {
           await eventRepository.findOne({
             ids: [REPLACEABLE_EVENT.id],
           })
-        )?.toEventDto(),
-      ).toEqual(REPLACEABLE_EVENT.toEventDto());
+        )?.toEvent(),
+      ).toEqual(REPLACEABLE_EVENT.toEvent());
 
       expect(
         await eventRepository.replace(
@@ -369,8 +372,8 @@ describe('EventRepository', () => {
           await eventRepository.findOne({
             ids: [REPLACEABLE_EVENT_NEW.id],
           })
-        )?.toEventDto(),
-      ).toEqual(REPLACEABLE_EVENT_NEW.toEventDto());
+        )?.toEvent(),
+      ).toEqual(REPLACEABLE_EVENT_NEW.toEvent());
       expect(
         await eventRepository.findOne({ ids: [REPLACEABLE_EVENT.id] }),
       ).toBeNull();

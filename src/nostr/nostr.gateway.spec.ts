@@ -13,7 +13,7 @@ import {
   createTestSignedEventDto,
 } from '../../seeds';
 import { EventKind, MessageType } from './constants';
-import { Event } from './entities';
+import { EventEntity } from './entities';
 import { NostrGateway } from './nostr.gateway';
 import { EventService } from './services/event.service';
 import { SubscriptionService } from './services/subscription.service';
@@ -40,10 +40,10 @@ describe('NostrGateway', () => {
       clear: mockSubscriptionServiceClear,
     });
     const mockEventService = createMock<EventService>({
-      handleEvent: async (event: Event) => {
+      handleEvent: async (event: EventEntity) => {
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
-      find: () => from(FIND_EVENTS.map(Event.fromEventDto)),
+      find: () => from(FIND_EVENTS.map(EventEntity.fromEventDto)),
       findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(
@@ -192,7 +192,7 @@ describe('NostrGateway', () => {
         [
           MessageType.EVENT,
           subscriptionId,
-          encryptedDirectMessageEvent.toEventDto(),
+          encryptedDirectMessageEvent.toEvent(),
         ],
         [MessageType.EOSE, subscriptionId],
       ]);

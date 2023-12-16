@@ -1,25 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Event } from './entities/event.entity';
+import { EventEntity } from './entities/event.entity';
 import { NostrController } from './nostr.controller';
 import { NostrGateway } from './nostr.gateway';
-import { EventRepository } from './repositories';
+import { PgEventRepository } from './repositories';
 import { EventSearchRepository } from './repositories/event-search.repository';
-import { EventService } from './services/event.service';
-import { StorageService } from './services/storage.service';
-import { SubscriptionService } from './services/subscription.service';
-import { GenericTag } from './entities';
+import { GenericTagEntity } from './entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Event, GenericTag])],
+  imports: [TypeOrmModule.forFeature([EventEntity, GenericTagEntity])],
   controllers: [NostrController],
-  providers: [
-    EventRepository,
-    EventSearchRepository,
-    NostrGateway,
-    SubscriptionService,
-    EventService,
-    StorageService,
-  ],
+  providers: [PgEventRepository, EventSearchRepository, NostrGateway],
 })
 export class NostrModule {}

@@ -4,7 +4,7 @@ import {
   REGULAR_EVENT,
 } from '../../../seeds/event';
 import { EventKind } from '../constants';
-import { Event } from './event.entity';
+import { EventEntity } from './event.entity';
 import { Filter } from './filter.entity';
 
 describe('filter', () => {
@@ -33,12 +33,14 @@ describe('filter', () => {
           tags: {
             z: ['test1', 'test2'],
           },
-        }).isEventMatching(Event.fromEventDto(unStandardTagEvent)),
+        }).isEventMatching(EventEntity.fromEventDto(unStandardTagEvent)),
       ).toBeTruthy();
 
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          Event.fromEventDto(createTestEventDto({ content: 'abandon test' })),
+          EventEntity.fromEventDto(
+            createTestEventDto({ content: 'abandon test' }),
+          ),
         ),
       ).toBeTruthy();
     });
@@ -74,7 +76,7 @@ describe('filter', () => {
       ).toBeFalsy();
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          Event.fromEventDto(createTestEventDto({ content: 'abandon' })),
+          EventEntity.fromEventDto(createTestEventDto({ content: 'abandon' })),
         ),
       ).toBeFalsy();
     });

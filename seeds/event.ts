@@ -1,5 +1,5 @@
 import { createCipheriv, randomFillSync, randomInt } from 'crypto';
-import { Event } from '../src/nostr/entities';
+import { EventEntity } from '../src/nostr/entities';
 import { EventDto } from '../src/nostr/schemas';
 import {
   getSharedSecret,
@@ -26,7 +26,7 @@ export const REGULAR_EVENT_DTO = createTestEventDto({
   content: 'hello world!',
 });
 
-export const REGULAR_EVENT = Event.fromEventDto(REGULAR_EVENT_DTO);
+export const REGULAR_EVENT = EventEntity.fromEventDto(REGULAR_EVENT_DTO);
 
 export const REGULAR_EVENT_B = createTestEvent({
   pubkey: PUBKEY_B,
@@ -42,7 +42,9 @@ export const REPLACEABLE_EVENT_DTO = createTestEventDto({
     '{"display_name":"Cody Tseng","website":"","name":"cody","about":"","lud06":""}',
 });
 
-export const REPLACEABLE_EVENT = Event.fromEventDto(REPLACEABLE_EVENT_DTO);
+export const REPLACEABLE_EVENT = EventEntity.fromEventDto(
+  REPLACEABLE_EVENT_DTO,
+);
 
 export const REPLACEABLE_EVENT_NEW = createTestEvent({
   kind: 0,
@@ -192,7 +194,7 @@ export function createTestEvent(params: {
   tags?: string[][];
   content?: string;
 }) {
-  return Event.fromEventDto(createTestEventDto(params));
+  return EventEntity.fromEventDto(createTestEventDto(params));
 }
 
 export function createTestSignedEventDto(
@@ -234,5 +236,5 @@ export function createTestSignedEvent(
     relay?: string;
   } = {},
 ) {
-  return Event.fromEventDto(createTestSignedEventDto(params));
+  return EventEntity.fromEventDto(createTestSignedEventDto(params));
 }

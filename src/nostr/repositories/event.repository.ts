@@ -1,45 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import {
+  Event,
+  EventRepository,
+  EventRepositoryInsertResult,
+  EventRepositoryUpsertResult,
+  Filter,
+} from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
-import { Event, Filter, GenericTag } from '../entities';
+import { EventEntity, GenericTagEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { getTimestampInSeconds } from '../utils';
-
-export type EventRepositoryFilter = Pick<
-  Filter,
-  | 'ids'
-  | 'authors'
-  | 'kinds'
-  | 'limit'
-  | 'since'
-  | 'until'
-  | 'genericTagsCollection'
-  | 'dTagValues'
->;
+import { EventSearchRepository } from './event-search.repository';
 
 @Injectable()
-export class EventRepository {
+export class PgEventRepository implements EventRepository {
+  readonly isSearchSupported = true;
+
   constructor(
-    @InjectRepository(Event)
-    private readonly event: Repository<Event>,
-    @InjectRepository(GenericTag)
-    private readonly genericTag: Repository<GenericTag>,
+    @InjectRepository(EventEntity)
+    private readonly eventRepository: Repository<EventEntity>,
+    @InjectRepository(GenericTagEntity)
+    private readonly genericTagRepository: Repository<GenericTagEntity>,
     private readonly dataSource: DataSource,
+    private readonly eventSearchRepository: EventSearchRepository,
   ) {}
 
-  async create(event: Event) {
+  async insert(event: Event): Promise<EventRepositoryInsertResult> {
+    const eventEntity = EventEntity.fromEventDto(event);
     try {
       await this.dataSource.transaction(async (manager) => {
-        await manager.insert(Event, event);
+        await manager.insert(EventEntity, eventEntity);
         await manager.insert(
-          GenericTag,
-          event.genericTags.map((tag) => ({
+          GenericTagEntity,
+          eventEntity.genericTags.map((tag) => ({
             tag,
-            eventId: event.id,
-            kind: event.kind,
-            author: event.author,
-            createdAt: event.createdAtStr,
+            eventId: eventEntity.id,
+            kind: eventEntity.kind,
+            author: eventEntity.author,
+            createdAt: eventEntity.createdAtStr,
           })),
         );
       });
@@ -49,61 +49,119 @@ export class EventRepository {
         error.driverError.code === '23505'
       ) {
         // 23505 is unique_violation
-        return false;
+        return { isDuplicate: true };
       }
       throw error;
     }
 
-    return true;
+    await this.eventSearchRepository.add(eventEntity);
+
+    return { isDuplicate: false };
   }
 
-  async find(filter: EventRepositoryFilter): Promise<Event[]> {
+  async upsert(event: Event): Promise<EventRepositoryUpsertResult> {
+    const eventEntity = EventEntity.fromEventDto(event);
+    let oldEventEntity: EventEntity | undefined | null;
+    let isDuplicate = false;
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        oldEventEntity = await manager.findOneBy(EventEntity, {
+          kind: eventEntity.kind,
+          author: eventEntity.author,
+          dTagValue: eventEntity.dTagValue!,
+        });
+        if (
+          oldEventEntity &&
+          (oldEventEntity.createdAt > eventEntity.createdAt ||
+            (oldEventEntity.createdAt === eventEntity.createdAt &&
+              oldEventEntity.id <= eventEntity.id))
+        ) {
+          isDuplicate = true;
+          return;
+        }
+        await manager.delete(EventEntity, { id: eventEntity.id });
+        await manager.insert(EventEntity, eventEntity);
+        await manager.insert(
+          GenericTagEntity,
+          eventEntity.genericTags.map((tag) => ({
+            tag,
+            eventId: eventEntity.id,
+            kind: eventEntity.kind,
+            author: eventEntity.author,
+            createdAt: eventEntity.createdAtStr,
+          })),
+        );
+        return;
+      });
+    } catch (error) {
+      if (
+        error instanceof QueryFailedError &&
+        error.driverError.code === '23505'
+      ) {
+        // 23505 is unique_violation
+        return { isDuplicate: true };
+      }
+      throw error;
+    }
+
+    if (isDuplicate) {
+      return { isDuplicate: true };
+    }
+
+    if (oldEventEntity) {
+      await this.eventSearchRepository.deleteMany([oldEventEntity.id]);
+    }
+
+    await this.eventSearchRepository.add(eventEntity);
+    return { isDuplicate: false };
+  }
+
+  async find(filter: Filter): Promise<Event[]> {
     const limit = this.getLimitFrom(filter);
     if (limit === 0) return [];
+
+    if (filter.search) {
+      return this.eventSearchRepository.find(filter);
+    }
 
     if (this.shouldQueryFromGenericTags(filter)) {
       const genericTags = await this.createGenericTagsQueryBuilder(filter)
         .take(limit)
         .orderBy('genericTag.createdAt', 'DESC')
         .getMany();
-      return genericTags.map((genericTag) => genericTag.event);
+      return genericTags.map((genericTag) => genericTag.event.toEvent());
     }
 
-    return await this.createQueryBuilder(filter)
+    const eventEntities = await this.createQueryBuilder(filter)
       .take(limit)
       .orderBy('event.createdAtStr', 'DESC')
       .getMany();
+    return eventEntities.map((eventEntity) => eventEntity.toEvent());
   }
 
-  async findOne(filter: EventRepositoryFilter, selection?: string[]) {
+  async findOne(filter: Filter): Promise<Event | null> {
     if (this.shouldQueryFromGenericTags(filter)) {
-      const genericTag = await this.createGenericTagsQueryBuilder(
-        filter,
-        selection?.length
-          ? selection.map((field) => `event.${field}`)
-          : undefined,
-      )
+      const genericTag = await this.createGenericTagsQueryBuilder(filter)
         .orderBy('genericTag.createdAt', 'DESC')
         .getOne();
-      return genericTag?.event ?? null;
+      return genericTag?.event.toEvent() ?? null;
     }
 
-    const qb = this.createQueryBuilder(filter);
-
-    if (selection?.length) {
-      qb.select(selection.map((field) => `event.${field}`));
-    }
-
-    return await qb.orderBy('event.createdAtStr', 'DESC').getOne();
+    const eventEntity = await this.createQueryBuilder(filter)
+      .orderBy('event.createdAtStr', 'DESC')
+      .getOne();
+    return eventEntity?.toEvent() ?? null;
   }
 
-  async findTopIdsWithScore(
-    filter: EventRepositoryFilter,
-  ): Promise<TEventIdWithScore[]> {
+  async findTopIdsWithScore(filter: Filter): Promise<TEventIdWithScore[]> {
     const limit = this.getLimitFrom(filter, 1000);
     if (limit === 0) return [];
 
-    let partialEvents: Pick<Event, 'id' | 'createdAt'>[] = [];
+    if (filter.search) {
+      return this.eventSearchRepository.findTopIdsWithScore(filter);
+    }
+
+    let partialEvents: Pick<EventEntity, 'id' | 'createdAt'>[] = [];
 
     if (this.shouldQueryFromGenericTags(filter)) {
       const genericTags = await this.createGenericTagsQueryBuilder(filter, [
@@ -129,16 +187,8 @@ export class EventRepository {
     }));
   }
 
-  async replace(event: Event, oldEventId?: string) {
-    if (oldEventId) {
-      await this.event.delete({ id: oldEventId });
-    }
-
-    return this.create(event);
-  }
-
-  private createQueryBuilder(filter: EventRepositoryFilter) {
-    const queryBuilder = this.event.createQueryBuilder('event');
+  private createQueryBuilder(filter: Filter) {
+    const queryBuilder = this.eventRepository.createQueryBuilder('event');
 
     queryBuilder.where('1 = 1');
 
@@ -170,14 +220,15 @@ export class EventRepository {
       });
     }
 
-    if (filter.dTagValues) {
+    if (filter['#d']?.length) {
       queryBuilder.andWhere('event.d_tag_value IN (:...dTagValues)', {
-        dTagValues: filter.dTagValues,
+        dTagValues: filter['#d'],
       });
     }
 
-    if (filter.genericTagsCollection?.length) {
-      filter.genericTagsCollection.forEach((genericTags) => {
+    const genericTagsCollection = this.extractGenericTagsCollectionFrom(filter);
+    if (genericTagsCollection.length) {
+      genericTagsCollection.forEach((genericTags) => {
         queryBuilder.andWhere('event.generic_tags && (:genericTags)', {
           genericTags,
         });
@@ -197,25 +248,20 @@ export class EventRepository {
     return queryBuilder;
   }
 
-  private shouldQueryFromGenericTags(
-    filter: EventRepositoryFilter,
-  ): filter is EventRepositoryFilter & { genericTagsCollection: string[][] } {
+  private shouldQueryFromGenericTags(filter: Filter): boolean {
     return (
-      !!filter.genericTagsCollection?.length &&
+      !!this.extractGenericTagsCollectionFrom(filter).length &&
       !filter.ids?.length &&
-      !filter.dTagValues?.length
+      !filter['#d']?.length
     );
   }
 
-  private createGenericTagsQueryBuilder(
-    filter: EventRepositoryFilter & { genericTagsCollection: string[][] },
-    selection?: string[],
-  ) {
+  private createGenericTagsQueryBuilder(filter: Filter, selection?: string[]) {
     // TODO: select more appropriate generic tags
     const [mainGenericTagsFilter, ...restGenericTagsCollection] =
-      filter.genericTagsCollection;
+      this.extractGenericTagsCollectionFrom(filter);
 
-    const queryBuilder = this.genericTag
+    const queryBuilder = this.genericTagRepository
       .createQueryBuilder('genericTag')
       .distinctOn(['genericTag.eventId', 'genericTag.createdAt']);
 
@@ -283,7 +329,16 @@ export class EventRepository {
     return queryBuilder;
   }
 
-  private getLimitFrom(filter: EventRepositoryFilter, defaultLimit = 100) {
+  private getLimitFrom(filter: Filter, defaultLimit = 100) {
     return Math.min(isNil(filter.limit) ? defaultLimit : filter.limit, 1000);
+  }
+
+  private extractGenericTagsCollectionFrom(filter: Filter): string[][] {
+    return Object.keys(filter)
+      .filter((key) => key.startsWith('#'))
+      .map((key) => {
+        const tagName = key[1];
+        return filter[key].map((v: string) => `${tagName}:${v}`);
+      });
   }
 }
