@@ -43,7 +43,7 @@ describe('NostrGateway', () => {
       handleEvent: async (event: EventEntity) => {
         return [MessageType.OK, event.id, true, ''] as CommandResultResponse;
       },
-      find: () => from(FIND_EVENTS.map(EventEntity.fromEventDto)),
+      find: () => from(FIND_EVENTS.map(EventEntity.fromEvent)),
       findTopIds: async () => FIND_EVENTS.map((event) => event.id),
     });
     nostrGateway = new NostrGateway(

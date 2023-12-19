@@ -3,19 +3,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   Event,
   EventRepository,
-  EventRepositoryInsertResult,
   EventRepositoryUpsertResult,
   Filter,
+  getTimestampInSeconds,
 } from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
+import { EventType } from '../constants';
 import { EventEntity, GenericTagEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
-import { getTimestampInSeconds } from '../utils';
+import { toGenericTag } from '../utils';
 import { EventSearchRepository } from './event-search.repository';
 
 @Injectable()
-export class PgEventRepository implements EventRepository {
+export class PgEventRepository extends EventRepository {
   readonly isSearchSupported = true;
 
   constructor(
@@ -25,61 +26,42 @@ export class PgEventRepository implements EventRepository {
     private readonly genericTagRepository: Repository<GenericTagEntity>,
     private readonly dataSource: DataSource,
     private readonly eventSearchRepository: EventSearchRepository,
-  ) {}
-
-  async insert(event: Event): Promise<EventRepositoryInsertResult> {
-    const eventEntity = EventEntity.fromEventDto(event);
-    try {
-      await this.dataSource.transaction(async (manager) => {
-        await manager.insert(EventEntity, eventEntity);
-        await manager.insert(
-          GenericTagEntity,
-          eventEntity.genericTags.map((tag) => ({
-            tag,
-            eventId: eventEntity.id,
-            kind: eventEntity.kind,
-            author: eventEntity.author,
-            createdAt: eventEntity.createdAtStr,
-          })),
-        );
-      });
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        error.driverError.code === '23505'
-      ) {
-        // 23505 is unique_violation
-        return { isDuplicate: true };
-      }
-      throw error;
-    }
-
-    await this.eventSearchRepository.add(eventEntity);
-
-    return { isDuplicate: false };
+  ) {
+    super();
   }
 
   async upsert(event: Event): Promise<EventRepositoryUpsertResult> {
-    const eventEntity = EventEntity.fromEventDto(event);
+    const eventEntity = EventEntity.fromEvent(event);
     let oldEventEntity: EventEntity | undefined | null;
     let isDuplicate = false;
     try {
       await this.dataSource.transaction(async (manager) => {
-        oldEventEntity = await manager.findOneBy(EventEntity, {
-          kind: eventEntity.kind,
-          author: eventEntity.author,
-          dTagValue: eventEntity.dTagValue!,
-        });
         if (
-          oldEventEntity &&
-          (oldEventEntity.createdAt > eventEntity.createdAt ||
-            (oldEventEntity.createdAt === eventEntity.createdAt &&
-              oldEventEntity.id <= eventEntity.id))
+          [EventType.PARAMETERIZED_REPLACEABLE, EventType.REPLACEABLE].includes(
+            eventEntity.type,
+          )
         ) {
-          isDuplicate = true;
-          return;
+          oldEventEntity = await manager.findOneBy(EventEntity, {
+            kind: eventEntity.kind,
+            author: eventEntity.author,
+            dTagValue: eventEntity.dTagValue!,
+          });
+
+          if (
+            oldEventEntity &&
+            (oldEventEntity.createdAt > eventEntity.createdAt ||
+              (oldEventEntity.createdAt === eventEntity.createdAt &&
+                oldEventEntity.id <= eventEntity.id))
+          ) {
+            isDuplicate = true;
+            return;
+          }
+
+          if (oldEventEntity) {
+            await manager.delete(EventEntity, { id: oldEventEntity.id });
+          }
         }
-        await manager.delete(EventEntity, { id: eventEntity.id });
+
         await manager.insert(EventEntity, eventEntity);
         await manager.insert(
           GenericTagEntity,
@@ -137,20 +119,6 @@ export class PgEventRepository implements EventRepository {
       .orderBy('event.createdAtStr', 'DESC')
       .getMany();
     return eventEntities.map((eventEntity) => eventEntity.toEvent());
-  }
-
-  async findOne(filter: Filter): Promise<Event | null> {
-    if (this.shouldQueryFromGenericTags(filter)) {
-      const genericTag = await this.createGenericTagsQueryBuilder(filter)
-        .orderBy('genericTag.createdAt', 'DESC')
-        .getOne();
-      return genericTag?.event.toEvent() ?? null;
-    }
-
-    const eventEntity = await this.createQueryBuilder(filter)
-      .orderBy('event.createdAtStr', 'DESC')
-      .getOne();
-    return eventEntity?.toEvent() ?? null;
   }
 
   async findTopIdsWithScore(filter: Filter): Promise<TEventIdWithScore[]> {
@@ -338,7 +306,7 @@ export class PgEventRepository implements EventRepository {
       .filter((key) => key.startsWith('#'))
       .map((key) => {
         const tagName = key[1];
-        return filter[key].map((v: string) => `${tagName}:${v}`);
+        return filter[key].map((v: string) => toGenericTag(tagName, v));
       });
   }
 }

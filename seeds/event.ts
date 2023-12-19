@@ -1,12 +1,8 @@
-import { createCipheriv, randomFillSync, randomInt } from 'crypto';
+import { getTimestampInSeconds } from '@nostr-relay/common';
+import { createCipheriv, randomFillSync } from 'crypto';
 import { EventEntity } from '../src/nostr/entities';
 import { EventDto } from '../src/nostr/schemas';
-import {
-  getSharedSecret,
-  getTimestampInSeconds,
-  schnorrSign,
-  sha256,
-} from '../src/nostr/utils';
+import { getSharedSecret, schnorrSign, sha256 } from '../src/nostr/utils';
 
 export const PUBKEY_A =
   'a09659cd9ee89cd3743bc29aa67edf1d7d12fb624699fcd3d6d33eef250b01e7';
@@ -26,7 +22,7 @@ export const REGULAR_EVENT_DTO = createTestEventDto({
   content: 'hello world!',
 });
 
-export const REGULAR_EVENT = EventEntity.fromEventDto(REGULAR_EVENT_DTO);
+export const REGULAR_EVENT = EventEntity.fromEvent(REGULAR_EVENT_DTO);
 
 export const REGULAR_EVENT_B = createTestEvent({
   pubkey: PUBKEY_B,
@@ -42,9 +38,7 @@ export const REPLACEABLE_EVENT_DTO = createTestEventDto({
     '{"display_name":"Cody Tseng","website":"","name":"cody","about":"","lud06":""}',
 });
 
-export const REPLACEABLE_EVENT = EventEntity.fromEventDto(
-  REPLACEABLE_EVENT_DTO,
-);
+export const REPLACEABLE_EVENT = EventEntity.fromEvent(REPLACEABLE_EVENT_DTO);
 
 export const REPLACEABLE_EVENT_NEW = createTestEvent({
   kind: 0,
@@ -194,7 +188,7 @@ export function createTestEvent(params: {
   tags?: string[][];
   content?: string;
 }) {
-  return EventEntity.fromEventDto(createTestEventDto(params));
+  return EventEntity.fromEvent(createTestEventDto(params));
 }
 
 export function createTestSignedEventDto(
@@ -236,5 +230,5 @@ export function createTestSignedEvent(
     relay?: string;
   } = {},
 ) {
-  return EventEntity.fromEventDto(createTestSignedEventDto(params));
+  return EventEntity.fromEvent(createTestSignedEventDto(params));
 }

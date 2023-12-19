@@ -1,3 +1,4 @@
+import { getTimestampInSeconds } from '@nostr-relay/common';
 import { randomUUID } from 'crypto';
 import {
   DELEGATION_EVENT,
@@ -13,7 +14,6 @@ import {
   createTestEvent,
   createTestSignedEvent,
 } from '../../../seeds';
-import { getTimestampInSeconds } from '../utils';
 import { EventEntity } from './event.entity';
 
 describe('Event entity', () => {
@@ -26,7 +26,7 @@ describe('Event entity', () => {
     });
 
     it('should return event id is wrong', () => {
-      const event = EventEntity.fromEventDto({
+      const event = EventEntity.fromEvent({
         ...REGULAR_EVENT_DTO,
         id: 'fake-id',
       });
@@ -34,7 +34,7 @@ describe('Event entity', () => {
     });
 
     it('should return signature is wrong', () => {
-      const event = EventEntity.fromEventDto({
+      const event = EventEntity.fromEvent({
         ...REGULAR_EVENT_DTO,
         sig: 'fake-sig',
       });

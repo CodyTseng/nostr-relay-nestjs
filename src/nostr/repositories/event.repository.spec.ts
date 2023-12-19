@@ -80,7 +80,7 @@ describe('EventRepository', () => {
     it('should throw error', async () => {
       await expect(
         eventRepository.create(
-          EventEntity.fromEventDto({
+          EventEntity.fromEvent({
             ...REGULAR_EVENT_DTO,
             id: undefined,
           } as any),
@@ -224,7 +224,7 @@ describe('EventRepository', () => {
     });
 
     it('should filter by tag successfully', async () => {
-      const manyTagsEvent = EventEntity.fromEventDto(
+      const manyTagsEvent = EventEntity.fromEvent(
         createTestEventDto({
           tags: [
             ['a', 'test1'],
@@ -319,7 +319,7 @@ describe('EventRepository', () => {
         tags: [['z', 'test2']],
       });
       await eventRepository.create(
-        EventEntity.fromEventDto(unStandardTagEventDto),
+        EventEntity.fromEvent(unStandardTagEventDto),
       );
       expect(
         (

@@ -33,12 +33,12 @@ describe('filter', () => {
           tags: {
             z: ['test1', 'test2'],
           },
-        }).isEventMatching(EventEntity.fromEventDto(unStandardTagEvent)),
+        }).isEventMatching(EventEntity.fromEvent(unStandardTagEvent)),
       ).toBeTruthy();
 
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          EventEntity.fromEventDto(
+          EventEntity.fromEvent(
             createTestEventDto({ content: 'abandon test' }),
           ),
         ),
@@ -76,7 +76,7 @@ describe('filter', () => {
       ).toBeFalsy();
       expect(
         Filter.fromFilterDto({ search: 'test' }).isEventMatching(
-          EventEntity.fromEventDto(createTestEventDto({ content: 'abandon' })),
+          EventEntity.fromEvent(createTestEventDto({ content: 'abandon' })),
         ),
       ).toBeFalsy();
     });

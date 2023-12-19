@@ -1,13 +1,12 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Event, Filter } from '@nostr-relay/common';
+import { Event, Filter, getTimestampInSeconds } from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
 import { EventEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
-import { getTimestampInSeconds } from '../utils';
 
 type EventDocument = {
   id: string;

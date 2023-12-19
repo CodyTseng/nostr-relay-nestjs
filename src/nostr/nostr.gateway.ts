@@ -5,7 +5,6 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
@@ -26,9 +25,7 @@ type Data = string | Buffer | ArrayBuffer | Buffer[];
 @UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
-export class NostrGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly relay: NostrRelay;
   private readonly validator: Validator;
 
@@ -38,21 +35,15 @@ export class NostrGateway
   ) {
     const limitConfig = configService.get('limit', { infer: true });
     const domain = configService.get('domain');
-    this.relay = new NostrRelay({
+    this.relay = new NostrRelay(eventRepository, {
       domain,
-      eventRepository,
       // TODO: logger
-      options: limitConfig,
+      ...limitConfig,
     });
     this.validator = new Validator();
   }
 
-  afterInit(server: any) {
-    console.log('init');
-  }
-
   handleConnection(client: WebSocket) {
-    console.log('connection');
     this.relay.handleConnection(client);
   }
 
@@ -65,7 +56,7 @@ export class NostrGateway
     @ConnectedSocket() client: WebSocket,
     @MessageBody() data: Data,
   ) {
-    const msg = this.validator.transformAndValidate(data);
+    const msg = await this.validator.validateIncomingMessage(data);
     await this.relay.handleMessage(client, msg);
   }
 
