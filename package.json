@@ -36,7 +36,7 @@
     "@nestjs/platform-ws": "^10.2.10",
     "@nestjs/throttler": "^5.0.1",
     "@nestjs/typeorm": "^10.0.1",
-    "@nestjs/websockets": "^10.2.9",
+    "@nestjs/websockets": "^10.3.0",
     "@noble/curves": "^1.2.0",
     "@types/ws": "^8.5.10",
     "dayjs": "^1.11.10",
