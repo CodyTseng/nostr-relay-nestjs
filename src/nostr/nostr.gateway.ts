@@ -10,7 +10,8 @@ import {
 } from '@nestjs/websockets';
 import { NostrRelay } from '@nostr-relay/core';
 import { Validator } from '@nostr-relay/validator';
-import { WebSocket } from 'ws';
+import { MessageHandlingConfig } from 'src/config/message-handling.config';
+import { RawData, WebSocket } from 'ws';
 import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
 import { Config } from '../config';
@@ -28,13 +29,17 @@ type Data = string | Buffer | ArrayBuffer | Buffer[];
 export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly relay: NostrRelay;
   private readonly validator: Validator;
+  private readonly messageHandlingConfig: MessageHandlingConfig;
 
   constructor(
     configService: ConfigService<Config, true>,
     eventRepository: PgEventRepository,
   ) {
-    const limitConfig = configService.get('limit', { infer: true });
     const domain = configService.get('domain');
+    const limitConfig = configService.get('limit', { infer: true });
+    this.messageHandlingConfig = configService.get('messageHandling', {
+      infer: true,
+    });
     this.relay = new NostrRelay(eventRepository, {
       domain,
       // TODO: logger
@@ -54,9 +59,12 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('default')
   async handleMessage(
     @ConnectedSocket() client: WebSocket,
-    @MessageBody() data: Data,
+    @MessageBody() data: RawData,
   ) {
     const msg = await this.validator.validateIncomingMessage(data);
+    if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
+      return;
+    }
     await this.relay.handleMessage(client, msg);
   }
 

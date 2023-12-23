@@ -1,22 +1,10 @@
-import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { MessageMappingProperties } from '@nestjs/websockets/gateway-metadata-explorer';
 import { createOutgoingNoticeMessage } from '@nostr-relay/core';
-import { EMPTY, Observable } from 'rxjs';
-import { Config } from 'src/config';
-import { MessageHandlingConfig } from 'src/config/message-handling.config';
+import { Observable } from 'rxjs';
 import { MessageEvent } from 'ws';
 
 export class NostrWsAdapter extends WsAdapter {
-  private readonly messageHandlingConfig: MessageHandlingConfig;
-
-  constructor(app: INestApplication) {
-    super(app);
-    const config = app.get(ConfigService<Config, true>);
-    this.messageHandlingConfig = config.get('messageHandling', { infer: true });
-  }
-
   public bindMessageHandler(
     message: MessageEvent,
     handlers: MessageMappingProperties[],
@@ -24,12 +12,13 @@ export class NostrWsAdapter extends WsAdapter {
   ): Observable<any> {
     try {
       const messageData = JSON.parse(message.data.toString());
-      if (!Array.isArray(messageData)) {
+      if (!Array.isArray(messageData) && messageData.length < 1) {
         return transform(
-          createOutgoingNoticeMessage('invalid: message must be a JSON array'),
+          createOutgoingNoticeMessage(
+            'invalid: message must be a JSON array and must have at least one element',
+          ),
         );
       }
-      const [type] = messageData;
 
       const messageHandler = handlers.find(
         (handler) => handler.message === 'default',
@@ -38,10 +27,6 @@ export class NostrWsAdapter extends WsAdapter {
         return transform(
           createOutgoingNoticeMessage('invalid: unknown message type'),
         );
-      }
-
-      if (!this.messageHandlingConfig[type.toLowerCase()]) {
-        return EMPTY;
       }
 
       return transform(messageHandler.callback(messageData));
