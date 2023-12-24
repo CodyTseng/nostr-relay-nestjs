@@ -2,16 +2,19 @@ import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { WebSocket } from 'ws';
 import { NostrGateway } from './nostr.gateway';
-import { PgEventRepository } from './repositories';
+import { EventRepository } from './repositories';
+import { EventService } from './services/event.service';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    const mockConfigService = createMock<ConfigService>();
-    const mockEventRepository = createMock<PgEventRepository>();
-    nostrGateway = new NostrGateway(mockConfigService, mockEventRepository);
+    nostrGateway = new NostrGateway(
+      createMock<EventRepository>(),
+      createMock<EventService>(),
+      createMock<ConfigService>(),
+    );
   });
 
   afterEach(() => {
@@ -74,6 +77,62 @@ describe('NostrGateway', () => {
         .mockImplementation();
       await nostrGateway.handleMessage(mockClient, mockData);
       expect(nostrRelayHandleMessageSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('top', () => {
+    it('should handle TOP message', async () => {
+      const mockData: any = ['TOP', 'test', {}];
+      (nostrGateway as any).messageHandlingConfig = {
+        top: true,
+      };
+      const findTopIdsSpy = jest
+        .spyOn(nostrGateway['eventService'], 'findTopIds')
+        .mockResolvedValue(['test']);
+
+      const result = await nostrGateway.top(mockData);
+      expect(result).toEqual(['TOP', 'test', ['test']]);
+      expect(findTopIdsSpy).toHaveBeenCalledWith([{}]);
+    });
+
+    it('should return directly if type is not enable', async () => {
+      const mockData: any = ['TOP', 'test', {}];
+      (nostrGateway as any).messageHandlingConfig = {
+        top: false,
+      };
+
+      const result = await nostrGateway.top(mockData);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return directly if message length is less than 3', async () => {
+      const mockData: any = ['TOP', 'test'];
+      (nostrGateway as any).messageHandlingConfig = {
+        top: true,
+      };
+
+      const result = await nostrGateway.top(mockData);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return notice if subscriptionId is invalid', async () => {
+      const mockData: any = ['TOP', 123, {}];
+      (nostrGateway as any).messageHandlingConfig = {
+        top: true,
+      };
+
+      const result = await nostrGateway.top(mockData);
+      expect(result).toEqual(['NOTICE', expect.any(String)]);
+    });
+
+    it('should return notice if filter is invalid', async () => {
+      const mockData: any = ['TOP', 'test', 'test'];
+      (nostrGateway as any).messageHandlingConfig = {
+        top: true,
+      };
+
+      const result = await nostrGateway.top(mockData);
+      expect(result).toEqual(['NOTICE', expect.any(String)]);
     });
   });
 });

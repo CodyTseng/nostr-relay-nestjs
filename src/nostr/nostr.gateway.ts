@@ -8,17 +8,19 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { NostrRelay } from '@nostr-relay/core';
+import { NostrRelay, createOutgoingNoticeMessage } from '@nostr-relay/core';
 import { Validator } from '@nostr-relay/validator';
-import { chain } from 'lodash';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { WebSocket } from 'ws';
+import { ZodError } from 'zod';
+import { fromZodError } from 'zod-validation-error';
 import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
 import { Config } from '../config';
 import { LoggingInterceptor } from './interceptors';
-import { PgEventRepository } from './repositories';
+import { EventRepository } from './repositories';
 import { SubscriptionIdSchema } from './schemas';
+import { EventService } from './services/event.service';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 128 KB
@@ -32,8 +34,9 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly messageHandlingConfig: MessageHandlingConfig;
 
   constructor(
+    private readonly eventRepository: EventRepository,
+    private readonly eventService: EventService,
     configService: ConfigService<Config, true>,
-    private readonly eventRepository: PgEventRepository,
   ) {
     const domain = configService.get('domain');
     const limitConfig = configService.get('limit', { infer: true });
@@ -75,29 +78,28 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     if (msg.length <= 2) return;
-    const validateSubscriptionIdResult =
-      await SubscriptionIdSchema.safeParseAsync(msg[1]);
-    if (!validateSubscriptionIdResult.success) return;
-    const subscriptionId = validateSubscriptionIdResult.data;
 
-    const filters = await Promise.all(
-      msg.slice(2).map((filterDto) => this.validator.validateFilter(filterDto)),
-    );
+    try {
+      const subscriptionId = await SubscriptionIdSchema.parseAsync(msg[1]);
 
-    const collection = await Promise.all([
-      ...filters.map((filter) =>
-        this.eventRepository.findTopIdsWithScore(filter),
-      ),
-    ]);
+      const filters = await Promise.all(
+        msg
+          .slice(2)
+          .map((filterDto) => this.validator.validateFilter(filterDto)),
+      );
 
-    const topIds = chain(collection)
-      .flatten()
-      .uniqBy('id')
-      .sortBy((item) => -item.score)
-      .map('id')
-      .take(1000)
-      .value();
+      const topIds = await this.eventService.findTopIds(filters);
 
-    return ['TOP', subscriptionId, topIds];
+      return ['TOP', subscriptionId, topIds];
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const formattedError = fromZodError(error, {
+          prefix: 'invalid',
+          maxIssuesInMessage: 1,
+        });
+        return createOutgoingNoticeMessage(formattedError.message);
+      }
+      return createOutgoingNoticeMessage((error as Error).message);
+    }
   }
 }

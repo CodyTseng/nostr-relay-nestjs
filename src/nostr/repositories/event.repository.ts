@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Event,
-  EventRepository,
   EventRepositoryUpsertResult,
   EventType,
   Filter,
+  EventRepository as IEventRepository,
   getTimestampInSeconds,
 } from '@nostr-relay/common';
 import { isNil } from 'lodash';
@@ -16,7 +16,7 @@ import { toGenericTag } from '../utils';
 import { EventSearchRepository } from './event-search.repository';
 
 @Injectable()
-export class PgEventRepository extends EventRepository {
+export class EventRepository extends IEventRepository {
   readonly isSearchSupported = true;
 
   constructor(
@@ -121,7 +121,7 @@ export class PgEventRepository extends EventRepository {
     return eventEntities.map((eventEntity) => eventEntity.toEvent());
   }
 
-  async findTopIdsWithScore(filter: Filter): Promise<TEventIdWithScore[]> {
+  async findTopIds(filter: Filter): Promise<TEventIdWithScore[]> {
     const limit = this.getLimitFrom(filter, 1000);
     if (limit === 0) return [];
 
