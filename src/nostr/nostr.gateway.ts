@@ -70,6 +70,10 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('TOP')
   async top(@MessageBody() msg: Array<any>) {
+    if (!this.messageHandlingConfig.top) {
+      return;
+    }
+
     if (msg.length <= 2) return;
     const validateSubscriptionIdResult =
       await SubscriptionIdSchema.safeParseAsync(msg[1]);

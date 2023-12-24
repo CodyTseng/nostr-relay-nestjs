@@ -1,5 +1,6 @@
 import { WsAdapter } from '@nestjs/platform-ws';
 import { MessageMappingProperties } from '@nestjs/websockets/gateway-metadata-explorer';
+import { MessageType } from '@nostr-relay/common';
 import { createOutgoingNoticeMessage } from '@nostr-relay/core';
 import { EMPTY, Observable } from 'rxjs';
 import { MessageEvent } from 'ws';
@@ -20,8 +21,24 @@ export class NostrWsAdapter extends WsAdapter {
         );
       }
 
-      const messageHandler = handlers.find(
-        (handler) => handler.message === 'default',
+      const [type] = messageData;
+      if (
+        typeof type !== 'string' ||
+        ![
+          MessageType.EVENT,
+          MessageType.REQ,
+          MessageType.CLOSE,
+          MessageType.AUTH,
+          'TOP',
+        ].includes(type)
+      ) {
+        return EMPTY;
+      }
+
+      const messageHandler = handlers.find((handler) =>
+        type === 'TOP'
+          ? handler.message === 'TOP'
+          : handler.message === 'default',
       );
       if (!messageHandler) {
         return EMPTY;

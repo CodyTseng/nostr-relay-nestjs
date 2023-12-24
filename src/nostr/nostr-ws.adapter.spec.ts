@@ -50,6 +50,22 @@ describe('NostrWsAdapter', () => {
     ]);
   });
 
+  it('should return EMPTY when message type is invalid', () => {
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify(['test', 'test'])) } as MessageEvent,
+      [handler],
+      mockTransForm,
+    );
+    expect(mockTransForm).not.toHaveBeenCalled();
+
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify([{}, 'test'])) } as MessageEvent,
+      [handler],
+      mockTransForm,
+    );
+    expect(mockTransForm).not.toHaveBeenCalled();
+  });
+
   it('should return EMPTY when message handler is not found', () => {
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from(JSON.stringify(['CLOSE', 'test'])) } as MessageEvent,
