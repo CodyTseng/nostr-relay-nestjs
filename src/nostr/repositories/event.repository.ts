@@ -4,12 +4,12 @@ import {
   Event,
   EventRepository,
   EventRepositoryUpsertResult,
+  EventType,
   Filter,
   getTimestampInSeconds,
 } from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
-import { EventType } from '../constants';
 import { EventEntity, GenericTagEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { toGenericTag } from '../utils';

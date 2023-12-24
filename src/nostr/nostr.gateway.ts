@@ -10,15 +10,15 @@ import {
 } from '@nestjs/websockets';
 import { NostrRelay } from '@nostr-relay/core';
 import { Validator } from '@nostr-relay/validator';
+import { chain } from 'lodash';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
-import { RawData, WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
 import { Config } from '../config';
 import { LoggingInterceptor } from './interceptors';
 import { PgEventRepository } from './repositories';
-
-type Data = string | Buffer | ArrayBuffer | Buffer[];
+import { SubscriptionIdSchema } from './schemas';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 128 KB
@@ -33,7 +33,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     configService: ConfigService<Config, true>,
-    eventRepository: PgEventRepository,
+    private readonly eventRepository: PgEventRepository,
   ) {
     const domain = configService.get('domain');
     const limitConfig = configService.get('limit', { infer: true });
@@ -59,7 +59,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('default')
   async handleMessage(
     @ConnectedSocket() client: WebSocket,
-    @MessageBody() data: RawData,
+    @MessageBody() data: Array<any>,
   ) {
     const msg = await this.validator.validateIncomingMessage(data);
     if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
@@ -68,24 +68,32 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.relay.handleMessage(client, msg);
   }
 
-  // @SubscribeMessage(MessageType.TOP)
-  // async top(
-  //   @ConnectedSocket() client: WebSocket,
-  //   @MessageBody(new ZodValidationPipe(TopMessageDto))
-  //   [, subscriptionId, ...filtersDto]: TopMessageDto,
-  // ) {
-  //   const filters = filtersDto.map(Filter.fromFilterDto);
-  //   if (
-  //     filters.some((filter) => filter.hasEncryptedDirectMessageKind()) &&
-  //     !client.pubkey
-  //   ) {
-  //     throw new RestrictedException(
-  //       "we can't serve DMs to unauthenticated users, does your client implement NIP-42?",
-  //     );
-  //   }
+  @SubscribeMessage('TOP')
+  async top(@MessageBody() msg: Array<any>) {
+    if (msg.length <= 2) return;
+    const validateSubscriptionIdResult =
+      await SubscriptionIdSchema.safeParseAsync(msg[1]);
+    if (!validateSubscriptionIdResult.success) return;
+    const subscriptionId = validateSubscriptionIdResult.data;
 
-  //   const topIds = await this.eventService.findTopIds(filters);
+    const filters = await Promise.all(
+      msg.slice(2).map((filterDto) => this.validator.validateFilter(filterDto)),
+    );
 
-  //   return createTopResponse(subscriptionId, topIds);
-  // }
+    const collection = await Promise.all([
+      ...filters.map((filter) =>
+        this.eventRepository.findTopIdsWithScore(filter),
+      ),
+    ]);
+
+    const topIds = chain(collection)
+      .flatten()
+      .uniqBy('id')
+      .sortBy((item) => -item.score)
+      .map('id')
+      .take(1000)
+      .value();
+
+    return ['TOP', subscriptionId, topIds];
+  }
 }

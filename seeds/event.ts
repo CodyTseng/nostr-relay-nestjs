@@ -1,7 +1,6 @@
-import { getTimestampInSeconds } from '@nostr-relay/common';
+import { Event, getTimestampInSeconds } from '@nostr-relay/common';
 import { createCipheriv, randomFillSync } from 'crypto';
 import { EventEntity } from '../src/nostr/entities';
-import { EventDto } from '../src/nostr/schemas';
 import { getSharedSecret, schnorrSign, sha256 } from '../src/nostr/utils';
 
 export const PUBKEY_A =
@@ -109,7 +108,7 @@ export const NON_EXPIRED_EVENT = createTestEvent({
 });
 
 function getEventHash(
-  event: Pick<EventDto, 'pubkey' | 'kind' | 'tags' | 'content' | 'created_at'>,
+  event: Pick<Event, 'pubkey' | 'kind' | 'tags' | 'content' | 'created_at'>,
 ) {
   return sha256([
     0,
@@ -199,7 +198,7 @@ export function createTestSignedEventDto(
     created_at?: number;
     relay?: string;
   } = {},
-): EventDto {
+): Event {
   const {
     pubkey,
     privKey,

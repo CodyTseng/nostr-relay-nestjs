@@ -2,12 +2,6 @@ import { Event } from '@nostr-relay/common';
 import { EventEntity } from './event.entity';
 
 describe('EventEntity', () => {
-  let eventEntity: EventEntity;
-
-  beforeEach(() => {
-    eventEntity = new EventEntity();
-  });
-
   describe('fromEvent', () => {
     it('should create a new EventEntity from an Event', () => {
       const event: Event = {

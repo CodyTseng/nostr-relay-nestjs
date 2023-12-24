@@ -1,9 +1,7 @@
-import { createMock } from '@golevelup/ts-jest';
 import { MessageMappingProperties } from '@nestjs/websockets';
+import { MessageType } from '@nostr-relay/common';
 import { MessageEvent } from 'ws';
 import { NostrWsAdapter } from './nostr-ws.adapter';
-import { INestApplication } from '@nestjs/common';
-import { MessageType } from '@nostr-relay/common';
 
 describe('NostrWsAdapter', () => {
   const handler: MessageMappingProperties = {
