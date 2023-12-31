@@ -1,5 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
+import { PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
 import { NostrGateway } from './nostr.gateway';
 import { EventRepository } from './repositories';
@@ -11,9 +12,10 @@ describe('NostrGateway', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     nostrGateway = new NostrGateway(
-      createMock<EventRepository>(),
       createMock<EventService>(),
+      createMock<EventRepository>(),
       createMock<ConfigService>(),
+      createMock<PinoLogger>(),
     );
   });
 

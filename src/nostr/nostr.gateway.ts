@@ -21,6 +21,7 @@ import { LoggingInterceptor } from './interceptors';
 import { EventRepository } from './repositories';
 import { SubscriptionIdSchema } from './schemas';
 import { EventService } from './services/event.service';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 128 KB
@@ -34,9 +35,11 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly messageHandlingConfig: MessageHandlingConfig;
 
   constructor(
-    private readonly eventRepository: EventRepository,
     private readonly eventService: EventService,
+    eventRepository: EventRepository,
     configService: ConfigService<Config, true>,
+    @InjectPinoLogger()
+    logger: PinoLogger,
   ) {
     const domain = configService.get('domain');
     const limitConfig = configService.get('limit', { infer: true });
@@ -45,7 +48,9 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
     this.relay = new NostrRelay(eventRepository, {
       domain,
-      // TODO: logger
+      logger: {
+        error: (context, error) => logger.error({ err: error, context }),
+      },
       ...limitConfig,
     });
     this.validator = new Validator();
