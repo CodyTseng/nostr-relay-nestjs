@@ -64,7 +64,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.relay.handleDisconnect(client);
   }
 
-  @SubscribeMessage('default')
+  @SubscribeMessage('DEFAULT')
   async handleMessage(
     @ConnectedSocket() client: WebSocket,
     @MessageBody() data: Array<any>,

@@ -5,7 +5,7 @@ import { NostrWsAdapter } from './nostr-ws.adapter';
 
 describe('NostrWsAdapter', () => {
   const defaultHandler: MessageMappingProperties = {
-    message: 'default',
+    message: 'DEFAULT',
     methodName: 'test',
     callback: jest.fn(),
   };

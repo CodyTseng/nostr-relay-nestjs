@@ -38,7 +38,7 @@ export class NostrWsAdapter extends WsAdapter {
       const messageHandler = handlers.find((handler) =>
         type === 'TOP'
           ? handler.message === 'TOP'
-          : handler.message === 'default',
+          : handler.message === 'DEFAULT',
       );
       if (!messageHandler) {
         return EMPTY;
