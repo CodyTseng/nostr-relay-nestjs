@@ -4,13 +4,13 @@ import {
   getRepositoryToken,
   TypeOrmModule,
 } from '@nestjs/typeorm';
+import { EventKind, getTimestampInSeconds } from '@nostr-relay/common';
 import 'dotenv/config';
 import { DataSource, Repository } from 'typeorm';
+import { createEvent } from '../../../test-utils/event';
 import { EventEntity, GenericTagEntity } from '../entities';
 import { EventSearchRepository } from './event-search.repository';
 import { EventRepository } from './event.repository';
-import { createTestEventDto } from '../../../seeds';
-import { EventKind, getTimestampInSeconds } from '@nostr-relay/common';
 
 describe('EventRepository', () => {
   let rawEventRepository: Repository<EventEntity>;
@@ -61,7 +61,7 @@ describe('EventRepository', () => {
 
   describe('upsert', () => {
     it('should insert a new event', async () => {
-      const event = createTestEventDto({
+      const event = createEvent({
         tags: [
           ['a', 'test'],
           ['b', 'test'],
@@ -82,13 +82,13 @@ describe('EventRepository', () => {
     });
 
     it('should update an existing event', async () => {
-      const eventA = createTestEventDto({
+      const eventA = createEvent({
         kind: EventKind.SET_METADATA,
         content: 'a',
       });
       await eventRepository.upsert(eventA);
 
-      const eventB = createTestEventDto({
+      const eventB = createEvent({
         kind: EventKind.SET_METADATA,
         content: 'b',
         created_at: eventA.created_at + 1,
@@ -107,7 +107,7 @@ describe('EventRepository', () => {
     });
 
     it('should not insert an event with same id', async () => {
-      const event = createTestEventDto();
+      const event = createEvent();
       await eventRepository.upsert(event);
       const result = await eventRepository.upsert(event);
       expect(result).toEqual({ isDuplicate: true });
@@ -117,13 +117,13 @@ describe('EventRepository', () => {
     });
 
     it('should not insert an event with earlier createdAt', async () => {
-      const eventA = createTestEventDto({
+      const eventA = createEvent({
         kind: EventKind.SET_METADATA,
         content: 'a',
       });
       await eventRepository.upsert(eventA);
 
-      const eventB = createTestEventDto({
+      const eventB = createEvent({
         kind: EventKind.SET_METADATA,
         content: 'b',
         created_at: eventA.created_at - 1,
@@ -144,17 +144,17 @@ describe('EventRepository', () => {
     it('should insert an event with same createdAt and smaller id', async () => {
       const now = getTimestampInSeconds();
       const [A, B, C] = [
-        createTestEventDto({
+        createEvent({
           kind: EventKind.SET_METADATA,
           content: Math.random().toString(),
           created_at: now,
         }),
-        createTestEventDto({
+        createEvent({
           kind: EventKind.SET_METADATA,
           content: Math.random().toString(),
           created_at: now,
         }),
-        createTestEventDto({
+        createEvent({
           kind: EventKind.SET_METADATA,
           content: Math.random().toString(),
           created_at: now,
@@ -179,16 +179,16 @@ describe('EventRepository', () => {
         .spyOn(eventRepository['dataSource'], 'transaction')
         .mockRejectedValue(new Error('test'));
 
-      await expect(
-        eventRepository.upsert(createTestEventDto()),
-      ).rejects.toThrow('test');
+      await expect(eventRepository.upsert(createEvent())).rejects.toThrow(
+        'test',
+      );
     });
   });
 
   describe('find', () => {
     const now = getTimestampInSeconds();
     const events = [
-      createTestEventDto({
+      createEvent({
         kind: EventKind.LONG_FORM_CONTENT,
         content: 'hello nostr',
         tags: [
@@ -198,13 +198,13 @@ describe('EventRepository', () => {
         ],
         created_at: now + 1000,
       }),
-      createTestEventDto({
+      createEvent({
         kind: EventKind.TEXT_NOTE,
         content: 'hello world',
         tags: [['t', 'test']],
         created_at: now,
       }),
-      createTestEventDto({
+      createEvent({
         kind: EventKind.SET_METADATA,
         content: JSON.stringify({ name: 'cody' }),
         created_at: now - 1000,
@@ -361,7 +361,7 @@ describe('EventRepository', () => {
   describe('findTopIds', () => {
     const now = getTimestampInSeconds();
     const events = [
-      createTestEventDto({
+      createEvent({
         kind: EventKind.LONG_FORM_CONTENT,
         content: 'hello nostr',
         tags: [
@@ -371,13 +371,13 @@ describe('EventRepository', () => {
         ],
         created_at: now + 1000,
       }),
-      createTestEventDto({
+      createEvent({
         kind: EventKind.TEXT_NOTE,
         content: 'hello world',
         tags: [['t', 'test']],
         created_at: now,
       }),
-      createTestEventDto({
+      createEvent({
         kind: EventKind.SET_METADATA,
         content: JSON.stringify({ name: 'cody' }),
         created_at: now - 1000,

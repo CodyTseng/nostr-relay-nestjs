@@ -129,15 +129,6 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
-  async replace(event: EventEntity, oldEventId?: string) {
-    if (!this.index) return;
-
-    await Promise.all([
-      this.add(event),
-      oldEventId ? this.deleteMany([oldEventId]) : undefined,
-    ]);
-  }
-
   private buildSearchFilters(filter: Filter): string[] {
     const searchFilters: string[] = [
       `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
@@ -211,7 +202,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
 
   private extractGenericTagsCollectionFrom(filter: Filter): string[][] {
     return Object.keys(filter)
-      .filter((key) => key.startsWith('#'))
+      .filter((key) => key.startsWith('#') && key !== '#d')
       .map((key) => {
         const tagName = key[1];
         return filter[key].map((v: string) => `${tagName}:${v}`);
