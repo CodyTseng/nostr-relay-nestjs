@@ -43,6 +43,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const domain = configService.get('domain');
     const limitConfig = configService.get('limit', { infer: true });
+    const cacheConfig = configService.get('cache', { infer: true });
     this.messageHandlingConfig = configService.get('messageHandling', {
       infer: true,
     });
@@ -52,6 +53,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
         error: (context, error) => logger.error({ err: error, context }),
       },
       ...limitConfig,
+      ...cacheConfig,
     });
     this.validator = new Validator();
   }
