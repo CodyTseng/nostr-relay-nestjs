@@ -4,8 +4,13 @@ import { MessageEvent } from 'ws';
 import { NostrWsAdapter } from './nostr-ws.adapter';
 
 describe('NostrWsAdapter', () => {
-  const handler: MessageMappingProperties = {
+  const defaultHandler: MessageMappingProperties = {
     message: 'default',
+    methodName: 'test',
+    callback: jest.fn(),
+  };
+  const topHandler: MessageMappingProperties = {
+    message: 'TOP',
     methodName: 'test',
     callback: jest.fn(),
   };
@@ -21,17 +26,29 @@ describe('NostrWsAdapter', () => {
     const message = ['CLOSE', 'test'];
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from(JSON.stringify(message)) } as MessageEvent,
-      [handler],
+      [defaultHandler, topHandler],
       mockTransForm,
     );
     expect(mockTransForm).toHaveBeenCalled();
-    expect(handler.callback).toHaveBeenCalledWith(message);
+    expect(defaultHandler.callback).toHaveBeenCalledWith(message);
+  });
+
+  it('should handle TOP event message successfully', () => {
+    const message = ['TOP', 'test'];
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify(message)) } as MessageEvent,
+      [defaultHandler, topHandler],
+      mockTransForm,
+    );
+    expect(mockTransForm).toHaveBeenCalled();
+    expect(defaultHandler.callback).not.toHaveBeenCalled();
+    expect(topHandler.callback).toHaveBeenCalledWith(message);
   });
 
   it('should return message must be a JSON array notice and must have at least one element', () => {
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from(JSON.stringify({ test: 'test' })) } as MessageEvent,
-      [handler],
+      [defaultHandler],
       mockTransForm,
     );
     expect(mockTransForm).toHaveBeenCalledWith([
@@ -41,7 +58,7 @@ describe('NostrWsAdapter', () => {
 
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from(JSON.stringify([])) } as MessageEvent,
-      [handler],
+      [defaultHandler],
       mockTransForm,
     );
     expect(mockTransForm).toHaveBeenCalledWith([
@@ -53,14 +70,14 @@ describe('NostrWsAdapter', () => {
   it('should return EMPTY when message type is invalid', () => {
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from(JSON.stringify(['test', 'test'])) } as MessageEvent,
-      [handler],
+      [defaultHandler],
       mockTransForm,
     );
     expect(mockTransForm).not.toHaveBeenCalled();
 
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from(JSON.stringify([{}, 'test'])) } as MessageEvent,
-      [handler],
+      [defaultHandler],
       mockTransForm,
     );
     expect(mockTransForm).not.toHaveBeenCalled();
@@ -78,7 +95,7 @@ describe('NostrWsAdapter', () => {
   it('should return JSON error notice', () => {
     nostrWsAdapter.bindMessageHandler(
       { data: Buffer.from('t') } as MessageEvent,
-      [handler],
+      [defaultHandler],
       mockTransForm,
     );
     expect(mockTransForm).toHaveBeenCalledWith([
