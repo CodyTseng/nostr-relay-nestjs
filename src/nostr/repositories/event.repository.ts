@@ -126,7 +126,7 @@ export class EventRepository extends IEventRepository {
     if (limit === 0) return [];
 
     if (filter.search) {
-      return this.eventSearchRepository.findTopIdsWithScore(filter);
+      return this.eventSearchRepository.findTopIds(filter);
     }
 
     let partialEvents: Pick<EventEntity, 'id' | 'createdAt'>[] = [];

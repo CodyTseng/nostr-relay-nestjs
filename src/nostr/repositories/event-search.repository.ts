@@ -87,7 +87,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     return result.hits.map(this.toEvent);
   }
 
-  async findTopIdsWithScore(filter: Filter): Promise<TEventIdWithScore[]> {
+  async findTopIds(filter: Filter): Promise<TEventIdWithScore[]> {
     if (!this.index) return [];
 
     const limit = this.getLimitFrom(filter);

@@ -86,6 +86,7 @@ export class EventEntity {
     eventEntity.sig = event.sig;
     eventEntity.expiredAt = EventUtils.extractExpirationTimestamp(event);
     eventEntity.dTagValue = EventUtils.extractDTagValue(event);
+    eventEntity.type = EventUtils.getType(event);
 
     const genericTagSet = new Set<string>();
     event.tags.forEach(([tagName, tagValue]) => {

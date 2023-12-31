@@ -285,15 +285,14 @@ describe('EventSearchRepository', () => {
 
   describe('findTopIdsWithScore', () => {
     it('should return empty array if no index', async () => {
-      const result =
-        await eventSearchRepositoryWithoutIndex.findTopIdsWithScore({
-          search: 'test',
-        });
+      const result = await eventSearchRepositoryWithoutIndex.findTopIds({
+        search: 'test',
+      });
       expect(result).toEqual([]);
     });
 
     it('should return idsWithScore', async () => {
-      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
+      const result = await eventSearchRepositoryWithIndex.findTopIds({
         search: 'test',
       });
       expect(result).toEqual([
@@ -305,7 +304,7 @@ describe('EventSearchRepository', () => {
     });
 
     it('should return empty array', async () => {
-      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
+      const result = await eventSearchRepositoryWithIndex.findTopIds({
         search: 'test',
         limit: 0,
       });

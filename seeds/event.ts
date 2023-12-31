@@ -154,14 +154,16 @@ export function createTestEncryptedDirectMessageEvent(
   });
 }
 
-export function createTestEventDto(params: {
-  pubkey?: string;
-  privKey?: string;
-  kind?: number;
-  created_at?: number;
-  tags?: string[][];
-  content?: string;
-}) {
+export function createTestEventDto(
+  params: {
+    pubkey?: string;
+    privKey?: string;
+    kind?: number;
+    created_at?: number;
+    tags?: string[][];
+    content?: string;
+  } = {},
+) {
   const baseEvent = {
     pubkey: params.pubkey ?? PUBKEY_A,
     kind: params.kind ?? 1,

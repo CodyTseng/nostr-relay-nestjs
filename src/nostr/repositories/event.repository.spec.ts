@@ -5,28 +5,20 @@ import {
   TypeOrmModule,
 } from '@nestjs/typeorm';
 import 'dotenv/config';
-import { sortBy } from 'lodash';
 import { DataSource, Repository } from 'typeorm';
-import {
-  createTestEventDto,
-  EXPIRED_EVENT,
-  PARAMETERIZED_REPLACEABLE_EVENT,
-  REGULAR_EVENT,
-  REGULAR_EVENT_B,
-  REGULAR_EVENT_DTO,
-  REPLACEABLE_EVENT,
-  REPLACEABLE_EVENT_NEW,
-} from '../../../seeds';
-import { EventEntity, Filter, GenericTagEntity } from '../entities';
-import { PgEventRepository } from '../repositories';
+import { EventEntity, GenericTagEntity } from '../entities';
+import { EventSearchRepository } from './event-search.repository';
+import { EventRepository } from './event.repository';
+import { createTestEventDto } from '../../../seeds';
+import { EventKind, getTimestampInSeconds } from '@nostr-relay/common';
 
 describe('EventRepository', () => {
   let rawEventRepository: Repository<EventEntity>;
   let rawGenericTagRepository: Repository<GenericTagEntity>;
-  let eventRepository: PgEventRepository;
+  let eventRepository: EventRepository;
   let dataSource: DataSource;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
@@ -38,386 +30,413 @@ describe('EventRepository', () => {
         }),
         TypeOrmModule.forFeature([EventEntity, GenericTagEntity]),
       ],
-      providers: [PgEventRepository],
+      providers: [
+        EventRepository,
+        {
+          provide: EventSearchRepository,
+          useValue: {
+            find: jest.fn(),
+            findTopIds: jest.fn(),
+            add: jest.fn(),
+            deleteMany: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     rawEventRepository = moduleRef.get(getRepositoryToken(EventEntity));
     rawGenericTagRepository = moduleRef.get(
       getRepositoryToken(GenericTagEntity),
     );
-    eventRepository = moduleRef.get(PgEventRepository);
+    eventRepository = moduleRef.get(EventRepository);
 
     dataSource = moduleRef.get(getDataSourceToken());
-  });
-
-  afterAll(async () => {
-    await dataSource.destroy();
   });
 
   afterEach(async () => {
     await rawGenericTagRepository.delete({});
     await rawEventRepository.delete({});
+    await dataSource.destroy();
   });
 
-  describe('create', () => {
-    it('should create successfully', async () => {
-      expect(await eventRepository.create(REGULAR_EVENT)).toBeTruthy();
-
-      expect(
-        (await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }))?.toEvent(),
-      ).toEqual(REGULAR_EVENT.toEvent());
-    });
-
-    it('should return false when the event already exists', async () => {
-      expect(
-        await eventRepository.create(PARAMETERIZED_REPLACEABLE_EVENT),
-      ).toBeTruthy();
-      expect(
-        await eventRepository.create(PARAMETERIZED_REPLACEABLE_EVENT),
-      ).toBeFalsy();
-    });
-
-    it('should throw error', async () => {
-      await expect(
-        eventRepository.create(
-          EventEntity.fromEvent({
-            ...REGULAR_EVENT_DTO,
-            id: undefined,
-          } as any),
-        ),
-      ).rejects.toThrowError();
-    });
-  });
-
-  describe('find & findOne', () => {
-    beforeEach(async () => {
-      await Promise.all([
-        eventRepository.create(REGULAR_EVENT),
-        eventRepository.create(REPLACEABLE_EVENT),
-        eventRepository.create(PARAMETERIZED_REPLACEABLE_EVENT),
-        eventRepository.create(EXPIRED_EVENT),
-        eventRepository.create(REGULAR_EVENT_B),
-      ]);
-    });
-
-    it('should filter by id successfully', async () => {
-      expect(
-        (
-          await eventRepository.find({
-            ids: [REGULAR_EVENT.id, REPLACEABLE_EVENT.id],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT, REPLACEABLE_EVENT].map((event) => event.toEvent()),
-      );
-
-      expect(
-        (await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }))?.toEvent(),
-      ).toEqual(REGULAR_EVENT.toEvent());
-
-      expect(
-        (
-          await eventRepository.findOne({ ids: [REGULAR_EVENT.id] }, ['id'])
-        )?.toEvent().id,
-      ).toEqual(REGULAR_EVENT.id);
-    });
-
-    it('should filter by kind successfully', async () => {
-      expect(
-        (
-          await eventRepository.find({
-            kinds: [REGULAR_EVENT.kind, REPLACEABLE_EVENT.kind],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT_B, REGULAR_EVENT, REPLACEABLE_EVENT].map((event) =>
-          event.toEvent(),
-        ),
-      );
-
-      expect(
-        (
-          await eventRepository.findOne({ kinds: [REGULAR_EVENT.kind] })
-        )?.toEvent(),
-      ).toEqual(REGULAR_EVENT_B.toEvent());
-    });
-
-    it('should filter by authors successfully', async () => {
-      expect(
-        (await eventRepository.find({ authors: [REGULAR_EVENT_B.author] })).map(
-          (event) => event.toEventDto(),
-        ),
-      ).toEqual([REGULAR_EVENT_B].map((event) => event.toEvent()));
-
-      expect(
-        (
-          await eventRepository.findOne({ authors: [REGULAR_EVENT_B.pubkey] })
-        )?.toEvent(),
-      ).toEqual(REGULAR_EVENT_B.toEvent());
-    });
-
-    it('should filter by created_at successfully', async () => {
-      expect(
-        (
-          await eventRepository.find({ since: REPLACEABLE_EVENT.createdAt })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REGULAR_EVENT_B, REGULAR_EVENT, REPLACEABLE_EVENT].map((event) =>
-          event.toEvent(),
-        ),
-      );
-
-      expect(
-        (
-          await eventRepository.find({ until: REPLACEABLE_EVENT.createdAt })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [REPLACEABLE_EVENT, PARAMETERIZED_REPLACEABLE_EVENT].map((event) =>
-          event.toEvent(),
-        ),
-      );
-
-      expect(
-        (
-          await eventRepository.find({
-            since: REPLACEABLE_EVENT.createdAt,
-            until: REPLACEABLE_EVENT.createdAt,
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual([REPLACEABLE_EVENT].map((event) => event.toEvent()));
-
-      expect(
-        (
-          await eventRepository.findOne({ until: REGULAR_EVENT.createdAt })
-        )?.toEvent(),
-      ).toEqual(REGULAR_EVENT.toEvent());
-
-      expect(
-        (
-          await eventRepository.findOne({ since: REPLACEABLE_EVENT.createdAt })
-        )?.toEvent(),
-      ).toEqual(REGULAR_EVENT_B.toEvent());
-    });
-
-    it('should filter by dTagValue successfully', async () => {
-      expect(
-        (
-          await eventRepository.find({
-            authors: [PARAMETERIZED_REPLACEABLE_EVENT.author],
-            kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
-            dTagValues: ['test'],
-          })
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEvent()),
-      );
-
-      expect(
-        (
-          await eventRepository.findOne({
-            authors: [PARAMETERIZED_REPLACEABLE_EVENT.author],
-            kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
-            dTagValues: ['test'],
-          })
-        )?.toEvent(),
-      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEvent());
-    });
-
-    it('should filter by tag successfully', async () => {
-      const manyTagsEvent = EventEntity.fromEvent(
-        createTestEventDto({
-          tags: [
-            ['a', 'test1'],
-            ['b', 'test2'],
-            ['c', 'test3'],
-          ],
-        }),
-      );
-      await eventRepository.create(manyTagsEvent);
-      expect(
-        (
-          await eventRepository.find(
-            Filter.fromFilterDto({
-              tags: {
-                a: ['test1'],
-                b: ['test2'],
-                c: ['test3'],
-              },
-              since: manyTagsEvent.createdAt - 1,
-              until: manyTagsEvent.createdAt + 1,
-              kinds: [manyTagsEvent.kind],
-              authors: [manyTagsEvent.pubkey],
-            }),
-          )
-        ).map((event) => event.toEventDto()),
-      ).toEqual([manyTagsEvent].map((event) => event.toEvent()));
-
-      expect(
-        (
-          await eventRepository.find(
-            Filter.fromFilterDto({
-              tags: {
-                p: [
-                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-                ],
-                d: ['test'],
-              },
-              kinds: [PARAMETERIZED_REPLACEABLE_EVENT.kind],
-              authors: [PARAMETERIZED_REPLACEABLE_EVENT.pubkey],
-            }),
-          )
-        ).map((event) => event.toEventDto()),
-      ).toEqual(
-        [PARAMETERIZED_REPLACEABLE_EVENT].map((event) => event.toEvent()),
-      );
-
-      expect(
-        (
-          await eventRepository.find(
-            Filter.fromFilterDto({
-              tags: {
-                p: [
-                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-                ],
-                d: ['fake'],
-              },
-            }),
-          )
-        ).map((event) => event.toEventDto()),
-      ).toEqual([]);
-
-      expect(
-        (
-          await eventRepository.findOne(
-            Filter.fromFilterDto({
-              tags: {
-                p: [
-                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-                ],
-              },
-            }),
-          )
-        )?.toEvent(),
-      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.toEvent());
-
-      expect(
-        (
-          await eventRepository.findOne(
-            Filter.fromFilterDto({
-              tags: {
-                p: [
-                  '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-                ],
-              },
-            }),
-            ['id'],
-          )
-        )?.toEvent().id,
-      ).toEqual(PARAMETERIZED_REPLACEABLE_EVENT.id);
-
-      const unStandardTagEventDto = createTestEventDto({
-        tags: [['z', 'test2']],
+  describe('upsert', () => {
+    it('should insert a new event', async () => {
+      const event = createTestEventDto({
+        tags: [
+          ['a', 'test'],
+          ['b', 'test'],
+        ],
       });
-      await eventRepository.create(
-        EventEntity.fromEvent(unStandardTagEventDto),
-      );
-      expect(
-        (
-          await eventRepository.findOne(
-            Filter.fromFilterDto({ tags: { z: ['test1', 'test2'] } }),
-          )
-        )?.toEvent(),
-      ).toEqual(unStandardTagEventDto);
+      const result = await eventRepository.upsert(event);
+      expect(result).toEqual({ isDuplicate: false });
 
-      expect(
-        await eventRepository.findOne(
-          Filter.fromFilterDto({ tags: { f: ['fake'] } }),
-        ),
-      ).toBeNull();
-    });
-
-    it('should limit successfully', async () => {
-      expect(
-        await eventRepository.find({
-          authors: [REGULAR_EVENT.pubkey],
-          limit: 1,
-        }),
-      ).toHaveLength(1);
-    });
-
-    it('should return empty', async () => {
-      expect(await eventRepository.find({ limit: 0 })).toEqual([]);
-    });
-  });
-
-  describe('replace', () => {
-    it('should replace successfully', async () => {
-      expect(await eventRepository.replace(REPLACEABLE_EVENT)).toBeTruthy();
-      expect(
-        (
-          await eventRepository.findOne({
-            ids: [REPLACEABLE_EVENT.id],
-          })
-        )?.toEvent(),
-      ).toEqual(REPLACEABLE_EVENT.toEvent());
-
-      expect(
-        await eventRepository.replace(
-          REPLACEABLE_EVENT_NEW,
-          REPLACEABLE_EVENT.id,
-        ),
-      ).toBeTruthy();
-      expect(
-        (
-          await eventRepository.findOne({
-            ids: [REPLACEABLE_EVENT_NEW.id],
-          })
-        )?.toEvent(),
-      ).toEqual(REPLACEABLE_EVENT_NEW.toEvent());
-      expect(
-        await eventRepository.findOne({ ids: [REPLACEABLE_EVENT.id] }),
-      ).toBeNull();
-    });
-  });
-
-  describe('findTopIdsWithScore', () => {
-    it('should find top ids with score successfully', async () => {
-      const EVENTS = [
-        REGULAR_EVENT,
-        REPLACEABLE_EVENT,
-        PARAMETERIZED_REPLACEABLE_EVENT,
-      ];
-      await Promise.all(EVENTS.map((EVENT) => eventRepository.create(EVENT)));
-
-      expect(await eventRepository.findTopIdsWithScore({})).toEqual(
-        sortBy(
-          EVENTS.map((e) => ({ id: e.id, score: e.createdAt })),
-          (item) => -item.score,
-        ),
-      );
-
-      expect(
-        await eventRepository.findTopIdsWithScore(
-          Filter.fromFilterDto({
-            tags: {
-              p: [
-                '096ec29294b56ae7e3489307e9d5b2131bd4f0f1b8721d8600f08f39a041f6c0',
-              ],
-            },
-          }),
-        ),
-      ).toEqual([
-        {
-          id: PARAMETERIZED_REPLACEABLE_EVENT.id,
-          score: PARAMETERIZED_REPLACEABLE_EVENT.createdAt,
-        },
+      const eventEntity = await rawEventRepository.findOneBy({ id: event.id });
+      expect(eventEntity?.toEvent()).toEqual(event);
+      const genericTagEntities = await rawGenericTagRepository.findBy({
+        eventId: event.id,
+      });
+      expect(genericTagEntities.map((e) => e.tag)).toEqual([
+        'a:test',
+        'b:test',
       ]);
     });
 
-    it('should return empty', async () => {
-      expect(await eventRepository.findTopIdsWithScore({ limit: 0 })).toEqual(
-        [],
+    it('should update an existing event', async () => {
+      const eventA = createTestEventDto({
+        kind: EventKind.SET_METADATA,
+        content: 'a',
+      });
+      await eventRepository.upsert(eventA);
+
+      const eventB = createTestEventDto({
+        kind: EventKind.SET_METADATA,
+        content: 'b',
+        created_at: eventA.created_at + 1,
+      });
+      const result = await eventRepository.upsert(eventB);
+      expect(result).toEqual({ isDuplicate: false });
+
+      const eventAEntity = await rawEventRepository.findOneBy({
+        id: eventA.id,
+      });
+      expect(eventAEntity).toBeNull();
+      const eventBEntity = await rawEventRepository.findOneBy({
+        id: eventB.id,
+      });
+      expect(eventBEntity?.toEvent()).toEqual(eventB);
+    });
+
+    it('should not insert an event with same id', async () => {
+      const event = createTestEventDto();
+      await eventRepository.upsert(event);
+      const result = await eventRepository.upsert(event);
+      expect(result).toEqual({ isDuplicate: true });
+
+      const eventEntity = await rawEventRepository.findOneBy({ id: event.id });
+      expect(eventEntity?.toEvent()).toEqual(event);
+    });
+
+    it('should not insert an event with earlier createdAt', async () => {
+      const eventA = createTestEventDto({
+        kind: EventKind.SET_METADATA,
+        content: 'a',
+      });
+      await eventRepository.upsert(eventA);
+
+      const eventB = createTestEventDto({
+        kind: EventKind.SET_METADATA,
+        content: 'b',
+        created_at: eventA.created_at - 1,
+      });
+      const result = await eventRepository.upsert(eventB);
+      expect(result).toEqual({ isDuplicate: true });
+
+      const eventAEntity = await rawEventRepository.findOneBy({
+        id: eventA.id,
+      });
+      expect(eventAEntity?.toEvent()).toEqual(eventA);
+      const eventBEntity = await rawEventRepository.findOneBy({
+        id: eventB.id,
+      });
+      expect(eventBEntity).toBeNull();
+    });
+
+    it('should insert an event with same createdAt and smaller id', async () => {
+      const now = getTimestampInSeconds();
+      const [A, B, C] = [
+        createTestEventDto({
+          kind: EventKind.SET_METADATA,
+          content: Math.random().toString(),
+          created_at: now,
+        }),
+        createTestEventDto({
+          kind: EventKind.SET_METADATA,
+          content: Math.random().toString(),
+          created_at: now,
+        }),
+        createTestEventDto({
+          kind: EventKind.SET_METADATA,
+          content: Math.random().toString(),
+          created_at: now,
+        }),
+      ].sort((a, b) => (a.id < b.id ? -1 : 1));
+
+      await eventRepository.upsert(B);
+      const upsertAResult = await eventRepository.upsert(A);
+      expect(upsertAResult).toEqual({ isDuplicate: false });
+
+      const upsertCResult = await eventRepository.upsert(C);
+      expect(upsertCResult).toEqual({ isDuplicate: true });
+
+      const eventAEntity = await rawEventRepository.findOneBy({
+        id: A.id,
+      });
+      expect(eventAEntity?.toEvent()).toEqual(A);
+    });
+
+    it('should throw an error', async () => {
+      jest
+        .spyOn(eventRepository['dataSource'], 'transaction')
+        .mockRejectedValue(new Error('test'));
+
+      await expect(
+        eventRepository.upsert(createTestEventDto()),
+      ).rejects.toThrow('test');
+    });
+  });
+
+  describe('find', () => {
+    const now = getTimestampInSeconds();
+    const events = [
+      createTestEventDto({
+        kind: EventKind.LONG_FORM_CONTENT,
+        content: 'hello nostr',
+        tags: [
+          ['d', 'test'],
+          ['t', 'test'],
+          ['e', 'test'],
+        ],
+        created_at: now + 1000,
+      }),
+      createTestEventDto({
+        kind: EventKind.TEXT_NOTE,
+        content: 'hello world',
+        tags: [['t', 'test']],
+        created_at: now,
+      }),
+      createTestEventDto({
+        kind: EventKind.SET_METADATA,
+        content: JSON.stringify({ name: 'cody' }),
+        created_at: now - 1000,
+      }),
+    ];
+    const [LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT, SET_METADATA_EVENT] =
+      events;
+
+    beforeEach(async () => {
+      await Promise.all(events.map((event) => eventRepository.upsert(event)));
+    });
+
+    it('should filter by kind', async () => {
+      const result = await eventRepository.find({
+        kinds: [EventKind.TEXT_NOTE],
+      });
+      expect(result).toEqual([TEXT_NOTE_EVENT]);
+    });
+
+    it('should filter by author', async () => {
+      const result = await eventRepository.find({
+        authors: [TEXT_NOTE_EVENT.pubkey],
+      });
+      expect(result).toEqual(events);
+
+      const result2 = await eventRepository.find({
+        authors: ['test'],
+      });
+      expect(result2).toEqual([]);
+    });
+
+    it('should filter by since', async () => {
+      const result = await eventRepository.find({
+        since: now,
+      });
+      expect(result).toEqual([LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT]);
+    });
+
+    it('should filter by until', async () => {
+      const result = await eventRepository.find({
+        until: now,
+      });
+      expect(result).toEqual([TEXT_NOTE_EVENT, SET_METADATA_EVENT]);
+    });
+
+    it('should filter by since and until', async () => {
+      const result = await eventRepository.find({
+        since: now + 1,
+        until: now + 1000,
+      });
+      expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
+    });
+
+    it('should filter by ids', async () => {
+      const result = await eventRepository.find({
+        ids: [TEXT_NOTE_EVENT.id],
+      });
+      expect(result).toEqual([TEXT_NOTE_EVENT]);
+    });
+
+    it('should filter by dTagValue', async () => {
+      const result = await eventRepository.find({
+        '#d': ['test'],
+      });
+      expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
+    });
+
+    it('should filter by search', async () => {
+      jest
+        .spyOn(eventRepository['eventSearchRepository'], 'find')
+        .mockResolvedValueOnce([LONG_FORM_CONTENT_EVENT]);
+
+      const result = await eventRepository.find({
+        search: 'nostr',
+      });
+
+      expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
+    });
+
+    it('should return empty array directly if limit is 0', async () => {
+      const result = await eventRepository.find({
+        limit: 0,
+      });
+      expect(result).toEqual([]);
+    });
+
+    describe('filter by generic tags', () => {
+      it('should filter by tags', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+        });
+        expect(result).toEqual([LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT]);
+      });
+
+      it('should filter by multiple tags', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          '#e': ['test'],
+        });
+        expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
+      });
+
+      it('should filter by tags and since', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          since: now + 1,
+        });
+        expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
+      });
+
+      it('should filter by tags and until', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          until: now + 1,
+        });
+        expect(result).toEqual([TEXT_NOTE_EVENT]);
+      });
+
+      it('should filter by tags and since and until', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          since: now + 1,
+          until: now + 1000,
+        });
+        expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
+      });
+
+      it('should filter by tags and authors', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          authors: [TEXT_NOTE_EVENT.pubkey],
+        });
+        expect(result).toEqual([LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT]);
+      });
+
+      it('should filter by tags and kinds', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          kinds: [EventKind.TEXT_NOTE],
+        });
+        expect(result).toEqual([TEXT_NOTE_EVENT]);
+      });
+
+      it('should filter by tags and ids', async () => {
+        const result = await eventRepository.find({
+          '#t': ['test'],
+          ids: [TEXT_NOTE_EVENT.id],
+        });
+        expect(result).toEqual([TEXT_NOTE_EVENT]);
+      });
+    });
+  });
+
+  describe('findTopIds', () => {
+    const now = getTimestampInSeconds();
+    const events = [
+      createTestEventDto({
+        kind: EventKind.LONG_FORM_CONTENT,
+        content: 'hello nostr',
+        tags: [
+          ['d', 'test'],
+          ['t', 'test'],
+          ['e', 'test'],
+        ],
+        created_at: now + 1000,
+      }),
+      createTestEventDto({
+        kind: EventKind.TEXT_NOTE,
+        content: 'hello world',
+        tags: [['t', 'test']],
+        created_at: now,
+      }),
+      createTestEventDto({
+        kind: EventKind.SET_METADATA,
+        content: JSON.stringify({ name: 'cody' }),
+        created_at: now - 1000,
+      }),
+    ];
+    const [LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT, SET_METADATA_EVENT] =
+      events;
+
+    beforeEach(async () => {
+      await Promise.all(events.map((event) => eventRepository.upsert(event)));
+    });
+
+    it('should find top ids', async () => {
+      const result = await eventRepository.findTopIds({
+        authors: [TEXT_NOTE_EVENT.pubkey],
+      });
+      expect(result).toEqual(
+        events.map((event) => ({
+          id: event.id,
+          score: event.created_at,
+        })),
       );
+    });
+
+    it('should find top ids and filter by tags', async () => {
+      const result = await eventRepository.findTopIds({
+        '#t': ['test'],
+      });
+      expect(result).toEqual(
+        [LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT].map((event) => ({
+          id: event.id,
+          score: event.created_at,
+        })),
+      );
+    });
+
+    it('should find top ids and filter by search', async () => {
+      const mockResult = [
+        {
+          id: LONG_FORM_CONTENT_EVENT.id,
+          score: 1,
+        },
+      ];
+      jest
+        .spyOn(eventRepository['eventSearchRepository'], 'findTopIds')
+        .mockResolvedValueOnce(mockResult);
+
+      const result = await eventRepository.findTopIds({
+        search: 'nostr',
+      });
+
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should return empty array directly if limit is 0', async () => {
+      const result = await eventRepository.findTopIds({
+        limit: 0,
+      });
+      expect(result).toEqual([]);
     });
   });
 });
