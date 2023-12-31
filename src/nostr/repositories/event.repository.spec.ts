@@ -383,8 +383,7 @@ describe('EventRepository', () => {
         created_at: now - 1000,
       }),
     ];
-    const [LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT, SET_METADATA_EVENT] =
-      events;
+    const [LONG_FORM_CONTENT_EVENT, TEXT_NOTE_EVENT] = events;
 
     beforeEach(async () => {
       await Promise.all(events.map((event) => eventRepository.upsert(event)));
