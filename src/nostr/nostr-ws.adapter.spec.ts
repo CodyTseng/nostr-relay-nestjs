@@ -1,92 +1,106 @@
-import { createMock } from '@golevelup/ts-jest';
 import { MessageMappingProperties } from '@nestjs/websockets';
+import { MessageType } from '@nostr-relay/common';
 import { MessageEvent } from 'ws';
 import { NostrWsAdapter } from './nostr-ws.adapter';
-import { createNoticeResponse } from './utils';
-import { INestApplication } from '@nestjs/common';
 
 describe('NostrWsAdapter', () => {
-  const EVENT_TYPE = 'EVENT';
-  const handlers = [
-    {
-      message: EVENT_TYPE,
-      callback: (data: unknown) => data,
-    } as MessageMappingProperties,
-  ];
-
-  let mockTransForm: jest.Mock;
+  const defaultHandler: MessageMappingProperties = {
+    message: 'DEFAULT',
+    methodName: 'test',
+    callback: jest.fn(),
+  };
+  const topHandler: MessageMappingProperties = {
+    message: 'TOP',
+    methodName: 'test',
+    callback: jest.fn(),
+  };
+  const mockTransForm = jest.fn();
   let nostrWsAdapter: NostrWsAdapter;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTransForm = jest.fn();
-    nostrWsAdapter = new NostrWsAdapter(
-      createMock<INestApplication>({
-        get: jest.fn().mockReturnValue({
-          get: jest.fn().mockReturnValue({
-            event: true,
-          }),
-        }),
-      }),
-    );
+    nostrWsAdapter = new NostrWsAdapter();
   });
 
   it('should handle message successfully', () => {
-    const DATA = 'hello';
-    testBindMessageHandler(JSON.stringify([EVENT_TYPE, DATA]), [
-      EVENT_TYPE,
-      DATA,
+    const message = ['CLOSE', 'test'];
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify(message)) } as MessageEvent,
+      [defaultHandler, topHandler],
+      mockTransForm,
+    );
+    expect(mockTransForm).toHaveBeenCalled();
+    expect(defaultHandler.callback).toHaveBeenCalledWith(message);
+  });
+
+  it('should handle TOP event message successfully', () => {
+    const message = ['TOP', 'test'];
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify(message)) } as MessageEvent,
+      [defaultHandler, topHandler],
+      mockTransForm,
+    );
+    expect(mockTransForm).toHaveBeenCalled();
+    expect(defaultHandler.callback).not.toHaveBeenCalled();
+    expect(topHandler.callback).toHaveBeenCalledWith(message);
+  });
+
+  it('should return message must be a JSON array notice and must have at least one element', () => {
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify({ test: 'test' })) } as MessageEvent,
+      [defaultHandler],
+      mockTransForm,
+    );
+    expect(mockTransForm).toHaveBeenCalledWith([
+      MessageType.NOTICE,
+      'invalid: message must be a JSON array and must have at least one element',
+    ]);
+
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify([])) } as MessageEvent,
+      [defaultHandler],
+      mockTransForm,
+    );
+    expect(mockTransForm).toHaveBeenCalledWith([
+      MessageType.NOTICE,
+      'invalid: message must be a JSON array and must have at least one element',
     ]);
   });
 
-  it('should return message must be a JSON array notice', () => {
-    testBindMessageHandler(
-      JSON.stringify('message'),
-      createNoticeResponse('invalid: message must be a JSON array'),
-    );
-  });
-
-  it('should return unknown message type notice', () => {
-    testBindMessageHandler(
-      JSON.stringify(['fake-event-type']),
-      createNoticeResponse('invalid: unknown message type'),
-    );
-  });
-
-  it('should return JSON error notice', () => {
-    testBindMessageHandler(
-      't',
-      createNoticeResponse('error: Unexpected end of JSON input'),
-    );
-  });
-
-  it('should return empty when message type is disabled', () => {
-    nostrWsAdapter = new NostrWsAdapter(
-      createMock<INestApplication>({
-        get: jest.fn().mockReturnValue({
-          get: jest.fn().mockReturnValue({
-            event: false,
-          }),
-        }),
-      }),
-    );
-
+  it('should return EMPTY when message type is invalid', () => {
     nostrWsAdapter.bindMessageHandler(
-      createMock<MessageEvent>({ data: JSON.stringify([EVENT_TYPE, 'hello']) }),
-      handlers,
+      { data: Buffer.from(JSON.stringify(['test', 'test'])) } as MessageEvent,
+      [defaultHandler],
       mockTransForm,
     );
+    expect(mockTransForm).not.toHaveBeenCalled();
 
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from(JSON.stringify([{}, 'test'])) } as MessageEvent,
+      [defaultHandler],
+      mockTransForm,
+    );
     expect(mockTransForm).not.toHaveBeenCalled();
   });
 
-  function testBindMessageHandler(data: any, response: any) {
+  it('should return EMPTY when message handler is not found', () => {
     nostrWsAdapter.bindMessageHandler(
-      createMock<MessageEvent>({ data }),
-      handlers,
+      { data: Buffer.from(JSON.stringify(['CLOSE', 'test'])) } as MessageEvent,
+      [],
       mockTransForm,
     );
+    expect(mockTransForm).not.toHaveBeenCalled();
+  });
 
-    expect(mockTransForm).toHaveBeenCalledWith(response);
-  }
+  it('should return JSON error notice', () => {
+    nostrWsAdapter.bindMessageHandler(
+      { data: Buffer.from('t') } as MessageEvent,
+      [defaultHandler],
+      mockTransForm,
+    );
+    expect(mockTransForm).toHaveBeenCalledWith([
+      MessageType.NOTICE,
+      'error: Unexpected end of JSON input',
+    ]);
+  });
 });

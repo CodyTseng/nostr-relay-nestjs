@@ -1,9 +1,9 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ArgumentsHost, HttpException } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { createNoticeResponse } from '../../nostr/utils';
 import { ClientException } from '../exceptions';
 import { GlobalExceptionFilter } from './global-exception.filter';
+import { createOutgoingNoticeMessage } from '@nostr-relay/core';
 
 describe('GlobalExceptionFilter', () => {
   let globalExceptionFilter: GlobalExceptionFilter;
@@ -48,8 +48,8 @@ describe('GlobalExceptionFilter', () => {
 
       globalExceptionFilter.catch(error, host);
 
-      expect(mockClientSend).toBeCalledWith(
-        JSON.stringify(createNoticeResponse(errMsg)),
+      expect(mockClientSend).toHaveBeenCalledWith(
+        JSON.stringify(createOutgoingNoticeMessage(errMsg)),
       );
     });
   });
@@ -73,8 +73,8 @@ describe('GlobalExceptionFilter', () => {
 
       globalExceptionFilter.catch(error, host);
 
-      expect(mockStatus).toBeCalledWith(500);
-      expect(mockSend).toBeCalledWith('Internal Server Error!');
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockSend).toHaveBeenCalledWith('Internal Server Error!');
     });
 
     it('should return ISE when catch a 5xx http exception', () => {
@@ -95,8 +95,8 @@ describe('GlobalExceptionFilter', () => {
 
       globalExceptionFilter.catch(error, host);
 
-      expect(mockStatus).toBeCalledWith(501);
-      expect(mockSend).toBeCalledWith('Internal Server Error!');
+      expect(mockStatus).toHaveBeenCalledWith(501);
+      expect(mockSend).toHaveBeenCalledWith('Internal Server Error!');
     });
 
     it('should return error msg when catch a 4xx http exception', () => {
@@ -117,8 +117,8 @@ describe('GlobalExceptionFilter', () => {
 
       globalExceptionFilter.catch(error, host);
 
-      expect(mockStatus).toBeCalledWith(404);
-      expect(mockSend).toBeCalledWith('test');
+      expect(mockStatus).toHaveBeenCalledWith(404);
+      expect(mockSend).toHaveBeenCalledWith('test');
     });
   });
 
@@ -131,6 +131,6 @@ describe('GlobalExceptionFilter', () => {
 
     globalExceptionFilter.catch(error, host);
 
-    expect(loggerErrorMock).toBeCalledWith(error);
+    expect(loggerErrorMock).toHaveBeenCalledWith(error);
   });
 });

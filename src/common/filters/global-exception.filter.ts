@@ -7,9 +7,9 @@ import {
 } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
-import { createNoticeResponse } from '../../nostr/utils';
 import { ClientException } from '../exceptions';
 import { Response } from 'express';
+import { createOutgoingNoticeMessage } from '@nostr-relay/core';
 
 @Catch(Error)
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -42,7 +42,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private handleWsException(error: Error, client: WebSocket) {
-    client.send(JSON.stringify(createNoticeResponse(error.message)));
+    client.send(JSON.stringify(createOutgoingNoticeMessage(error.message)));
   }
 
   private handleHttpException(error: Error, response: Response) {

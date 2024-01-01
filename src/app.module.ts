@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
@@ -21,7 +20,6 @@ import { NostrModule } from './nostr/nostr.module';
       useFactory: loggerModuleFactory,
       inject: [ConfigService],
     }),
-    EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService<Config, true>) => {
         const { url } = configService.get('database', { infer: true });

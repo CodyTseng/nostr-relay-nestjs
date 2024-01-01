@@ -1,14 +1,13 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
+import { EventKind } from '@nostr-relay/common';
 import { PinoLogger } from 'nestjs-pino';
-import {
-  REGULAR_EVENT,
-  REPLACEABLE_EVENT,
-  createTestEvent,
-} from '../../../seeds';
+import { createEvent } from '../../../test-utils/event';
+import { EventEntity } from '../entities';
 import { EventSearchRepository } from './event-search.repository';
 
-jest.mock('../utils/time', () => ({
+jest.mock('@nostr-relay/common', () => ({
+  ...jest.requireActual('@nostr-relay/common'),
   getTimestampInSeconds: jest.fn(() => 1620000000),
 }));
 
@@ -21,31 +20,22 @@ describe('EventSearchRepository', () => {
   const mockDeleteDocuments = jest.fn();
   const logError = jest.fn();
 
+  const regularEvent = createEvent({
+    kind: EventKind.TEXT_NOTE,
+    content: 'hello world',
+  });
   const REGULAR_EVENT_DOCUMENT = {
-    id: REGULAR_EVENT.id,
-    pubkey: REGULAR_EVENT.pubkey,
-    createdAt: REGULAR_EVENT.createdAt,
-    kind: REGULAR_EVENT.kind,
-    tags: REGULAR_EVENT.tags,
-    genericTags: REGULAR_EVENT.genericTags,
-    content: REGULAR_EVENT.content,
-    sig: REGULAR_EVENT.sig,
-    expiredAt: REGULAR_EVENT.expiredAt,
-    author: REGULAR_EVENT.author,
-    dTagValue: REGULAR_EVENT.dTagValue,
-  };
-  const REPLACEABLE_EVENT_DOCUMENT = {
-    id: REPLACEABLE_EVENT.id,
-    pubkey: REPLACEABLE_EVENT.pubkey,
-    createdAt: REPLACEABLE_EVENT.createdAt,
-    kind: REPLACEABLE_EVENT.kind,
-    tags: REPLACEABLE_EVENT.tags,
-    genericTags: REPLACEABLE_EVENT.genericTags,
-    content: REPLACEABLE_EVENT.content,
-    sig: REPLACEABLE_EVENT.sig,
-    expiredAt: REPLACEABLE_EVENT.expiredAt,
-    author: REPLACEABLE_EVENT.author,
-    dTagValue: REPLACEABLE_EVENT.dTagValue,
+    id: regularEvent.id,
+    pubkey: regularEvent.pubkey,
+    createdAt: regularEvent.created_at,
+    kind: regularEvent.kind,
+    tags: regularEvent.tags,
+    genericTags: [],
+    content: regularEvent.content,
+    sig: regularEvent.sig,
+    author: regularEvent.pubkey,
+    dTagValue: null,
+    expiredAt: null,
   };
 
   beforeEach(() => {
@@ -83,12 +73,12 @@ describe('EventSearchRepository', () => {
   describe('onApplicationBootstrap', () => {
     it('should not update index settings if no index', () => {
       eventSearchRepositoryWithoutIndex.onApplicationBootstrap();
-      expect(mockUpdateSettings).not.toBeCalled();
+      expect(mockUpdateSettings).not.toHaveBeenCalled();
     });
 
     it('should update index settings if has index', () => {
       eventSearchRepositoryWithIndex.onApplicationBootstrap();
-      expect(mockUpdateSettings).toBeCalledWith({
+      expect(mockUpdateSettings).toHaveBeenCalledWith({
         searchableAttributes: ['content'],
         filterableAttributes: [
           'id',
@@ -126,12 +116,12 @@ describe('EventSearchRepository', () => {
       const events = await eventSearchRepositoryWithIndex.find({
         search: 'search',
       });
-      expect(mockSearch).toBeCalledWith('search', {
+      expect(mockSearch).toHaveBeenCalledWith('search', {
         filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
         sort: ['createdAt:desc'],
         limit: 100,
       });
-      expect(events[0].id).toEqual(REGULAR_EVENT.id);
+      expect(events).toEqual([regularEvent]);
     });
 
     it('has ids filter', async () => {
@@ -139,7 +129,7 @@ describe('EventSearchRepository', () => {
         search: '',
         ids: ['id1', 'id2'],
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `id IN [id1, id2]`,
@@ -154,7 +144,7 @@ describe('EventSearchRepository', () => {
         search: '',
         kinds: [1, 2],
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `kind IN [1, 2]`,
@@ -169,7 +159,7 @@ describe('EventSearchRepository', () => {
         search: '',
         since: 1620000000,
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `createdAt >= 1620000000`,
@@ -184,7 +174,7 @@ describe('EventSearchRepository', () => {
         search: '',
         until: 1620000000,
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `createdAt <= 1620000000`,
@@ -199,7 +189,7 @@ describe('EventSearchRepository', () => {
         search: '',
         authors: ['pubkey1', 'pubkey2'],
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `author IN [pubkey1, pubkey2]`,
@@ -212,9 +202,10 @@ describe('EventSearchRepository', () => {
     it('has genericTagsCollection filter', async () => {
       await eventSearchRepositoryWithIndex.find({
         search: '',
-        genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
+        '#a': ['genericTags'],
+        '#b': ['genericTags'],
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `genericTags IN [a:genericTags]`,
@@ -228,9 +219,9 @@ describe('EventSearchRepository', () => {
     it('has dTagValues filter', async () => {
       await eventSearchRepositoryWithIndex.find({
         search: '',
-        dTagValues: ['dTagValue1', 'dTagValue2'],
+        '#d': ['dTagValue1', 'dTagValue2'],
       });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `dTagValue IN [dTagValue1, dTagValue2]`,
@@ -242,7 +233,7 @@ describe('EventSearchRepository', () => {
 
     it('has limit', async () => {
       await eventSearchRepositoryWithIndex.find({ search: '', limit: 10 });
-      expect(mockSearch).toBeCalledWith('', {
+      expect(mockSearch).toHaveBeenCalledWith('', {
         filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
         sort: ['createdAt:desc'],
         limit: 10,
@@ -261,11 +252,12 @@ describe('EventSearchRepository', () => {
         since: 1620000000,
         until: 1630000000,
         authors: ['pubkey1', 'pubkey2'],
-        genericTagsCollection: [['a:genericTags'], ['b:genericTags']],
-        dTagValues: ['dTagValue1', 'dTagValue2'],
+        '#a': ['genericTags'],
+        '#b': ['genericTags'],
+        '#d': ['dTagValue1', 'dTagValue2'],
         limit: 10,
       });
-      expect(mockSearch).toBeCalledWith('search', {
+      expect(mockSearch).toHaveBeenCalledWith('search', {
         filter: [
           `expiredAt IS NULL OR expiredAt >= 1620000000`,
           `id IN [id1, id2]`,
@@ -283,17 +275,16 @@ describe('EventSearchRepository', () => {
     });
   });
 
-  describe('findTopIdsWithScore', () => {
+  describe('findTopIds', () => {
     it('should return empty array if no index', async () => {
-      const result =
-        await eventSearchRepositoryWithoutIndex.findTopIdsWithScore({
-          search: 'test',
-        });
+      const result = await eventSearchRepositoryWithoutIndex.findTopIds({
+        search: 'test',
+      });
       expect(result).toEqual([]);
     });
 
     it('should return idsWithScore', async () => {
-      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
+      const result = await eventSearchRepositoryWithIndex.findTopIds({
         search: 'test',
       });
       expect(result).toEqual([
@@ -305,7 +296,7 @@ describe('EventSearchRepository', () => {
     });
 
     it('should return empty array', async () => {
-      const result = await eventSearchRepositoryWithIndex.findTopIdsWithScore({
+      const result = await eventSearchRepositoryWithIndex.findTopIds({
         search: 'test',
         limit: 0,
       });
@@ -315,13 +306,17 @@ describe('EventSearchRepository', () => {
 
   describe('add', () => {
     it('should not add documents if no index', async () => {
-      await eventSearchRepositoryWithoutIndex.add(REGULAR_EVENT);
-      expect(mockAddDocuments).not.toBeCalled();
+      await eventSearchRepositoryWithoutIndex.add(
+        EventEntity.fromEvent(regularEvent),
+      );
+      expect(mockAddDocuments).not.toHaveBeenCalled();
     });
 
     it('should add documents if has index', async () => {
-      await eventSearchRepositoryWithIndex.add(REGULAR_EVENT);
-      expect(mockAddDocuments).toBeCalledWith([REGULAR_EVENT_DOCUMENT]);
+      await eventSearchRepositoryWithIndex.add(
+        EventEntity.fromEvent(regularEvent),
+      );
+      expect(mockAddDocuments).toHaveBeenCalledWith([REGULAR_EVENT_DOCUMENT]);
     });
 
     it('should throw error if addDocuments failed', async () => {
@@ -329,50 +324,29 @@ describe('EventSearchRepository', () => {
       jest
         .spyOn(eventSearchRepositoryWithIndex['index'] as any, 'addDocuments')
         .mockRejectedValue(addDocumentsFailError);
-      await eventSearchRepositoryWithIndex.add(createTestEvent({}));
-      expect(logError).toBeCalledWith(addDocumentsFailError);
+      await eventSearchRepositoryWithIndex.add(
+        EventEntity.fromEvent(regularEvent),
+      );
+      expect(logError).toHaveBeenCalledWith(addDocumentsFailError);
     });
   });
 
   describe('deleteMany', () => {
     it('should not delete documents if no index', async () => {
       await eventSearchRepositoryWithoutIndex.deleteMany(['id']);
-      expect(mockDeleteDocuments).not.toBeCalled();
+      expect(mockDeleteDocuments).not.toHaveBeenCalled();
     });
 
     it('should delete documents if has index', async () => {
       await eventSearchRepositoryWithIndex.deleteMany(['id']);
-      expect(mockDeleteDocuments).toBeCalledWith(['id']);
+      expect(mockDeleteDocuments).toHaveBeenCalledWith(['id']);
     });
 
     it('should throw error if deleteDocuments failed', async () => {
       const deleteDocumentsFailError = new Error('deleteDocuments fail');
       mockDeleteDocuments.mockRejectedValue(deleteDocumentsFailError);
       await eventSearchRepositoryWithIndex.deleteMany(['throwError']);
-      expect(logError).toBeCalledWith(deleteDocumentsFailError);
-    });
-  });
-
-  describe('replace', () => {
-    it('should do nothing if no index', async () => {
-      await eventSearchRepositoryWithoutIndex.replace(REGULAR_EVENT);
-      expect(mockDeleteDocuments).not.toBeCalled();
-      expect(mockAddDocuments).not.toBeCalled();
-    });
-
-    it('should delete and add documents if has index', async () => {
-      await eventSearchRepositoryWithIndex.replace(
-        REPLACEABLE_EVENT,
-        'oldEventId',
-      );
-      expect(mockDeleteDocuments).toBeCalledWith(['oldEventId']);
-      expect(mockAddDocuments).toBeCalledWith([REPLACEABLE_EVENT_DOCUMENT]);
-    });
-
-    it('should not delete if no oldEventId', async () => {
-      await eventSearchRepositoryWithIndex.replace(REPLACEABLE_EVENT);
-      expect(mockDeleteDocuments).not.toBeCalled();
-      expect(mockAddDocuments).toBeCalledWith([REPLACEABLE_EVENT_DOCUMENT]);
+      expect(logError).toHaveBeenCalledWith(deleteDocumentsFailError);
     });
   });
 });

@@ -1,12 +1,12 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Event, Filter, getTimestampInSeconds } from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
-import { Event, SearchFilter } from '../entities';
+import { EventEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
-import { getTimestampInSeconds } from '../utils';
 
 type EventDocument = {
   id: string;
@@ -21,20 +21,6 @@ type EventDocument = {
   expiredAt: number | null;
   dTagValue: string | null;
 };
-
-type EventSearchRepositoryFilter = Pick<
-  SearchFilter,
-  | 'ids'
-  | 'authors'
-  | 'dTagValues'
-  | 'genericTagsCollection'
-  | 'kinds'
-  | 'limit'
-  | 'search'
-  | 'searchOptions'
-  | 'since'
-  | 'until'
->;
 
 @Injectable()
 export class EventSearchRepository implements OnApplicationBootstrap {
@@ -84,7 +70,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     });
   }
 
-  async find(filter: EventSearchRepositoryFilter): Promise<Event[]> {
+  async find(filter: Filter): Promise<Event[]> {
     if (!this.index) return [];
 
     const limit = this.getLimitFrom(filter);
@@ -101,9 +87,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     return result.hits.map(this.toEvent);
   }
 
-  async findTopIdsWithScore(
-    filter: EventSearchRepositoryFilter,
-  ): Promise<TEventIdWithScore[]> {
+  async findTopIds(filter: Filter): Promise<TEventIdWithScore[]> {
     if (!this.index) return [];
 
     const limit = this.getLimitFrom(filter);
@@ -125,7 +109,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }));
   }
 
-  async add(event: Event) {
+  async add(event: EventEntity) {
     if (!this.index || !this.syncEventKinds.includes(event.kind)) return;
 
     try {
@@ -145,16 +129,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
-  async replace(event: Event, oldEventId?: string) {
-    if (!this.index) return;
-
-    await Promise.all([
-      this.add(event),
-      oldEventId ? this.deleteMany([oldEventId]) : undefined,
-    ]);
-  }
-
-  private buildSearchFilters(filter: EventSearchRepositoryFilter): string[] {
+  private buildSearchFilters(filter: Filter): string[] {
     const searchFilters: string[] = [
       `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
     ];
@@ -179,27 +154,25 @@ export class EventSearchRepository implements OnApplicationBootstrap {
       searchFilters.push(`author IN [${filter.authors.join(', ')}]`);
     }
 
-    if (filter.genericTagsCollection?.length) {
-      filter.genericTagsCollection.forEach((genericTags) => {
+    const genericTagsCollection = this.extractGenericTagsCollectionFrom(filter);
+    if (genericTagsCollection.length) {
+      genericTagsCollection.forEach((genericTags) => {
         searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
       });
     }
 
-    if (filter.dTagValues?.length) {
-      searchFilters.push(`dTagValue IN [${filter.dTagValues.join(', ')}]`);
+    if (filter['#d']?.length) {
+      searchFilters.push(`dTagValue IN [${filter['#d'].join(', ')}]`);
     }
 
     return searchFilters;
   }
 
-  private getLimitFrom(
-    filter: EventSearchRepositoryFilter,
-    defaultLimit = 100,
-  ) {
+  private getLimitFrom(filter: Filter, defaultLimit = 100) {
     return Math.min(isNil(filter.limit) ? defaultLimit : filter.limit, 1000);
   }
 
-  private toEventDocument(event: Event): EventDocument {
+  private toEventDocument(event: EventEntity): EventDocument {
     return {
       id: event.id,
       pubkey: event.pubkey,
@@ -216,19 +189,23 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   }
 
   private toEvent(eventDocument: EventDocument): Event {
-    const event = new Event();
-    event.id = eventDocument.id;
-    event.pubkey = eventDocument.pubkey;
-    event.createdAt = eventDocument.createdAt;
-    event.kind = eventDocument.kind;
-    event.tags = eventDocument.tags;
-    event.content = eventDocument.content;
-    event.sig = eventDocument.sig;
-    event.expiredAt = eventDocument.expiredAt;
-    event.genericTags = eventDocument.genericTags;
-    event.dTagValue = eventDocument.dTagValue;
-    event.author = eventDocument.author;
+    return {
+      id: eventDocument.id,
+      pubkey: eventDocument.pubkey,
+      created_at: eventDocument.createdAt,
+      kind: eventDocument.kind,
+      tags: eventDocument.tags,
+      content: eventDocument.content,
+      sig: eventDocument.sig,
+    };
+  }
 
-    return event;
+  private extractGenericTagsCollectionFrom(filter: Filter): string[][] {
+    return Object.keys(filter)
+      .filter((key) => key.startsWith('#') && key !== '#d')
+      .map((key) => {
+        const tagName = key[1];
+        return filter[key].map((v: string) => `${tagName}:${v}`);
+      });
   }
 }
