@@ -86,9 +86,11 @@ Run container
 
 ## Architecture
 
-![structure light](https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png#gh-light-mode-only)
-
-![structure dark](https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-dark.png#gh-dark-mode-only)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png">
+  <img alt="Hashnode logo" src="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png" height="600">
+</picture>
 
 ## Donate
 
