@@ -13,7 +13,7 @@ import { Validator } from '@nostr-relay/validator';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { WebSocket } from 'ws';
 import { ZodError } from 'zod';
-import { fromZodError } from 'zod-validation-error';
+import { ValidationError, fromZodError } from 'zod-validation-error';
 import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
 import { Config } from '../config';
@@ -35,11 +35,11 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly messageHandlingConfig: MessageHandlingConfig;
 
   constructor(
+    @InjectPinoLogger(NostrGateway.name)
+    private readonly logger: PinoLogger,
     private readonly eventService: EventService,
     eventRepository: EventRepository,
     configService: ConfigService<Config, true>,
-    @InjectPinoLogger()
-    logger: PinoLogger,
   ) {
     const domain = configService.get('domain');
     const limitConfig = configService.get('limit', { infer: true });
@@ -71,11 +71,19 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: WebSocket,
     @MessageBody() data: Array<any>,
   ) {
-    const msg = await this.validator.validateIncomingMessage(data);
-    if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
-      return;
+    try {
+      const msg = await this.validator.validateIncomingMessage(data);
+      if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
+        return;
+      }
+      await this.relay.handleMessage(client, msg);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return createOutgoingNoticeMessage(error.message);
+      }
+      this.logger.error(error);
+      return createOutgoingNoticeMessage((error as Error).message);
     }
-    await this.relay.handleMessage(client, msg);
   }
 
   @SubscribeMessage('TOP')
@@ -106,6 +114,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
         return createOutgoingNoticeMessage(formattedError.message);
       }
+      this.logger.error(error);
       return createOutgoingNoticeMessage((error as Error).message);
     }
   }

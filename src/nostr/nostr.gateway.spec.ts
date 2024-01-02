@@ -5,6 +5,7 @@ import { WebSocket } from 'ws';
 import { NostrGateway } from './nostr.gateway';
 import { EventRepository } from './repositories';
 import { EventService } from './services/event.service';
+import { ValidationError } from 'zod-validation-error';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
@@ -12,10 +13,10 @@ describe('NostrGateway', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     nostrGateway = new NostrGateway(
+      createMock<PinoLogger>(),
       createMock<EventService>(),
       createMock<EventRepository>(),
       createMock<ConfigService>(),
-      createMock<PinoLogger>(),
     );
   });
 
@@ -79,6 +80,25 @@ describe('NostrGateway', () => {
         .mockImplementation();
       await nostrGateway.handleMessage(mockClient, mockData);
       expect(nostrRelayHandleMessageSpy).not.toHaveBeenCalled();
+    });
+
+    it('should return notice if message is invalid', async () => {
+      const mockClient = {} as WebSocket;
+      const mockData: any = ['test'];
+      (nostrGateway as any).messageHandlingConfig = {
+        event: true,
+      };
+      jest
+        .spyOn(nostrGateway['validator'], 'validateIncomingMessage')
+        .mockRejectedValue(new ValidationError('test'));
+      const result = await nostrGateway.handleMessage(mockClient, mockData);
+      expect(result).toEqual(['NOTICE', expect.any(String)]);
+
+      jest
+        .spyOn(nostrGateway['validator'], 'validateIncomingMessage')
+        .mockRejectedValue(new Error('test'));
+      const result2 = await nostrGateway.handleMessage(mockClient, mockData);
+      expect(result2).toEqual(['NOTICE', expect.any(String)]);
     });
   });
 
