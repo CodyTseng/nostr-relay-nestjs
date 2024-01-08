@@ -38,7 +38,7 @@ describe('EventRepository', () => {
             find: jest.fn(),
             findTopIds: jest.fn(),
             add: jest.fn(),
-            deleteMany: jest.fn(),
+            deleteByReplaceableEvent: jest.fn(),
           },
         },
       ],
@@ -85,6 +85,10 @@ describe('EventRepository', () => {
       const eventA = createEvent({
         kind: EventKind.SET_METADATA,
         content: 'a',
+        tags: [
+          ['a', 'test'],
+          ['b', 'test'],
+        ],
       });
       await eventRepository.upsert(eventA);
 
@@ -100,6 +104,10 @@ describe('EventRepository', () => {
         id: eventA.id,
       });
       expect(eventAEntity).toBeNull();
+      const eventAGenericTagEntities = await rawGenericTagRepository.findBy({
+        eventId: eventA.id,
+      });
+      expect(eventAGenericTagEntities).toEqual([]);
       const eventBEntity = await rawEventRepository.findOneBy({
         id: eventB.id,
       });

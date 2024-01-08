@@ -331,21 +331,31 @@ describe('EventSearchRepository', () => {
     });
   });
 
-  describe('deleteMany', () => {
+  describe('deleteByReplaceableEvent', () => {
     it('should not delete documents if no index', async () => {
-      await eventSearchRepositoryWithoutIndex.deleteMany(['id']);
+      await eventSearchRepositoryWithoutIndex.deleteByReplaceableEvent(
+        {} as EventEntity,
+      );
       expect(mockDeleteDocuments).not.toHaveBeenCalled();
     });
 
     it('should delete documents if has index', async () => {
-      await eventSearchRepositoryWithIndex.deleteMany(['id']);
-      expect(mockDeleteDocuments).toHaveBeenCalledWith(['id']);
+      await eventSearchRepositoryWithIndex.deleteByReplaceableEvent({
+        author: 'author',
+        kind: 0,
+        dTagValue: 'dTagValue',
+      } as EventEntity);
+      expect(mockDeleteDocuments).toHaveBeenCalledWith({
+        filter: [`author=author`, `kind=0`, `dTagValue=dTagValue`],
+      });
     });
 
     it('should throw error if deleteDocuments failed', async () => {
       const deleteDocumentsFailError = new Error('deleteDocuments fail');
       mockDeleteDocuments.mockRejectedValue(deleteDocumentsFailError);
-      await eventSearchRepositoryWithIndex.deleteMany(['throwError']);
+      await eventSearchRepositoryWithIndex.deleteByReplaceableEvent(
+        {} as EventEntity,
+      );
       expect(logError).toHaveBeenCalledWith(deleteDocumentsFailError);
     });
   });

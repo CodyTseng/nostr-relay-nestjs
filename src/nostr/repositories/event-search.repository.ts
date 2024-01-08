@@ -119,11 +119,17 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }
   }
 
-  async deleteMany(eventIds: string[]) {
+  async deleteByReplaceableEvent(event: EventEntity) {
     if (!this.index) return;
 
     try {
-      await this.index.deleteDocuments(eventIds);
+      await this.index.deleteDocuments({
+        filter: [
+          `author=${event.author}`,
+          `kind=${event.kind}`,
+          `dTagValue=${event.dTagValue}`,
+        ],
+      });
     } catch (error) {
       this.logger.error(error);
     }

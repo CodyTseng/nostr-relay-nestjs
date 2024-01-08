@@ -32,37 +32,58 @@ export class EventRepository extends IEventRepository {
 
   async upsert(event: Event): Promise<EventRepositoryUpsertResult> {
     const eventEntity = EventEntity.fromEvent(event);
-    let oldEventEntity: EventEntity | undefined | null;
-    let isDuplicate = false;
     try {
       await this.dataSource.transaction(async (manager) => {
-        if (
-          [EventType.PARAMETERIZED_REPLACEABLE, EventType.REPLACEABLE].includes(
-            eventEntity.type,
-          )
-        ) {
-          oldEventEntity = await manager.findOneBy(EventEntity, {
-            kind: eventEntity.kind,
-            author: eventEntity.author,
-            dTagValue: eventEntity.dTagValue!,
-          });
+        await manager.query(
+          `
+            INSERT INTO events (
+                id,
+                pubkey,
+                author,
+                created_at,
+                kind,
+                tags,
+                content,
+                sig,
+                expired_at,
+                d_tag_value,
+                generic_tags,
+                create_date
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+            ON CONFLICT (author, kind, d_tag_value)
+            DO UPDATE SET
+                id = EXCLUDED.id,
+                pubkey = EXCLUDED.pubkey,
+                created_at = EXCLUDED.created_at,
+                tags = EXCLUDED.tags,
+                content = EXCLUDED.content,
+                sig = EXCLUDED.sig,
+                expired_at = EXCLUDED.expired_at,
+                generic_tags = EXCLUDED.generic_tags,
+                create_date = EXCLUDED.create_date
+            WHERE
+                events.created_at < EXCLUDED.created_at
+                OR (
+                    events.created_at = EXCLUDED.created_at
+                    AND events.id > EXCLUDED.id
+                )
+        `,
+          [
+            eventEntity.id,
+            eventEntity.pubkey,
+            eventEntity.author,
+            eventEntity.createdAt,
+            eventEntity.kind,
+            JSON.stringify(eventEntity.tags),
+            eventEntity.content,
+            eventEntity.sig,
+            eventEntity.expiredAt,
+            eventEntity.dTagValue,
+            `{${eventEntity.genericTags.join(',')}}`,
+          ],
+        );
 
-          if (
-            oldEventEntity &&
-            (oldEventEntity.createdAt > eventEntity.createdAt ||
-              (oldEventEntity.createdAt === eventEntity.createdAt &&
-                oldEventEntity.id <= eventEntity.id))
-          ) {
-            isDuplicate = true;
-            return;
-          }
-
-          if (oldEventEntity) {
-            await manager.delete(EventEntity, { id: oldEventEntity.id });
-          }
-        }
-
-        await manager.insert(EventEntity, eventEntity);
         await manager.insert(
           GenericTagEntity,
           eventEntity.genericTags.map((tag) => ({
@@ -86,12 +107,21 @@ export class EventRepository extends IEventRepository {
       throw error;
     }
 
-    if (isDuplicate) {
-      return { isDuplicate: true };
-    }
+    if (
+      [EventType.REPLACEABLE, EventType.PARAMETERIZED_REPLACEABLE].includes(
+        eventEntity.type,
+      )
+    ) {
+      const dbEvent = await this.eventRepository.findOneBy({
+        author: eventEntity.author,
+        kind: eventEntity.kind,
+        dTagValue: eventEntity.dTagValue!,
+      });
+      if (dbEvent && dbEvent.id !== eventEntity.id) {
+        return { isDuplicate: true };
+      }
 
-    if (oldEventEntity) {
-      await this.eventSearchRepository.deleteMany([oldEventEntity.id]);
+      await this.eventSearchRepository.deleteByReplaceableEvent(eventEntity);
     }
 
     await this.eventSearchRepository.add(eventEntity);
