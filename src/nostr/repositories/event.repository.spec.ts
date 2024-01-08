@@ -81,7 +81,7 @@ describe('EventRepository', () => {
       ]);
     });
 
-    it.only('should update an existing event', async () => {
+    it('should update an existing event', async () => {
       const eventA = createEvent({
         kind: EventKind.SET_METADATA,
         content: 'a',
