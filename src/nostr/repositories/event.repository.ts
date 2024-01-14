@@ -136,12 +136,13 @@ export class EventRepository extends IEventRepository {
       return this.eventSearchRepository.find(filter);
     }
 
-    if (this.shouldQueryFromGenericTags(filter)) {
-      const genericTags = await this.createGenericTagsQueryBuilder(filter)
+    const genericTags = this.extractGenericTagsCollectionFrom(filter);
+    if (!filter.ids?.length && genericTags.length) {
+      const rows = await this.createGenericTagsQueryBuilder(filter, genericTags)
         .take(limit)
         .orderBy('genericTag.createdAt', 'DESC')
         .getMany();
-      return genericTags.map((genericTag) => genericTag.event.toEvent());
+      return rows.map((genericTag) => genericTag.event.toEvent());
     }
 
     const eventEntities = await this.createQueryBuilder(filter)
@@ -161,15 +162,17 @@ export class EventRepository extends IEventRepository {
 
     let partialEvents: Pick<EventEntity, 'id' | 'createdAt'>[] = [];
 
-    if (this.shouldQueryFromGenericTags(filter)) {
-      const genericTags = await this.createGenericTagsQueryBuilder(filter, [
-        'event.id',
-        'event.createdAtStr',
-      ])
+    const genericTags = this.extractGenericTagsCollectionFrom(filter);
+    if (!filter.ids?.length && genericTags.length) {
+      const rows = await this.createGenericTagsQueryBuilder(
+        filter,
+        genericTags,
+        ['event.id', 'event.createdAtStr'],
+      )
         .take(limit)
         .orderBy('genericTag.createdAt', 'DESC')
         .getMany();
-      partialEvents = genericTags.map((genericTag) => genericTag.event);
+      partialEvents = rows.map((genericTag) => genericTag.event);
     } else {
       partialEvents = await this.createQueryBuilder(filter)
         .select(['event.id', 'event.createdAtStr'])
@@ -218,12 +221,6 @@ export class EventRepository extends IEventRepository {
       });
     }
 
-    if (filter['#d']?.length) {
-      queryBuilder.andWhere('event.d_tag_value IN (:...dTagValues)', {
-        dTagValues: filter['#d'],
-      });
-    }
-
     const genericTagsCollection = this.extractGenericTagsCollectionFrom(filter);
     if (genericTagsCollection.length) {
       genericTagsCollection.forEach((genericTags) => {
@@ -246,18 +243,13 @@ export class EventRepository extends IEventRepository {
     return queryBuilder;
   }
 
-  private shouldQueryFromGenericTags(filter: Filter): boolean {
-    return (
-      !!this.extractGenericTagsCollectionFrom(filter).length &&
-      !filter.ids?.length &&
-      !filter['#d']?.length
-    );
-  }
-
-  private createGenericTagsQueryBuilder(filter: Filter, selection?: string[]) {
+  private createGenericTagsQueryBuilder(
+    filter: Filter,
+    genericTags: string[][],
+    selection?: string[],
+  ) {
     // TODO: select more appropriate generic tags
-    const [mainGenericTagsFilter, ...restGenericTagsCollection] =
-      this.extractGenericTagsCollectionFrom(filter);
+    const [mainGenericTagsFilter, ...restGenericTagsCollection] = genericTags;
 
     const queryBuilder = this.genericTagRepository
       .createQueryBuilder('genericTag')
@@ -337,6 +329,7 @@ export class EventRepository extends IEventRepository {
       .map((key) => {
         const tagName = key[1];
         return filter[key].map((v: string) => toGenericTag(tagName, v));
-      });
+      })
+      .sort((a, b) => a.length - b.length);
   }
 }
