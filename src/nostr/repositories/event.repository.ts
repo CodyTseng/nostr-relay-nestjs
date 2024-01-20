@@ -51,7 +51,7 @@ export class EventRepository extends IEventRepository {
                 create_date
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-            ON CONFLICT (author, kind, d_tag_value)
+            ON CONFLICT (author, kind, d_tag_value) WHERE d_tag_value IS NOT NULL
             DO UPDATE SET
                 id = EXCLUDED.id,
                 pubkey = EXCLUDED.pubkey,

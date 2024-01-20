@@ -11,7 +11,7 @@ import { EventEntity } from './event.entity';
 @Entity({ name: 'generic_tags' })
 @Index('g_tag_created_at_desc_event_id_idx', { synchronize: false })
 @Index('g_tag_kind_created_at_desc_event_id_idx', { synchronize: false })
-@Index('g_tag_kind_author_created_at_desc_event_id_idx', { synchronize: false })
+@Index('g_author_tag_kind_created_at_desc_event_id_idx', { synchronize: false })
 @Index('g_event_id_tag_idx', ['eventId', 'tag'], { unique: true })
 export class GenericTagEntity {
   @PrimaryGeneratedColumn()

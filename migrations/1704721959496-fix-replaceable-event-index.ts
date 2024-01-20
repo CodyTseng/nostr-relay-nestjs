@@ -13,7 +13,7 @@ export class FixReplaceableEventIndex1704721959496
       `ALTER TABLE "generic_tags" DROP CONSTRAINT "FK_5c845879328f9e991bbb43ef96a"`,
     );
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "e_author_kind_d_tag_value_idx" ON "events" ("author", "kind", "d_tag_value") `,
+      `CREATE UNIQUE INDEX "e_author_kind_d_tag_value_idx" ON "events" ("author", "kind", "d_tag_value") WHERE "d_tag_value" IS NOT NULL`,
     );
     await queryRunner.query(
       `ALTER TABLE "generic_tags" ADD CONSTRAINT "FK_5c845879328f9e991bbb43ef96a" FOREIGN KEY ("event_id") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE CASCADE`,

@@ -12,10 +12,7 @@ import { isGenericTagName, toGenericTag } from '../utils';
 @Entity({ name: 'events' })
 @Index('e_author_kind_created_at_idx', ['author', 'kind', 'createdAtStr'])
 @Index('e_author_created_at_idx', ['author', 'createdAtStr'])
-@Index('e_author_kind_d_tag_value_idx', ['author', 'kind', 'dTagValue'], {
-  sparse: true,
-  unique: true,
-})
+@Index('e_author_kind_d_tag_value_idx', { synchronize: false })
 @Index('e_kind_created_at_idx', ['kind', 'createdAtStr'])
 @Index('e_created_at_idx', ['createdAtStr'])
 export class EventEntity {

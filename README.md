@@ -8,6 +8,8 @@ A Nostr relay with a clear architecture and high test coverage
 
 If you'd like to help me test the reliability of this relay implementation, you can add wss://nostr-relay.app to your relay list (it's free) 💜⚡️
 
+> **Note:** Please use the released version of this code. The latest version may contain changes to migration scripts and other elements that are not finalized.
+
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
 
 ## Features
