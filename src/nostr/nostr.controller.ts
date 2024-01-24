@@ -83,7 +83,6 @@ export class NostrController {
     if (req.headers.accept === 'application/nostr+json') {
       return res
         .setHeader('content-type', 'application/nostr+json')
-        .setHeader('access-control-allow-origin', '*')
         .status(HttpStatus.OK)
         .send(this.relayInfoDoc);
     }
