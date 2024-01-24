@@ -13,6 +13,12 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   app.use(helmet());
   app.useWebSocketAdapter(new NostrWsAdapter(app));
+  app.enableCors();
+  app.use((_req, res, next) => {
+    res.setHeader('cross-origin-opener-policy', 'cross-origin');
+    res.setHeader('cross-origin-resource-policy', 'cross-origin');
+    next();
+  });
 
   app.use('/favicon.ico', ExpressStatic('./resources/favicon.ico'));
 
