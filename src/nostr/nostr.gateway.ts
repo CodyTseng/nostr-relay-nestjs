@@ -22,6 +22,7 @@ import { EventRepository } from './repositories';
 import { SubscriptionIdSchema } from './schemas';
 import { EventService } from './services/event.service';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 128 KB
@@ -38,6 +39,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @InjectPinoLogger(NostrGateway.name)
     private readonly logger: PinoLogger,
     private readonly eventService: EventService,
+    private readonly nostrRelayLogger: NostrRelayLogger,
     eventRepository: EventRepository,
     configService: ConfigService<Config, true>,
   ) {
@@ -49,9 +51,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
     this.relay = new NostrRelay(eventRepository, {
       domain,
-      logger: {
-        error: (context, error) => logger.error({ err: error, context }),
-      },
+      logger: nostrRelayLogger,
       ...limitConfig,
       ...cacheConfig,
     });

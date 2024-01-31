@@ -6,6 +6,7 @@ import { NostrGateway } from './nostr.gateway';
 import { EventRepository } from './repositories';
 import { EventService } from './services/event.service';
 import { ValidationError } from 'zod-validation-error';
+import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
@@ -15,6 +16,7 @@ describe('NostrGateway', () => {
     nostrGateway = new NostrGateway(
       createMock<PinoLogger>(),
       createMock<EventService>(),
+      createMock<NostrRelayLogger>(),
       createMock<EventRepository>(),
       createMock<ConfigService>(),
     );
