@@ -7,6 +7,7 @@ import { NostrGateway } from './nostr.gateway';
 import { EventRepository } from './repositories';
 import { EventSearchRepository } from './repositories/event-search.repository';
 import { EventService } from './services/event.service';
+import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EventEntity, GenericTagEntity])],
@@ -16,6 +17,7 @@ import { EventService } from './services/event.service';
     EventSearchRepository,
     NostrGateway,
     EventService,
+    NostrRelayLogger,
   ],
 })
 export class NostrModule {}
