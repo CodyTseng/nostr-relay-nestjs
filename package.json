@@ -48,7 +48,7 @@
     "pino-http": "^9.0.0",
     "reflect-metadata": "^0.1.14",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.19",
+    "typeorm": "^0.3.20",
     "zod": "^3.22.4",
     "zod-validation-error": "^3.0.0"
   },
