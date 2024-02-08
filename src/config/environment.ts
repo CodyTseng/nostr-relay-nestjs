@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 export const EnvironmentSchema = z.object({
-  DOMAIN: z.string(),
-
   DATABASE_URL: z.string(),
 
   /*==== optional ====*/
+  DOMAIN: z.string().optional(),
+
   PORT: z
     .preprocess((port: string) => parseInt(port), z.number().positive())
     .optional(),
