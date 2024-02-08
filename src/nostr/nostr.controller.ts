@@ -43,7 +43,12 @@ export class NostrController {
   constructor(configService: ConfigService<Config, true>) {
     const relayInfo = configService.get('relayInfo', { infer: true });
     const limitConfig = configService.get('limit', { infer: true });
-    const supported_nips = [1, 2, 4, 11, 13, 22, 26, 28, 40, 42];
+    const supported_nips = [1, 2, 4, 11, 13, 22, 26, 28, 40];
+
+    const domain = configService.get('domain', { infer: true });
+    if (domain) {
+      supported_nips.push(42);
+    }
 
     const meiliSearchConfig = configService.get('meiliSearch', { infer: true });
     if (meiliSearchConfig.apiKey && meiliSearchConfig.host) {
