@@ -59,6 +59,28 @@ export const EnvironmentSchema = z.object({
   MAX_SUBSCRIPTIONS_PER_CLIENT: z
     .preprocess((max: string) => parseInt(max), z.number().nonnegative())
     .optional(),
+  BLACKLIST: z
+    .preprocess(
+      (str: string) => str.split(','),
+      z.array(
+        z
+          .string()
+          .regex(/^[0-9a-f]+$/)
+          .length(64),
+      ),
+    )
+    .optional(),
+  WHITELIST: z
+    .preprocess(
+      (str: string) => str.split(','),
+      z.array(
+        z
+          .string()
+          .regex(/^[0-9a-f]+$/)
+          .length(64),
+      ),
+    )
+    .optional(),
 
   THROTTLER_LIMIT: z
     .preprocess((limit: string) => parseInt(limit), z.number().nonnegative())

@@ -19,6 +19,10 @@ describe('config', () => {
         CREATED_AT_UPPER_LIMIT: '60',
         CREATED_AT_LOWER_LIMIT: '60',
         MIN_POW_DIFFICULTY: '16',
+        BLACKLIST:
+          '8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883,82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2',
+        WHITELIST:
+          '8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883,82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2',
         MAX_SUBSCRIPTIONS_PER_CLIENT: '100',
         THROTTLER_LIMIT: '100',
         THROTTLER_TTL: '1',
@@ -41,6 +45,14 @@ describe('config', () => {
       CREATED_AT_UPPER_LIMIT: 60,
       CREATED_AT_LOWER_LIMIT: 60,
       MIN_POW_DIFFICULTY: 16,
+      BLACKLIST: [
+        '8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883',
+        '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2',
+      ],
+      WHITELIST: [
+        '8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883',
+        '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2',
+      ],
       MAX_SUBSCRIPTIONS_PER_CLIENT: 100,
       THROTTLER_LIMIT: 100,
       THROTTLER_TTL: 1,

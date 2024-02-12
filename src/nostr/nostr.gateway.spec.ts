@@ -7,6 +7,7 @@ import { EventRepository } from './repositories';
 import { EventService } from './services/event.service';
 import { ValidationError } from 'zod-validation-error';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
+import { AccessControlPlugin } from './plugins';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
@@ -19,6 +20,9 @@ describe('NostrGateway', () => {
       createMock<NostrRelayLogger>(),
       createMock<EventRepository>(),
       createMock<ConfigService>(),
+      createMock<AccessControlPlugin>({
+        beforeEventHandle: jest.fn().mockReturnValue({ canContinue: true }),
+      }),
     );
   });
 

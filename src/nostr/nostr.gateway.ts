@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { NostrRelay, createOutgoingNoticeMessage } from '@nostr-relay/core';
 import { Validator } from '@nostr-relay/validator';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { WebSocket } from 'ws';
 import { ZodError } from 'zod';
@@ -18,14 +19,14 @@ import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
 import { Config } from '../config';
 import { LoggingInterceptor } from './interceptors';
+import { AccessControlPlugin } from './plugins';
 import { EventRepository } from './repositories';
 import { SubscriptionIdSchema } from './schemas';
 import { EventService } from './services/event.service';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 
 @WebSocketGateway({
-  maxPayload: 256 * 1024, // 128 KB
+  maxPayload: 256 * 1024, // 256KB
 })
 @UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
@@ -39,9 +40,10 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @InjectPinoLogger(NostrGateway.name)
     private readonly logger: PinoLogger,
     private readonly eventService: EventService,
-    private readonly nostrRelayLogger: NostrRelayLogger,
+    nostrRelayLogger: NostrRelayLogger,
     eventRepository: EventRepository,
     configService: ConfigService<Config, true>,
+    accessControlPlugin: AccessControlPlugin,
   ) {
     const domain = configService.get('domain');
     const limitConfig = configService.get('limit', { infer: true });
@@ -56,6 +58,8 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ...cacheConfig,
     });
     this.validator = new Validator();
+
+    this.relay.register(accessControlPlugin);
   }
 
   handleConnection(client: WebSocket) {
