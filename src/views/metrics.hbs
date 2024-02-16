@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Metrics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 10px;
+            padding: 0;
+        }
+        table {
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Server Metrics</h1>
+
+    <p>Startup Time: {{startupTime}}</p>
+
+    <h2>Current Connection Count: {{connectionCount}}</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Request Type</th>
+                <th>P50</th>
+                <th>P75</th>
+                <th>P90</th>
+                <th>P95</th>
+                <th>P99</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>REQ</td>
+                {{#each reqProcessingTime}}
+                  <td>{{this}} ms</td>
+                {{/each}}
+            </tr>
+            <tr>
+                <td>EVENT</td>
+                {{#each eventProcessingTime}}
+                  <td>{{this}} ms</td>
+                {{/each}}
+            </tr>
+            <tr>
+                <td>AUTH</td>
+                {{#each authProcessingTime}}
+                  <td>{{this}} ms</td>
+                {{/each}}
+            </tr>
+            <tr>
+                <td>CLOSE</td>
+                {{#each closeProcessingTime}}
+                  <td>{{this}} ms</td>
+                {{/each}}
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

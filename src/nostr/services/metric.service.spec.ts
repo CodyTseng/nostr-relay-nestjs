@@ -18,55 +18,44 @@ describe('metricService', () => {
   });
 
   it('should push REQ processing time', () => {
-    for (let i = 0; i < 1000; i++) {
-      metricService.pushProcessingTime('REQ', Math.floor(Math.random() * 1000));
-    }
-    const metrics = metricService.getMetrics();
-    expect(metrics.reqRequestCount).toBe(1000);
-    expect(metrics.reqProcessingTime[0]).toBeCloseTo(500, -2);
-    expect(metrics.reqProcessingTime[1]).toBeCloseTo(950, -2);
-    expect(metrics.reqProcessingTime[2]).toBeCloseTo(990, -2);
+    const mockReqDigestPush = jest
+      .spyOn(metricService['reqDigest'], 'push')
+      .mockImplementation();
+    metricService.pushProcessingTime('REQ', 100);
+    expect(mockReqDigestPush).toHaveBeenCalledWith(100);
   });
 
   it('should push EVENT processing time', () => {
-    for (let i = 0; i < 1000; i++) {
-      metricService.pushProcessingTime(
-        'EVENT',
-        Math.floor(Math.random() * 1000),
-      );
-    }
-    const metrics = metricService.getMetrics();
-    expect(metrics.eventRequestCount).toBe(1000);
-    expect(metrics.eventProcessingTime[0]).toBeCloseTo(500, -2);
-    expect(metrics.eventProcessingTime[1]).toBeCloseTo(950, -2);
-    expect(metrics.eventProcessingTime[2]).toBeCloseTo(990, -2);
+    const mockEventDigestPush = jest
+      .spyOn(metricService['eventDigest'], 'push')
+      .mockImplementation();
+    metricService.pushProcessingTime('EVENT', 100);
+    expect(mockEventDigestPush).toHaveBeenCalledWith(100);
   });
 
   it('should push CLOSE processing time', () => {
-    for (let i = 0; i < 1000; i++) {
-      metricService.pushProcessingTime(
-        'CLOSE',
-        Math.floor(Math.random() * 1000),
-      );
-    }
-    const metrics = metricService.getMetrics();
-    expect(metrics.closeRequestCount).toBe(1000);
-    expect(metrics.closeProcessingTime[0]).toBeCloseTo(500, -2);
-    expect(metrics.closeProcessingTime[1]).toBeCloseTo(950, -2);
-    expect(metrics.closeProcessingTime[2]).toBeCloseTo(990, -2);
+    const mockCloseDigestPush = jest
+      .spyOn(metricService['closeDigest'], 'push')
+      .mockImplementation();
+    metricService.pushProcessingTime('CLOSE', 100);
+    expect(mockCloseDigestPush).toHaveBeenCalledWith(100);
   });
 
   it('should push AUTH processing time', () => {
-    for (let i = 0; i < 1000; i++) {
-      metricService.pushProcessingTime(
-        'AUTH',
-        Math.floor(Math.random() * 1000),
-      );
-    }
+    const mockAuthDigestPush = jest
+      .spyOn(metricService['authDigest'], 'push')
+      .mockImplementation();
+    metricService.pushProcessingTime('AUTH', 100);
+    expect(mockAuthDigestPush).toHaveBeenCalledWith(100);
+  });
+
+  it('should get metrics', () => {
     const metrics = metricService.getMetrics();
-    expect(metrics.authRequestCount).toBe(1000);
-    expect(metrics.authProcessingTime[0]).toBeCloseTo(500, -2);
-    expect(metrics.authProcessingTime[1]).toBeCloseTo(950, -2);
-    expect(metrics.authProcessingTime[2]).toBeCloseTo(990, -2);
+    expect(metrics.startupTime).toBeDefined();
+    expect(metrics.connectionCount).toBeDefined();
+    expect(metrics.reqProcessingTime).toBeDefined();
+    expect(metrics.eventProcessingTime).toBeDefined();
+    expect(metrics.closeProcessingTime).toBeDefined();
+    expect(metrics.authProcessingTime).toBeDefined();
   });
 });

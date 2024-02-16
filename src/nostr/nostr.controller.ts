@@ -4,6 +4,7 @@ import {
   Header,
   HttpStatus,
   Query,
+  Render,
   Req,
   Res,
 } from '@nestjs/common';
@@ -117,8 +118,8 @@ export class NostrController {
   }
 
   @Get('metrics')
-  metrics(@Res() res: Response) {
-    const metrics = this.metricService.getMetrics();
-    return res.status(HttpStatus.OK).send(metrics);
+  @Render('metrics')
+  metrics() {
+    return this.metricService.getMetrics();
   }
 }

@@ -89,16 +89,7 @@ describe('NostrController', () => {
         get: () => ({}),
       } as any);
 
-      let responseData: any;
-      const mockRes = createMock<Response>({
-        setHeader: () => mockRes,
-        status: () => mockRes,
-        send: (data) => (responseData = data),
-      });
-
-      nostrController.metrics(mockRes);
-
-      expect(responseData).toEqual({ test: 'test' });
+      expect(nostrController.metrics()).toEqual({ test: 'test' });
     });
   });
 });
