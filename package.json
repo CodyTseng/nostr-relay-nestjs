@@ -48,6 +48,7 @@
     "pino-http": "^9.0.0",
     "reflect-metadata": "^0.1.14",
     "rxjs": "^7.8.1",
+    "tdigest": "^0.1.2",
     "typeorm": "^0.3.20",
     "zod": "^3.22.4",
     "zod-validation-error": "^3.0.0"
@@ -63,6 +64,7 @@
     "@types/node": "18.15.3",
     "@types/pg": "^8.11.0",
     "@types/supertest": "^6.0.2",
+    "@types/tdigest": "^0.1.4",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
     "eslint": "^8.56.0",

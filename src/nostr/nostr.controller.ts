@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { Config } from '../config';
+import { MetricService } from './services/metric.service';
 
 @Controller()
 export class NostrController {
@@ -40,7 +41,10 @@ export class NostrController {
     retention: [{ time: null }];
   };
 
-  constructor(configService: ConfigService<Config, true>) {
+  constructor(
+    private readonly metricService: MetricService,
+    configService: ConfigService<Config, true>,
+  ) {
     const relayInfo = configService.get('relayInfo', { infer: true });
     const limitConfig = configService.get('limit', { infer: true });
     const supported_nips = [1, 2, 4, 11, 13, 22, 26, 28, 40];
@@ -110,5 +114,11 @@ export class NostrController {
           },
         }
       : {};
+  }
+
+  @Get('metrics')
+  metrics(@Res() res: Response) {
+    const metrics = this.metricService.getMetrics();
+    return res.status(HttpStatus.OK).send(metrics);
   }
 }

@@ -2,12 +2,13 @@ import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
+import { ValidationError } from 'zod-validation-error';
 import { NostrGateway } from './nostr.gateway';
+import { AccessControlPlugin } from './plugins';
 import { EventRepository } from './repositories';
 import { EventService } from './services/event.service';
-import { ValidationError } from 'zod-validation-error';
+import { MetricService } from './services/metric.service';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
-import { AccessControlPlugin } from './plugins';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
@@ -17,6 +18,7 @@ describe('NostrGateway', () => {
     nostrGateway = new NostrGateway(
       createMock<PinoLogger>(),
       createMock<EventService>(),
+      createMock<MetricService>(),
       createMock<NostrRelayLogger>(),
       createMock<EventRepository>(),
       createMock<ConfigService>(),

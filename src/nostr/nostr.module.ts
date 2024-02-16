@@ -9,6 +9,7 @@ import { EventSearchRepository } from './repositories/event-search.repository';
 import { EventService } from './services/event.service';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 import { AccessControlPlugin } from './plugins';
+import { MetricService } from './services/metric.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EventEntity, GenericTagEntity])],
@@ -18,6 +19,7 @@ import { AccessControlPlugin } from './plugins';
     EventSearchRepository,
     NostrGateway,
     EventService,
+    MetricService,
     NostrRelayLogger,
     AccessControlPlugin,
   ],
