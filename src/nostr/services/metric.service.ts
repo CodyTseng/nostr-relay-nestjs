@@ -19,10 +19,7 @@ export class MetricService {
     this.connectionCount--;
   }
 
-  pushProcessingTime(
-    msgType: 'REQ' | 'EVENT' | 'CLOSE' | 'AUTH',
-    time: number,
-  ) {
+  pushProcessingTime(msgType: MessageType, time: number) {
     switch (msgType) {
       case MessageType.REQ:
         this.reqDigest.push(time);
