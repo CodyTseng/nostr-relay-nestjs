@@ -108,9 +108,12 @@ export class EventRepository extends IEventRepository {
     }
 
     if (
-      [EventType.REPLACEABLE, EventType.PARAMETERIZED_REPLACEABLE].includes(
-        eventEntity.type,
-      )
+      (
+        [
+          EventType.REPLACEABLE,
+          EventType.PARAMETERIZED_REPLACEABLE,
+        ] as EventType[]
+      ).includes(eventEntity.type)
     ) {
       const dbEvent = await this.eventRepository.findOneBy({
         author: eventEntity.author,
