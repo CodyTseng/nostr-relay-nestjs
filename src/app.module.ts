@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
@@ -36,6 +37,7 @@ import { NostrModule } from './nostr/nostr.module';
         configService.get('throttler', { infer: true }),
       inject: [ConfigService],
     }),
+    ScheduleModule.forRoot(),
     NostrModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: GlobalExceptionFilter }],
