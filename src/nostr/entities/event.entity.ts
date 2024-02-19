@@ -15,6 +15,7 @@ import { isGenericTagName, toGenericTag } from '../utils';
 @Index('e_author_kind_d_tag_value_idx', { synchronize: false })
 @Index('e_kind_created_at_idx', ['kind', 'createdAtStr'])
 @Index('e_created_at_idx', ['createdAtStr'])
+@Index('e_expired_at_idx', ['expiredAtStr'])
 export class EventEntity {
   @PrimaryColumn({ type: 'char', length: 64 })
   id: string;

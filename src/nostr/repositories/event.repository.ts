@@ -191,6 +191,17 @@ export class EventRepository extends IEventRepository {
     }));
   }
 
+  async deleteExpiredEvents() {
+    return await this.eventRepository
+      .createQueryBuilder()
+      .delete()
+      .from(EventEntity)
+      .where('expired_at < :expiredAt', {
+        expiredAt: getTimestampInSeconds(),
+      })
+      .execute();
+  }
+
   private createQueryBuilder(filter: Filter) {
     const queryBuilder = this.eventRepository.createQueryBuilder('event');
 
@@ -232,16 +243,6 @@ export class EventRepository extends IEventRepository {
         });
       });
     }
-
-    queryBuilder.andWhere(
-      new Brackets((subQb) => {
-        subQb
-          .where('event.expired_at IS NULL')
-          .orWhere('event.expired_at > :expiredAt', {
-            expiredAt: getTimestampInSeconds(),
-          });
-      }),
-    );
 
     return queryBuilder;
   }
@@ -308,16 +309,6 @@ export class EventRepository extends IEventRepository {
         kinds: filter.kinds,
       });
     }
-
-    queryBuilder.andWhere(
-      new Brackets((subQb) => {
-        subQb
-          .where('event.expired_at IS NULL')
-          .orWhere('event.expired_at > :expiredAt', {
-            expiredAt: getTimestampInSeconds(),
-          });
-      }),
-    );
 
     return queryBuilder;
   }
