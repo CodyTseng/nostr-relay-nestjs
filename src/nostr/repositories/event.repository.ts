@@ -9,7 +9,7 @@ import {
   getTimestampInSeconds,
 } from '@nostr-relay/common';
 import { isNil } from 'lodash';
-import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { EventEntity, GenericTagEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { toGenericTag } from '../utils';

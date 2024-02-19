@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Injectable } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { EventRepository } from '../repositories';
 
 @Injectable()
