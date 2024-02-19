@@ -4,12 +4,13 @@ import { GenericTagEntity } from './entities';
 import { EventEntity } from './entities/event.entity';
 import { NostrController } from './nostr.controller';
 import { NostrGateway } from './nostr.gateway';
+import { AccessControlPlugin } from './plugins';
 import { EventRepository } from './repositories';
 import { EventSearchRepository } from './repositories/event-search.repository';
 import { EventService } from './services/event.service';
-import { NostrRelayLogger } from './services/nostr-relay-logger.service';
-import { AccessControlPlugin } from './plugins';
 import { MetricService } from './services/metric.service';
+import { NostrRelayLogger } from './services/nostr-relay-logger.service';
+import { TaskService } from './services/task.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EventEntity, GenericTagEntity])],
@@ -22,6 +23,7 @@ import { MetricService } from './services/metric.service';
     MetricService,
     NostrRelayLogger,
     AccessControlPlugin,
+    TaskService,
   ],
 })
 export class NostrModule {}

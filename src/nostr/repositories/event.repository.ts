@@ -9,7 +9,7 @@ import {
   getTimestampInSeconds,
 } from '@nostr-relay/common';
 import { isNil } from 'lodash';
-import { Brackets, DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { EventEntity, GenericTagEntity } from '../entities';
 import { TEventIdWithScore } from '../types';
 import { toGenericTag } from '../utils';
@@ -191,6 +191,17 @@ export class EventRepository extends IEventRepository {
     }));
   }
 
+  async deleteExpiredEvents() {
+    return await this.eventRepository
+      .createQueryBuilder()
+      .delete()
+      .from(EventEntity)
+      .where('expired_at < :expiredAt', {
+        expiredAt: getTimestampInSeconds(),
+      })
+      .execute();
+  }
+
   private createQueryBuilder(filter: Filter) {
     const queryBuilder = this.eventRepository.createQueryBuilder('event');
 
@@ -232,16 +243,6 @@ export class EventRepository extends IEventRepository {
         });
       });
     }
-
-    queryBuilder.andWhere(
-      new Brackets((subQb) => {
-        subQb
-          .where('event.expired_at IS NULL')
-          .orWhere('event.expired_at > :expiredAt', {
-            expiredAt: getTimestampInSeconds(),
-          });
-      }),
-    );
 
     return queryBuilder;
   }
@@ -308,16 +309,6 @@ export class EventRepository extends IEventRepository {
         kinds: filter.kinds,
       });
     }
-
-    queryBuilder.andWhere(
-      new Brackets((subQb) => {
-        subQb
-          .where('event.expired_at IS NULL')
-          .orWhere('event.expired_at > :expiredAt', {
-            expiredAt: getTimestampInSeconds(),
-          });
-      }),
-    );
 
     return queryBuilder;
   }

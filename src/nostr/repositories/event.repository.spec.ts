@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
 import {
+  TypeOrmModule,
   getDataSourceToken,
   getRepositoryToken,
-  TypeOrmModule,
 } from '@nestjs/typeorm';
 import { EventKind, getTimestampInSeconds } from '@nostr-relay/common';
 import 'dotenv/config';
@@ -444,6 +444,24 @@ describe('EventRepository', () => {
         limit: 0,
       });
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('deleteExpiredEvents', () => {
+    it('should delete expired events', async () => {
+      await eventRepository.upsert({
+        id: 'test',
+        kind: 1,
+        content: 'test',
+        created_at: getTimestampInSeconds() - 10000,
+        tags: [['expiration', (getTimestampInSeconds() - 1000).toString()]],
+        sig: 'test',
+        pubkey: 'test',
+      });
+
+      const result = await eventRepository.deleteExpiredEvents();
+
+      expect(result.affected).toBe(1);
     });
   });
 });
