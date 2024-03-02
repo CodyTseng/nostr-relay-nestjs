@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Interval } from '@nestjs/schedule';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { EventRepository } from '../repositories';
 import { MetricService } from './metric.service';
@@ -19,7 +19,7 @@ export class TaskService {
     this.logger.info(`Deleted ${result.affected} expired events`);
   }
 
-  @Interval(3600000) // 1 hour
+  @Cron(CronExpression.EVERY_HOUR)
   async recordMetrics() {
     this.metricService.recordMetric();
   }

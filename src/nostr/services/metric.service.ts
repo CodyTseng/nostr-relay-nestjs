@@ -5,14 +5,16 @@ import { Digest } from 'tdigest';
 @Injectable()
 export class MetricService {
   private readonly startupTime = new Date().toUTCString();
+  private currentConnectionCount = 0;
   private connectionCount = 0;
-  private connectionCountDigest = new Digest();
+  private maxConcurrentConnectionCount = 0;
   private reqDigest = new Digest();
   private eventDigest = new Digest();
   private closeDigest = new Digest();
   private authDigest = new Digest();
   private metrics: {
     timestamp: number;
+    maxConcurrentConnectionCount: number;
     connectionCount: number;
     reqProcessingTimes: number[];
     eventProcessingTimes: number[];
@@ -21,13 +23,16 @@ export class MetricService {
   }[] = [];
 
   incrementConnectionCount() {
+    this.currentConnectionCount++;
     this.connectionCount++;
-    this.connectionCountDigest.push(this.connectionCount);
+    this.maxConcurrentConnectionCount = Math.max(
+      this.maxConcurrentConnectionCount,
+      this.currentConnectionCount,
+    );
   }
 
   decrementConnectionCount() {
-    this.connectionCount--;
-    this.connectionCountDigest.push(this.connectionCount);
+    this.currentConnectionCount--;
   }
 
   pushProcessingTime(msgType: MessageType, time: number) {
@@ -50,7 +55,8 @@ export class MetricService {
   recordMetric() {
     this.metrics.push({
       timestamp: Date.now(),
-      connectionCount: this.connectionCountDigest.percentile(0.5) ?? 0,
+      connectionCount: this.connectionCount,
+      maxConcurrentConnectionCount: this.maxConcurrentConnectionCount,
       reqProcessingTimes: this.reqDigest
         .percentile([0.5, 0.75, 0.9, 0.95, 0.99])
         .map((n) => n ?? 0),
@@ -64,7 +70,8 @@ export class MetricService {
         .percentile([0.5, 0.75, 0.9, 0.95, 0.99])
         .map((n) => n ?? 0),
     });
-    this.connectionCountDigest.reset();
+    this.maxConcurrentConnectionCount = 0;
+    this.connectionCount = 0;
     this.reqDigest.reset();
     this.eventDigest.reset();
     this.authDigest.reset();
@@ -77,6 +84,7 @@ export class MetricService {
   getMetrics() {
     return {
       startupTime: this.startupTime,
+      currentConnectionCount: this.currentConnectionCount,
       metrics: this.metrics,
     };
   }
