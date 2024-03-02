@@ -1,70 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Metrics</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0 10px;
-            padding: 0;
-        }
-        table {
-            margin-top: 10px;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: left;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Metrics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
     <h1>Server Metrics</h1>
+    <p>Server started at: {{startupTime}}</p>
+    <h2>Connection Count</h2>
+    <canvas id="connectionCount"></canvas>
+    <h2>REQ processing time</h2>
+    <canvas id="reqProcessingTime"></canvas>
+    <h2>EVENT processing time</h2>
+    <canvas id="eventProcessingTime"></canvas>
+    <h2>AUTH processing time</h2>
+    <canvas id="authProcessingTime"></canvas>
+    <h2>CLOSE processing time</h2>
+    <canvas id="closeProcessingTime"></canvas>
+  </div>
 
-    <p>Startup Time: {{startupTime}}</p>
+  <script>
+    const connectionCount = document.getElementById('connectionCount');
+    const reqProcessingTime = document.getElementById('reqProcessingTime');
+    const eventProcessingTime = document.getElementById('eventProcessingTime');
+    const authProcessingTime = document.getElementById('authProcessingTime');
+    const closeProcessingTime = document.getElementById('closeProcessingTime');
 
-    <h2>Current Connection Count: {{connectionCount}}</h2>
+    const metrics = {{{json metrics}}};
+    const labels = metrics.map(metric => dayjs(metric.timestamp).format('HH:mm'));
 
-    <table>
-        <thead>
-            <tr>
-                <th>Request Type</th>
-                <th>P50</th>
-                <th>P75</th>
-                <th>P90</th>
-                <th>P95</th>
-                <th>P99</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>REQ</td>
-                {{#each reqProcessingTime}}
-                  <td>{{this}} ms</td>
-                {{/each}}
-            </tr>
-            <tr>
-                <td>EVENT</td>
-                {{#each eventProcessingTime}}
-                  <td>{{this}} ms</td>
-                {{/each}}
-            </tr>
-            <tr>
-                <td>AUTH</td>
-                {{#each authProcessingTime}}
-                  <td>{{this}} ms</td>
-                {{/each}}
-            </tr>
-            <tr>
-                <td>CLOSE</td>
-                {{#each closeProcessingTime}}
-                  <td>{{this}} ms</td>
-                {{/each}}
-            </tr>
-        </tbody>
-    </table>
+    new Chart(connectionCount, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'connection count',
+          data: metrics.map(metric => metric.connectionCount),
+        }]
+      },
+    });
+
+    new Chart(reqProcessingTime, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.reqProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.reqProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.reqProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.reqProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.reqProcessingTimes[4]),
+          },
+        ]
+      },
+    })
+
+    new Chart(eventProcessingTime, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.eventProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.eventProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.eventProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.eventProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.eventProcessingTimes[4]),
+          },
+        ]
+      },
+    })
+
+    new Chart(authProcessingTime, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.authProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.authProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.authProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.authProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.authProcessingTimes[4]),
+          },
+        ]
+      },
+    })
+
+    new Chart(closeProcessingTime, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.closeProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.closeProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.closeProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.closeProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.closeProcessingTimes[4]),
+          },
+        ]
+      },
+    })
+  </script>
 </body>
 </html>

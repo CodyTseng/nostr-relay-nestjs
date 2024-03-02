@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import 'dotenv/config';
 import { Express, static as ExpressStatic } from 'express';
+import * as hbs from 'hbs';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { join } from 'path';
@@ -17,6 +18,7 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
+  hbs.registerHelper('json', (context) => JSON.stringify(context));
   app.setViewEngine('hbs');
 
   app.useWebSocketAdapter(new NostrWsAdapter(app));

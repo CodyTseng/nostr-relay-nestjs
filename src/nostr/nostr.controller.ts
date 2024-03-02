@@ -105,7 +105,6 @@ export class NostrController {
   }
 
   @Get('.well-known/nostr.json')
-  @Header('access-control-allow-origin', '*')
   async nip05(@Query('name') name?: string) {
     const { pubkey } = this.relayInfoDoc;
     return name === '_' && pubkey
@@ -119,6 +118,10 @@ export class NostrController {
 
   @Get('metrics')
   @Render('metrics')
+  @Header(
+    'Content-Security-Policy',
+    "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'",
+  )
   metrics() {
     return this.metricService.getMetrics();
   }
