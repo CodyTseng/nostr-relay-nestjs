@@ -1,18 +1,29 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import 'dotenv/config';
 import { Express, static as ExpressStatic } from 'express';
+import * as hbs from 'hbs';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { Config } from './config';
 import { NostrWsAdapter } from './nostr/nostr-ws.adapter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
   app.useLogger(app.get(Logger));
-  app.use(helmet());
+
+  app.setBaseViewsDir(join(__dirname, '..', 'views'));
+  hbs.registerHelper('json', (context) => JSON.stringify(context));
+  app.setViewEngine('hbs');
+
   app.useWebSocketAdapter(new NostrWsAdapter(app));
+
+  app.use(helmet());
   app.enableCors();
   app.use((_req, res, next) => {
     res.setHeader('cross-origin-opener-policy', 'cross-origin');

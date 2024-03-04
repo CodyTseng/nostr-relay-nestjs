@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Metrics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Server Metrics</h1>
+    <p>Server started at: {{startupTime}}</p>
+    <h2>Connection (current: {{currentConnectionCount}})</h2>
+    <canvas id="connection"></canvas>
+    <h2>REQ processing time</h2>
+    <canvas id="reqProcessingTime"></canvas>
+    <h2>EVENT processing time</h2>
+    <canvas id="eventProcessingTime"></canvas>
+    <h2>AUTH processing time</h2>
+    <canvas id="authProcessingTime"></canvas>
+    <h2>CLOSE processing time</h2>
+    <canvas id="closeProcessingTime"></canvas>
+  </div>
+
+  <script>
+    const connectionChart = document.getElementById('connection');
+    const reqProcessingTimeChart = document.getElementById('reqProcessingTime');
+    const eventProcessingTimeChart = document.getElementById('eventProcessingTime');
+    const authProcessingTimeChart = document.getElementById('authProcessingTime');
+    const closeProcessingTimeChart = document.getElementById('closeProcessingTime');
+
+    const metrics = {{{json metrics}}};
+    const labels = metrics.map(metric => dayjs(metric.timestamp).format('HH:mm'));
+    const chartOptions = {
+      elements: {
+        line: {
+          tension: 0.3
+        }
+      },
+      interaction: {
+        intersect: false,
+        axis: 'x'
+      },
+    };
+
+    new Chart(connectionChart, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Maximum concurrent online user count',
+            data: metrics.map(metric => metric.maxConcurrentConnectionCount),
+          }, {
+            label: 'Connection count',
+            data: metrics.map(metric => metric.connectionCount),
+          }
+        ]
+      },
+      options: chartOptions
+    });
+
+    new Chart(reqProcessingTimeChart, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.reqProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.reqProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.reqProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.reqProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.reqProcessingTimes[4]),
+          },
+        ]
+      },
+      options: chartOptions
+    })
+
+    new Chart(eventProcessingTimeChart, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.eventProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.eventProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.eventProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.eventProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.eventProcessingTimes[4]),
+          },
+        ]
+      },
+      options: chartOptions
+    })
+
+    new Chart(authProcessingTimeChart, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.authProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.authProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.authProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.authProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.authProcessingTimes[4]),
+          },
+        ]
+      },
+      options: chartOptions
+    })
+
+    new Chart(closeProcessingTimeChart, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'P50',
+            data: metrics.map(metric => metric.closeProcessingTimes[0]),
+          },
+          {
+            label: 'P75',
+            data: metrics.map(metric => metric.closeProcessingTimes[1]),
+          },
+          {
+            label: 'P90',
+            data: metrics.map(metric => metric.closeProcessingTimes[2]),
+          },
+          {
+            label: 'P95',
+            data: metrics.map(metric => metric.closeProcessingTimes[3]),
+          },
+          {
+            label: 'P99',
+            data: metrics.map(metric => metric.closeProcessingTimes[4]),
+          },
+        ]
+      },
+      options: chartOptions
+    })
+  </script>
+</body>
+</html>

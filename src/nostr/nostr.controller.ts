@@ -4,12 +4,14 @@ import {
   Header,
   HttpStatus,
   Query,
+  Render,
   Req,
   Res,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { Config } from '../config';
+import { MetricService } from './services/metric.service';
 
 @Controller()
 export class NostrController {
@@ -40,7 +42,10 @@ export class NostrController {
     retention: [{ time: null }];
   };
 
-  constructor(configService: ConfigService<Config, true>) {
+  constructor(
+    private readonly metricService: MetricService,
+    configService: ConfigService<Config, true>,
+  ) {
     const relayInfo = configService.get('relayInfo', { infer: true });
     const limitConfig = configService.get('limit', { infer: true });
     const supported_nips = [1, 2, 4, 11, 13, 22, 26, 28, 40];
@@ -100,7 +105,6 @@ export class NostrController {
   }
 
   @Get('.well-known/nostr.json')
-  @Header('access-control-allow-origin', '*')
   async nip05(@Query('name') name?: string) {
     const { pubkey } = this.relayInfoDoc;
     return name === '_' && pubkey
@@ -110,5 +114,15 @@ export class NostrController {
           },
         }
       : {};
+  }
+
+  @Get('metrics')
+  @Render('metrics')
+  @Header(
+    'Content-Security-Policy',
+    "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'",
+  )
+  metrics() {
+    return this.metricService.getMetrics();
   }
 }

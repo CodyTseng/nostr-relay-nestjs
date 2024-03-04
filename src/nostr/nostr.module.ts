@@ -8,6 +8,7 @@ import { AccessControlPlugin } from './plugins';
 import { EventRepository } from './repositories';
 import { EventSearchRepository } from './repositories/event-search.repository';
 import { EventService } from './services/event.service';
+import { MetricService } from './services/metric.service';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 import { TaskService } from './services/task.service';
 
@@ -19,6 +20,7 @@ import { TaskService } from './services/task.service';
     EventSearchRepository,
     NostrGateway,
     EventService,
+    MetricService,
     NostrRelayLogger,
     AccessControlPlugin,
     TaskService,

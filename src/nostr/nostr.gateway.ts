@@ -24,6 +24,7 @@ import { EventRepository } from './repositories';
 import { SubscriptionIdSchema } from './schemas';
 import { EventService } from './services/event.service';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
+import { MetricService } from './services/metric.service';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 256KB
@@ -40,6 +41,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @InjectPinoLogger(NostrGateway.name)
     private readonly logger: PinoLogger,
     private readonly eventService: EventService,
+    private readonly metricService: MetricService,
     nostrRelayLogger: NostrRelayLogger,
     eventRepository: EventRepository,
     configService: ConfigService<Config, true>,
@@ -64,10 +66,12 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: WebSocket) {
     this.relay.handleConnection(client);
+    this.metricService.incrementConnectionCount();
   }
 
   handleDisconnect(client: WebSocket) {
     this.relay.handleDisconnect(client);
+    this.metricService.decrementConnectionCount();
   }
 
   @SubscribeMessage('DEFAULT')
@@ -76,11 +80,13 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: Array<any>,
   ) {
     try {
+      const start = Date.now();
       const msg = await this.validator.validateIncomingMessage(data);
       if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
         return;
       }
       await this.relay.handleMessage(client, msg);
+      this.metricService.pushProcessingTime(msg[0], Date.now() - start);
     } catch (error) {
       if (error instanceof ValidationError) {
         return createOutgoingNoticeMessage(error.message);

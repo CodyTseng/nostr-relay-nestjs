@@ -80,6 +80,12 @@ Run container
 ./scripts/run.sh
 ```
 
+## Metrics
+
+You can view some simple relay metrics on `/metrics` endpoint.
+
+<img alt="Metrics snapshot" src="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/metrics-snapshot.png" width="520">
+
 ## TODO
 
 - [x] Unit test
@@ -102,6 +108,5 @@ If you like this project, you can buy me a coffee :) ⚡️ codytseng@getalby.co
 ## License
 
 This project is MIT licensed.
-
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FCodyTseng%2Fnostr-relay-nestjs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FCodyTseng%2Fnostr-relay-nestjs?ref=badge_large)
