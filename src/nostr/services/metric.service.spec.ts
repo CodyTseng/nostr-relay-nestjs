@@ -9,12 +9,17 @@ describe('metricService', () => {
 
   it('should increment connection count', () => {
     metricService.incrementConnectionCount();
-    expect(metricService.getMetrics().connectionCount).toBe(1);
+    expect(metricService['connectionCount']).toBe(1);
+    expect(metricService['currentConnectionCount']).toBe(1);
+    expect(metricService['maxConcurrentConnectionCount']).toBe(1);
   });
 
   it('should decrement connection count', () => {
+    metricService.incrementConnectionCount();
     metricService.decrementConnectionCount();
-    expect(metricService.getMetrics().connectionCount).toBe(-1);
+    expect(metricService['connectionCount']).toBe(1);
+    expect(metricService['currentConnectionCount']).toBe(0);
+    expect(metricService['maxConcurrentConnectionCount']).toBe(1);
   });
 
   it('should push REQ processing time', () => {
@@ -49,13 +54,40 @@ describe('metricService', () => {
     expect(mockAuthDigestPush).toHaveBeenCalledWith(100);
   });
 
+  it('should record metric', () => {
+    metricService.incrementConnectionCount();
+
+    const mockMetricsPush = jest
+      .spyOn(metricService['metrics'], 'push')
+      .mockImplementation();
+    const mockReqDigestReset = jest
+      .spyOn(metricService['reqDigest'], 'reset')
+      .mockImplementation();
+    const mockEventDigestReset = jest
+      .spyOn(metricService['eventDigest'], 'reset')
+      .mockImplementation();
+    const mockAuthDigestReset = jest
+      .spyOn(metricService['authDigest'], 'reset')
+      .mockImplementation();
+    const mockCloseDigestReset = jest
+      .spyOn(metricService['closeDigest'], 'reset')
+      .mockImplementation();
+
+    metricService.recordMetric();
+
+    expect(mockMetricsPush).toHaveBeenCalled();
+    expect(metricService['maxConcurrentConnectionCount']).toBe(0);
+    expect(metricService['connectionCount']).toBe(0);
+    expect(metricService['currentConnectionCount']).toBe(1);
+    expect(mockReqDigestReset).toHaveBeenCalled();
+    expect(mockEventDigestReset).toHaveBeenCalled();
+    expect(mockAuthDigestReset).toHaveBeenCalled();
+    expect(mockCloseDigestReset).toHaveBeenCalled();
+  });
+
   it('should get metrics', () => {
     const metrics = metricService.getMetrics();
     expect(metrics.startupTime).toBeDefined();
-    expect(metrics.connectionCount).toBeDefined();
-    expect(metrics.reqProcessingTime).toBeDefined();
-    expect(metrics.eventProcessingTime).toBeDefined();
-    expect(metrics.closeProcessingTime).toBeDefined();
-    expect(metrics.authProcessingTime).toBeDefined();
+    expect(metrics.metrics).toBeDefined();
   });
 });
