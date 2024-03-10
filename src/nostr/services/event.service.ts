@@ -5,7 +5,7 @@ import { LazyCache } from '@nostr-relay/core/dist/utils';
 import { chain } from 'lodash';
 import { Config } from 'src/config';
 import { EventRepository } from '../repositories';
-import { TEventIdWithScore } from '../types';
+import { TEventIdWithScore } from '../types/event';
 
 @Injectable()
 export class EventService {

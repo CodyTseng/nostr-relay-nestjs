@@ -43,6 +43,7 @@
     "@types/ws": "^8.5.10",
     "hbs": "^4.2.0",
     "helmet": "^7.1.0",
+    "kysely": "^0.27.3",
     "lodash": "^4.17.21",
     "meilisearch": "^0.37.0",
     "nestjs-pino": "^4.0.0",

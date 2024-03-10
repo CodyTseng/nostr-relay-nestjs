@@ -10,7 +10,7 @@ describe('TaskService', () => {
       info: jest.fn(),
     });
     const mockEventRepository = createMock<EventRepository>({
-      deleteExpiredEvents: jest.fn().mockResolvedValue({ affected: 1 }),
+      deleteExpiredEvents: jest.fn().mockResolvedValue(1),
     });
     const taskService = new TaskService(
       mockLogger,

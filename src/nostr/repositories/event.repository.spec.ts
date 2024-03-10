@@ -1,62 +1,29 @@
-import { Test } from '@nestjs/testing';
-import {
-  TypeOrmModule,
-  getDataSourceToken,
-  getRepositoryToken,
-} from '@nestjs/typeorm';
+import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
 import { EventKind, getTimestampInSeconds } from '@nostr-relay/common';
 import 'dotenv/config';
-import { DataSource, Repository } from 'typeorm';
+import { Kysely } from 'kysely';
 import { createEvent } from '../../../test-utils/event';
-import { EventEntity, GenericTagEntity } from '../entities';
 import { EventSearchRepository } from './event-search.repository';
-import { EventRepository } from './event.repository';
+import { Database, EventRepository } from './event.repository';
 
 describe('EventRepository', () => {
-  let rawEventRepository: Repository<EventEntity>;
-  let rawGenericTagRepository: Repository<GenericTagEntity>;
+  let db: Kysely<Database>;
   let eventRepository: EventRepository;
-  let dataSource: DataSource;
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot({
-          type: 'postgres',
-          url: process.env.TEST_DATABASE_URL,
-          autoLoadEntities: true,
-          migrationsRun: true,
-          migrations: ['dist/migrations/*.js'],
-        }),
-        TypeOrmModule.forFeature([EventEntity, GenericTagEntity]),
-      ],
-      providers: [
-        EventRepository,
-        {
-          provide: EventSearchRepository,
-          useValue: {
-            find: jest.fn(),
-            findTopIds: jest.fn(),
-            add: jest.fn(),
-            deleteByReplaceableEvent: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    rawEventRepository = moduleRef.get(getRepositoryToken(EventEntity));
-    rawGenericTagRepository = moduleRef.get(
-      getRepositoryToken(GenericTagEntity),
+    eventRepository = new EventRepository(
+      createMock<EventSearchRepository>(),
+      createMock<ConfigService>({
+        get: () => ({ url: process.env.TEST_DATABASE_URL }),
+      }),
     );
-    eventRepository = moduleRef.get(EventRepository);
-
-    dataSource = moduleRef.get(getDataSourceToken());
+    db = eventRepository['db'];
   });
 
   afterEach(async () => {
-    await rawGenericTagRepository.delete({});
-    await rawEventRepository.delete({});
-    await dataSource.destroy();
+    await db.deleteFrom('events').execute();
+    await eventRepository.destroy();
   });
 
   describe('upsert', () => {
@@ -70,15 +37,15 @@ describe('EventRepository', () => {
       const result = await eventRepository.upsert(event);
       expect(result).toEqual({ isDuplicate: false });
 
-      const eventEntity = await rawEventRepository.findOneBy({ id: event.id });
-      expect(eventEntity?.toEvent()).toEqual(event);
-      const genericTagEntities = await rawGenericTagRepository.findBy({
-        eventId: event.id,
-      });
-      expect(genericTagEntities.map((e) => e.tag)).toEqual([
-        'a:test',
-        'b:test',
-      ]);
+      const [dbEvent] = await eventRepository.find({ ids: [event.id] });
+      expect(dbEvent).toEqual(event);
+
+      const genericTags = await db
+        .selectFrom('generic_tags')
+        .selectAll()
+        .where('event_id', '=', event.id)
+        .execute();
+      expect(genericTags.map((e) => e.tag)).toEqual(['a:test', 'b:test']);
     });
 
     it('should update an existing event', async () => {
@@ -100,18 +67,18 @@ describe('EventRepository', () => {
       const result = await eventRepository.upsert(eventB);
       expect(result).toEqual({ isDuplicate: false });
 
-      const eventAEntity = await rawEventRepository.findOneBy({
-        id: eventA.id,
-      });
-      expect(eventAEntity).toBeNull();
-      const eventAGenericTagEntities = await rawGenericTagRepository.findBy({
-        eventId: eventA.id,
-      });
-      expect(eventAGenericTagEntities).toEqual([]);
-      const eventBEntity = await rawEventRepository.findOneBy({
-        id: eventB.id,
-      });
-      expect(eventBEntity?.toEvent()).toEqual(eventB);
+      const [dbEventA] = await eventRepository.find({ ids: [eventA.id] });
+      expect(dbEventA).toBeUndefined();
+
+      const eventAGenericTags = await db
+        .selectFrom('generic_tags')
+        .selectAll()
+        .where('event_id', '=', eventA.id)
+        .execute();
+      expect(eventAGenericTags).toEqual([]);
+
+      const [dbEventB] = await eventRepository.find({ ids: [eventB.id] });
+      expect(dbEventB).toEqual(eventB);
     });
 
     it('should not insert an event with same id', async () => {
@@ -120,8 +87,8 @@ describe('EventRepository', () => {
       const result = await eventRepository.upsert(event);
       expect(result).toEqual({ isDuplicate: true });
 
-      const eventEntity = await rawEventRepository.findOneBy({ id: event.id });
-      expect(eventEntity?.toEvent()).toEqual(event);
+      const [dbEvent] = await eventRepository.find({ ids: [event.id] });
+      expect(dbEvent).toEqual(event);
     });
 
     it('should not insert an event with earlier createdAt', async () => {
@@ -139,14 +106,11 @@ describe('EventRepository', () => {
       const result = await eventRepository.upsert(eventB);
       expect(result).toEqual({ isDuplicate: true });
 
-      const eventAEntity = await rawEventRepository.findOneBy({
-        id: eventA.id,
-      });
-      expect(eventAEntity?.toEvent()).toEqual(eventA);
-      const eventBEntity = await rawEventRepository.findOneBy({
-        id: eventB.id,
-      });
-      expect(eventBEntity).toBeNull();
+      const [dbEventA] = await eventRepository.find({ ids: [eventA.id] });
+      expect(dbEventA).toEqual(eventA);
+
+      const [dbEventB] = await eventRepository.find({ ids: [eventB.id] });
+      expect(dbEventB).toBeUndefined();
     });
 
     it('should insert an event with same createdAt and smaller id', async () => {
@@ -176,20 +140,18 @@ describe('EventRepository', () => {
       const upsertCResult = await eventRepository.upsert(C);
       expect(upsertCResult).toEqual({ isDuplicate: true });
 
-      const eventAEntity = await rawEventRepository.findOneBy({
-        id: A.id,
-      });
-      expect(eventAEntity?.toEvent()).toEqual(A);
+      const [dbEventA] = await eventRepository.find({ ids: [A.id] });
+      expect(dbEventA).toEqual(A);
     });
 
     it('should throw an error', async () => {
-      jest
-        .spyOn(eventRepository['dataSource'], 'transaction')
-        .mockRejectedValue(new Error('test'));
-
-      await expect(eventRepository.upsert(createEvent())).rejects.toThrow(
-        'test',
-      );
+      await expect(
+        eventRepository.upsert(
+          createEvent({
+            kind: 'abc',
+          } as any),
+        ),
+      ).rejects.toThrow();
     });
   });
 
@@ -315,6 +277,15 @@ describe('EventRepository', () => {
         expect(result).toEqual([LONG_FORM_CONTENT_EVENT]);
       });
 
+      it('should return directly if tags filter is more than 2', async () => {
+        const result = await eventRepository.find({
+          '#d': ['test'],
+          '#t': ['test'],
+          '#e': ['test'],
+        });
+        expect(result).toEqual([]);
+      });
+
       it('should filter by tags and since', async () => {
         const result = await eventRepository.find({
           '#t': ['test'],
@@ -421,6 +392,15 @@ describe('EventRepository', () => {
       );
     });
 
+    it('should return directly if tags filter is more than 2', async () => {
+      const result = await eventRepository.findTopIds({
+        '#d': ['test'],
+        '#t': ['test'],
+        '#e': ['test'],
+      });
+      expect(result).toEqual([]);
+    });
+
     it('should find top ids and filter by search', async () => {
       const mockResult = [
         {
@@ -461,7 +441,7 @@ describe('EventRepository', () => {
 
       const result = await eventRepository.deleteExpiredEvents();
 
-      expect(result.affected).toBe(1);
+      expect(result).toBe(1);
     });
   });
 });

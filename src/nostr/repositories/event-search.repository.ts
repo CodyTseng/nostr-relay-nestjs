@@ -5,8 +5,7 @@ import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
-import { EventEntity } from '../entities';
-import { TEventIdWithScore } from '../types';
+import { TEventIdWithScore } from '../types/event';
 
 type EventDocument = {
   id: string;
@@ -18,6 +17,13 @@ type EventDocument = {
   genericTags: string[];
   content: string;
   sig: string;
+  expiredAt: number | null;
+  dTagValue: string | null;
+};
+
+type AdditionalEventDocumentFields = {
+  author: string;
+  genericTags: string[];
   expiredAt: number | null;
   dTagValue: string | null;
 };
@@ -109,26 +115,28 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     }));
   }
 
-  async add(event: EventEntity) {
+  async add(event: Event, additionalFields: AdditionalEventDocumentFields) {
     if (!this.index || !this.syncEventKinds.includes(event.kind)) return;
 
     try {
-      await this.index.addDocuments([this.toEventDocument(event)]);
+      await this.index.addDocuments([
+        this.toEventDocument(event, additionalFields),
+      ]);
     } catch (error) {
       this.logger.error(error);
     }
   }
 
-  async deleteByReplaceableEvent(event: EventEntity) {
+  async deleteReplaceableEvents(
+    author: string,
+    kind: number,
+    dTagValue: string,
+  ) {
     if (!this.index) return;
 
     try {
       await this.index.deleteDocuments({
-        filter: [
-          `author=${event.author}`,
-          `kind=${event.kind}`,
-          `dTagValue=${event.dTagValue}`,
-        ],
+        filter: [`author=${author}`, `kind=${kind}`, `dTagValue=${dTagValue}`],
       });
     } catch (error) {
       this.logger.error(error);
@@ -178,19 +186,27 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     return Math.min(isNil(filter.limit) ? defaultLimit : filter.limit, 1000);
   }
 
-  private toEventDocument(event: EventEntity): EventDocument {
+  private toEventDocument(
+    event: Event,
+    {
+      author,
+      genericTags,
+      expiredAt,
+      dTagValue,
+    }: AdditionalEventDocumentFields,
+  ): EventDocument {
     return {
       id: event.id,
       pubkey: event.pubkey,
-      createdAt: event.createdAt,
+      createdAt: event.created_at,
       kind: event.kind,
       tags: event.tags,
-      genericTags: event.genericTags,
+      genericTags,
       content: event.content,
       sig: event.sig,
-      expiredAt: event.expiredAt,
-      author: event.author,
-      dTagValue: event.dTagValue,
+      expiredAt,
+      author,
+      dTagValue,
     };
   }
 
