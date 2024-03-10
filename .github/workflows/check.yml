@@ -47,7 +47,7 @@ jobs:
       - name: Migration
         run: npm run migration:run
         env:
-          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
 
       - name: Unit testing
         run: npm run test:cov
