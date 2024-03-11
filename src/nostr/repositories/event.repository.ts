@@ -195,22 +195,28 @@ export class EventRepository extends IEventRepository {
         return [];
       }
 
-      const rows = await this.createGenericTagsSelectQuery(
+      return await this.createGenericTagsSelectQuery(
         filter,
         genericTagsCollection[0],
         genericTagsCollection[1],
       )
-        .selectAll('e')
+        .select([
+          'e.id',
+          'e.pubkey',
+          'e.kind',
+          'e.tags',
+          'e.content',
+          'e.sig',
+          'e.created_at',
+        ])
         .limit(limit)
         .execute();
-      return rows.map((row) => this.toEvent(row));
     }
 
-    const rows = await this.createSelectQuery(filter)
-      .selectAll()
+    return await this.createSelectQuery(filter)
+      .select(['id', 'pubkey', 'kind', 'tags', 'content', 'sig', 'created_at'])
       .limit(limit)
       .execute();
-    return rows.map((row) => this.toEvent(row));
   }
 
   async findTopIds(filter: Filter): Promise<TEventIdWithScore[]> {
@@ -362,17 +368,5 @@ export class EventRepository extends IEventRepository {
       }
     });
     return [...genericTagSet];
-  }
-
-  private toEvent(row: EventRow): Event {
-    return {
-      id: row.id,
-      pubkey: row.pubkey,
-      kind: row.kind,
-      tags: row.tags,
-      content: row.content,
-      sig: row.sig,
-      created_at: row.created_at,
-    };
   }
 }
