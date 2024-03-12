@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { EventKind } from '@nostr-relay/common';
 import { PinoLogger } from 'nestjs-pino';
 import { createEvent } from '../../../test-utils/event';
-import { EventEntity } from '../entities';
 import { EventSearchRepository } from './event-search.repository';
 
 jest.mock('@nostr-relay/common', () => ({
@@ -306,16 +305,17 @@ describe('EventSearchRepository', () => {
 
   describe('add', () => {
     it('should not add documents if no index', async () => {
-      await eventSearchRepositoryWithoutIndex.add(
-        EventEntity.fromEvent(regularEvent),
-      );
+      await eventSearchRepositoryWithoutIndex.add(regularEvent, {} as any);
       expect(mockAddDocuments).not.toHaveBeenCalled();
     });
 
     it('should add documents if has index', async () => {
-      await eventSearchRepositoryWithIndex.add(
-        EventEntity.fromEvent(regularEvent),
-      );
+      await eventSearchRepositoryWithIndex.add(regularEvent, {
+        author: regularEvent.pubkey,
+        genericTags: [],
+        dTagValue: null,
+        expiredAt: null,
+      });
       expect(mockAddDocuments).toHaveBeenCalledWith([REGULAR_EVENT_DOCUMENT]);
     });
 
@@ -324,27 +324,27 @@ describe('EventSearchRepository', () => {
       jest
         .spyOn(eventSearchRepositoryWithIndex['index'] as any, 'addDocuments')
         .mockRejectedValue(addDocumentsFailError);
-      await eventSearchRepositoryWithIndex.add(
-        EventEntity.fromEvent(regularEvent),
-      );
+      await eventSearchRepositoryWithIndex.add(regularEvent, {} as any);
       expect(logError).toHaveBeenCalledWith(addDocumentsFailError);
     });
   });
 
-  describe('deleteByReplaceableEvent', () => {
+  describe('deleteReplaceableEvents', () => {
     it('should not delete documents if no index', async () => {
-      await eventSearchRepositoryWithoutIndex.deleteByReplaceableEvent(
-        {} as EventEntity,
+      await eventSearchRepositoryWithoutIndex.deleteReplaceableEvents(
+        '',
+        0,
+        '',
       );
       expect(mockDeleteDocuments).not.toHaveBeenCalled();
     });
 
     it('should delete documents if has index', async () => {
-      await eventSearchRepositoryWithIndex.deleteByReplaceableEvent({
-        author: 'author',
-        kind: 0,
-        dTagValue: 'dTagValue',
-      } as EventEntity);
+      await eventSearchRepositoryWithIndex.deleteReplaceableEvents(
+        'author',
+        0,
+        'dTagValue',
+      );
       expect(mockDeleteDocuments).toHaveBeenCalledWith({
         filter: [`author=author`, `kind=0`, `dTagValue=dTagValue`],
       });
@@ -353,9 +353,7 @@ describe('EventSearchRepository', () => {
     it('should throw error if deleteDocuments failed', async () => {
       const deleteDocumentsFailError = new Error('deleteDocuments fail');
       mockDeleteDocuments.mockRejectedValue(deleteDocumentsFailError);
-      await eventSearchRepositoryWithIndex.deleteByReplaceableEvent(
-        {} as EventEntity,
-      );
+      await eventSearchRepositoryWithIndex.deleteReplaceableEvents('', 0, '');
       expect(logError).toHaveBeenCalledWith(deleteDocumentsFailError);
     });
   });

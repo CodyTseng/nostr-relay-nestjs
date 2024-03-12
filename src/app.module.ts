@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { GlobalExceptionFilter } from './common/filters';
 import { loggerModuleFactory } from './common/utils/logger-module-factory';
@@ -19,17 +18,6 @@ import { NostrModule } from './nostr/nostr.module';
     }),
     LoggerModule.forRootAsync({
       useFactory: loggerModuleFactory,
-      inject: [ConfigService],
-    }),
-    TypeOrmModule.forRootAsync({
-      useFactory: (configService: ConfigService<Config, true>) => {
-        const { url } = configService.get('database', { infer: true });
-        return {
-          type: 'postgres',
-          url,
-          autoLoadEntities: true,
-        };
-      },
       inject: [ConfigService],
     }),
     ThrottlerModule.forRootAsync({

@@ -44,6 +44,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Migration
+        run: npm run migration:run
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+
       - name: Unit testing
         run: npm run test:cov
         env:

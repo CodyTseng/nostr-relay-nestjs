@@ -1,7 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { GenericTagEntity } from './entities';
-import { EventEntity } from './entities/event.entity';
 import { NostrController } from './nostr.controller';
 import { NostrGateway } from './nostr.gateway';
 import { AccessControlPlugin } from './plugins';
@@ -13,7 +10,6 @@ import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 import { TaskService } from './services/task.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EventEntity, GenericTagEntity])],
   controllers: [NostrController],
   providers: [
     EventRepository,

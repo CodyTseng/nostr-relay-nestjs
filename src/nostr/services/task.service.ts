@@ -15,8 +15,8 @@ export class TaskService {
 
   @Interval(600000) // 10 minutes
   async deleteExpiredEvents() {
-    const result = await this.eventRepository.deleteExpiredEvents();
-    this.logger.info(`Deleted ${result.affected} expired events`);
+    const affected = await this.eventRepository.deleteExpiredEvents();
+    this.logger.info(`Deleted ${affected} expired events`);
   }
 
   @Cron(CronExpression.EVERY_HOUR)
