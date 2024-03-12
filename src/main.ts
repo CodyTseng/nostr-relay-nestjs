@@ -9,7 +9,7 @@ import { Logger } from 'nestjs-pino';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { Config } from './config';
-import { NostrWsAdapter } from './nostr/nostr-ws.adapter';
+import { createWsAdapter } from './create-ws-adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -21,7 +21,8 @@ async function bootstrap() {
   hbs.registerHelper('json', (context) => JSON.stringify(context));
   app.setViewEngine('hbs');
 
-  app.useWebSocketAdapter(new NostrWsAdapter(app));
+  const wsAdapter = createWsAdapter(app);
+  app.useWebSocketAdapter(wsAdapter);
 
   app.use(helmet());
   app.enableCors();
