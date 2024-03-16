@@ -5,7 +5,7 @@
 
 Powered by [nostr-relay](https://github.com/CodyTseng/nostr-relay) & [NestJS](https://nestjs.com/).
 
-A Nostr relay with a clear architecture and high test coverage
+A high-performance nostr relay, using PostgreSQL.
 
 If you'd like to help me test the reliability of this relay implementation, you can add wss://nostr-relay.app to your relay list (it's free) 💜⚡️
 
@@ -70,14 +70,43 @@ Build image
 Create `.env` file based on [example.env](./example.env) file
 
 ```.env
-DOMAIN=localhost
-DATABASE_URL=postgresql://username:xxxxxxxxxx@host:port/database
+DATABASE_URL=postgresql://username:password@host:port/database
 ```
 
 Run container
 
 ```bash
 ./scripts/run.sh
+```
+
+### Local Development
+
+First of all, you need to have a PostgreSQL database running.
+
+Clone the repository and install dependencies
+
+```bash
+git clone https://github.com/CodyTseng/nostr-relay-nestjs.git
+cd nostr-relay-nestjs
+npm install
+```
+
+Create `.env` file based on [example.env](./example.env) file
+
+```.env
+DATABASE_URL=postgresql://username:password@host:port/database
+```
+
+Execute migration scripts
+
+```bash
+npm run migration:run
+```
+
+Start the server
+
+```bash
+npm run start
 ```
 
 ## Metrics
