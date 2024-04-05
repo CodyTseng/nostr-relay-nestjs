@@ -1,6 +1,6 @@
 {
   "name": "nostr-relay-nestjs",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "A high-performance nostr relay, using PostgreSQL",
   "author": "codytseng",
   "private": true,
