@@ -81,7 +81,7 @@ describe('EventRepository', () => {
       expect(dbEventB).toEqual(eventB);
     });
 
-    it.only('should update an existing parameterized replaceable event', async () => {
+    it('should update an existing parameterized replaceable event', async () => {
       const eventA = createEvent({
         kind: EventKind.PARAMETERIZED_REPLACEABLE_FIRST,
         content: 'a',
