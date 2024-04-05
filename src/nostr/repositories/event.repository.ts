@@ -132,7 +132,16 @@ export class EventRepository extends IEventRepository {
             )
             .executeTakeFirst();
 
+          if (eventInsertResult.numInsertedOrUpdatedRows === BigInt(0)) {
+            return eventInsertResult;
+          }
+
           if (genericTags.length > 0) {
+            await trx
+              .deleteFrom('generic_tags')
+              .where('event_id', '=', event.id)
+              .execute();
+
             await trx
               .insertInto('generic_tags')
               .values(

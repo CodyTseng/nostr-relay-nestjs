@@ -81,6 +81,41 @@ describe('EventRepository', () => {
       expect(dbEventB).toEqual(eventB);
     });
 
+    it('should update an existing parameterized replaceable event', async () => {
+      const eventA = createEvent({
+        kind: EventKind.PARAMETERIZED_REPLACEABLE_FIRST,
+        content: 'a',
+        tags: [
+          ['d', 'test'],
+          ['x', 'test'],
+        ],
+      });
+      await eventRepository.upsert(eventA);
+
+      const eventB = createEvent({
+        kind: EventKind.PARAMETERIZED_REPLACEABLE_FIRST,
+        content: 'b',
+        tags: [['d', 'test']],
+        created_at: eventA.created_at + 1,
+      });
+      const result = await eventRepository.upsert(eventB);
+      expect(result).toEqual({ isDuplicate: false });
+
+      const eventAGenericTags = await db
+        .selectFrom('generic_tags')
+        .selectAll()
+        .where('event_id', '=', eventA.id)
+        .execute();
+      expect(eventAGenericTags).toEqual([]);
+
+      const eventBGenericTags = await db
+        .selectFrom('generic_tags')
+        .selectAll()
+        .where('event_id', '=', eventB.id)
+        .execute();
+      expect(eventBGenericTags.map((e) => e.tag)).toEqual(['d:test']);
+    });
+
     it('should not insert an event with same id', async () => {
       const event = createEvent();
       await eventRepository.upsert(event);
