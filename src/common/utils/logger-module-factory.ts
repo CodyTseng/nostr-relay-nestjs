@@ -8,6 +8,7 @@ export function loggerModuleFactory(
   configService: ConfigService<Config, true>,
 ) {
   const { dir, level } = configService.get('logger', { infer: true });
+  const environment = configService.get('environment', { infer: true });
   const targets: TransportTargetOptions[] = [];
   if (dir) {
     const dirStat = statSync(dir);
@@ -23,7 +24,10 @@ export function loggerModuleFactory(
       options: { destination: path.join(dir, 'common.log') },
     });
   }
-  targets.push({ level, target: 'pino/file', options: { destination: 1 } });
+
+  if (environment !== 'production') {
+    targets.push({ level, target: 'pino/file', options: { destination: 1 } });
+  }
   return {
     pinoHttp: {
       transport: {

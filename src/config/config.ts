@@ -13,6 +13,7 @@ export function config() {
   return {
     domain: env.DOMAIN,
     port: env.PORT ?? 3000,
+    environment: env.NODE_ENV,
     database: databaseConfig(env),
     meiliSearch: meiliSearchConfig(env),
     limit: limitConfig(env),
