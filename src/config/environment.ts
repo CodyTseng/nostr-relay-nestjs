@@ -5,7 +5,7 @@ export const EnvironmentSchema = z.object({
 
   /*==== optional ====*/
   DOMAIN: z.string().optional(),
-
+  NODE_ENV: z.string().default('development'),
   PORT: z
     .preprocess((port: string) => parseInt(port), z.number().positive())
     .optional(),

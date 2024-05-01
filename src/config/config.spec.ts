@@ -39,6 +39,7 @@ describe('config', () => {
       DOMAIN: 'localhost',
       DATABASE_URL: 'postgresql://xxx:xxx/xxx',
       PORT: 3000,
+      NODE_ENV: 'development',
       LOG_DIR: 'logs',
       LOG_LEVEL: 'info',
       LOG_SLOW_EXECUTION_THRESHOLD: 100,

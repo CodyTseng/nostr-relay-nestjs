@@ -22,6 +22,7 @@ FROM node:18-alpine as production
 # Set environment variables
 ARG GIT_COMMIT_SHA
 ENV GIT_COMMIT_SHA $GIT_COMMIT_SHA
+ENV NODE_ENV=production
 
 WORKDIR /app
 
