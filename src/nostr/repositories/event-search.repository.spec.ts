@@ -116,7 +116,7 @@ describe('EventSearchRepository', () => {
         search: 'search',
       });
       expect(mockSearch).toHaveBeenCalledWith('search', {
-        filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000)`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -129,10 +129,7 @@ describe('EventSearchRepository', () => {
         ids: ['id1', 'id2'],
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `id IN [id1, id2]`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND id IN ["id1", "id2"]`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -144,10 +141,7 @@ describe('EventSearchRepository', () => {
         kinds: [1, 2],
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `kind IN [1, 2]`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND kind IN [1, 2]`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -159,10 +153,7 @@ describe('EventSearchRepository', () => {
         since: 1620000000,
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `createdAt >= 1620000000`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND createdAt >= 1620000000`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -174,10 +165,7 @@ describe('EventSearchRepository', () => {
         until: 1620000000,
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `createdAt <= 1620000000`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND createdAt <= 1620000000`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -189,10 +177,7 @@ describe('EventSearchRepository', () => {
         authors: ['pubkey1', 'pubkey2'],
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `author IN [pubkey1, pubkey2]`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND author IN ["pubkey1", "pubkey2"]`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -205,11 +190,7 @@ describe('EventSearchRepository', () => {
         '#b': ['genericTags'],
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `genericTags IN [a:genericTags]`,
-          `genericTags IN [b:genericTags]`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND genericTags IN ["a:genericTags"] AND genericTags IN ["b:genericTags"]`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -221,10 +202,7 @@ describe('EventSearchRepository', () => {
         '#d': ['dTagValue1', 'dTagValue2'],
       });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `dTagValue IN [dTagValue1, dTagValue2]`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND dTagValue IN ["dTagValue1", "dTagValue2"]`,
         sort: ['createdAt:desc'],
         limit: 100,
       });
@@ -233,7 +211,7 @@ describe('EventSearchRepository', () => {
     it('has limit', async () => {
       await eventSearchRepositoryWithIndex.find({ search: '', limit: 10 });
       expect(mockSearch).toHaveBeenCalledWith('', {
-        filter: [`expiredAt IS NULL OR expiredAt >= 1620000000`],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000)`,
         sort: ['createdAt:desc'],
         limit: 10,
       });
@@ -257,17 +235,7 @@ describe('EventSearchRepository', () => {
         limit: 10,
       });
       expect(mockSearch).toHaveBeenCalledWith('search', {
-        filter: [
-          `expiredAt IS NULL OR expiredAt >= 1620000000`,
-          `id IN [id1, id2]`,
-          `kind IN [1, 2]`,
-          `createdAt >= 1620000000`,
-          `createdAt <= 1630000000`,
-          `author IN [pubkey1, pubkey2]`,
-          `genericTags IN [a:genericTags]`,
-          `genericTags IN [b:genericTags]`,
-          `dTagValue IN [dTagValue1, dTagValue2]`,
-        ],
+        filter: `(expiredAt IS NULL OR expiredAt >= 1620000000) AND id IN ["id1", "id2"] AND kind IN [1, 2] AND createdAt >= 1620000000 AND createdAt <= 1630000000 AND author IN ["pubkey1", "pubkey2"] AND genericTags IN ["a:genericTags"] AND genericTags IN ["b:genericTags"] AND dTagValue IN ["dTagValue1", "dTagValue2"]`,
         sort: ['createdAt:desc'],
         limit: 10,
       });
@@ -346,7 +314,7 @@ describe('EventSearchRepository', () => {
         'dTagValue',
       );
       expect(mockDeleteDocuments).toHaveBeenCalledWith({
-        filter: [`author=author`, `kind=0`, `dTagValue=dTagValue`],
+        filter: `author = "author" AND kind = 0 AND dTagValue = "dTagValue"`,
       });
     });
 

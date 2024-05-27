@@ -44,6 +44,7 @@
     "kysely": "^0.27.3",
     "lodash": "^4.17.21",
     "meilisearch": "^0.37.0",
+    "meilisearch-helper": "^1.1.0",
     "nestjs-pino": "^4.0.0",
     "pg": "^8.11.3",
     "pino-http": "^9.0.0",

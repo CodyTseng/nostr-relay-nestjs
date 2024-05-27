@@ -3,9 +3,29 @@ import { ConfigService } from '@nestjs/config';
 import { Event, Filter, getTimestampInSeconds } from '@nostr-relay/common';
 import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
+import {
+  buildMeiliSearchFilter,
+  FilterQuery,
+  buildMeiliSearchSort,
+} from 'meilisearch-helper';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
 import { TEventIdWithScore } from '../types/event';
+
+const EVENT_FILTERABLE_ATTRIBUTES = [
+  'id',
+  'author',
+  'createdAt',
+  'kind',
+  'genericTags',
+  'delegator',
+  'expiredAt',
+  'dTagValue',
+] as const;
+type EventFilterableAttributes = (typeof EVENT_FILTERABLE_ATTRIBUTES)[number];
+
+const EVENT_SORTABLE_ATTRIBUTES = ['createdAt'] as const;
+type EventSortableAttributes = (typeof EVENT_SORTABLE_ATTRIBUTES)[number];
 
 type EventDocument = {
   id: string;
@@ -82,12 +102,12 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     const limit = this.getLimitFrom(filter);
     if (limit === 0) return [];
 
-    const searchFilters = this.buildSearchFilters(filter);
-
     const result = await this.index.search(filter.search, {
       limit,
-      filter: searchFilters,
-      sort: ['createdAt:desc'],
+      filter: this.buildSearchFilter(filter),
+      sort: buildMeiliSearchSort<EventSortableAttributes>({
+        createdAt: -1,
+      }),
     });
 
     return result.hits.map(this.toEvent);
@@ -99,7 +119,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
     const limit = this.getLimitFrom(filter);
     if (limit === 0) return [];
 
-    const searchFilters = this.buildSearchFilters(filter);
+    const searchFilters = this.buildSearchFilter(filter);
 
     const result = await this.index.search(filter.search, {
       limit,
@@ -136,50 +156,51 @@ export class EventSearchRepository implements OnApplicationBootstrap {
 
     try {
       await this.index.deleteDocuments({
-        filter: [`author=${author}`, `kind=${kind}`, `dTagValue=${dTagValue}`],
+        filter: buildMeiliSearchFilter<EventFilterableAttributes>({
+          author,
+          kind,
+          dTagValue,
+        }),
       });
     } catch (error) {
       this.logger.error(error);
     }
   }
 
-  private buildSearchFilters(filter: Filter): string[] {
-    const searchFilters: string[] = [
-      `expiredAt IS NULL OR expiredAt >= ${getTimestampInSeconds()}`,
-    ];
-
+  private buildSearchFilter(filter: Filter): string {
+    const filterQuery: FilterQuery<EventFilterableAttributes> = {
+      $or: [
+        { expiredAt: null },
+        { expiredAt: { $gte: getTimestampInSeconds() } },
+      ],
+    };
     if (filter.ids?.length) {
-      searchFilters.push(`id IN [${filter.ids.join(', ')}]`);
+      filterQuery.id = { $in: filter.ids };
     }
-
     if (filter.kinds?.length) {
-      searchFilters.push(`kind IN [${filter.kinds.join(', ')}]`);
+      filterQuery.kind = { $in: filter.kinds };
     }
-
-    if (filter.since) {
-      searchFilters.push(`createdAt >= ${filter.since}`);
+    if (filter.until || filter.since) {
+      filterQuery.createdAt = {
+        $gte: filter.since,
+        $lte: filter.until,
+      };
     }
-
-    if (filter.until) {
-      searchFilters.push(`createdAt <= ${filter.until}`);
-    }
-
     if (filter.authors?.length) {
-      searchFilters.push(`author IN [${filter.authors.join(', ')}]`);
+      filterQuery.author = { $in: filter.authors };
     }
-
     const genericTagsCollection = this.extractGenericTagsCollectionFrom(filter);
     if (genericTagsCollection.length) {
+      filterQuery.$and = [];
       genericTagsCollection.forEach((genericTags) => {
-        searchFilters.push(`genericTags IN [${genericTags.join(', ')}]`);
+        filterQuery.$and?.push({ genericTags: { $in: genericTags } });
       });
     }
-
     if (filter['#d']?.length) {
-      searchFilters.push(`dTagValue IN [${filter['#d'].join(', ')}]`);
+      filterQuery.dTagValue = { $in: filter['#d'] };
     }
 
-    return searchFilters;
+    return buildMeiliSearchFilter(filterQuery);
   }
 
   private getLimitFrom(filter: Filter, defaultLimit = 100) {
