@@ -15,7 +15,7 @@ describe('EventRepository', () => {
     eventRepository = new EventRepository(
       createMock<EventSearchRepository>(),
       createMock<ConfigService>({
-        get: () => ({ url: process.env.TEST_DATABASE_URL }),
+        get: () => ({ url: process.env.TEST_DATABASE_URL, maxConnections: 50 }),
       }),
     );
     db = eventRepository['db'];

@@ -10,6 +10,9 @@ export const EnvironmentSchema = z.object({
     .preprocess((port: string) => parseInt(port), z.number().positive())
     .optional(),
   GIT_COMMIT_SHA: z.string().optional(),
+  DATABASE_MAX_CONNECTIONS: z
+    .preprocess((max: string) => parseInt(max), z.number().positive())
+    .optional(),
 
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),

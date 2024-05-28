@@ -71,6 +71,7 @@ export class EventRepository extends IEventRepository {
     const dialect = new PostgresDialect({
       pool: new pg.Pool({
         connectionString: databaseConfig.url,
+        max: databaseConfig.maxConnections,
       }),
     });
     this.db = new Kysely<Database>({ dialect });

@@ -12,6 +12,7 @@ describe('config', () => {
       validateEnvironment({
         DOMAIN: 'localhost',
         DATABASE_URL: 'postgresql://xxx:xxx/xxx',
+        DATABASE_MAX_CONNECTIONS: '20',
         PORT: '3000',
         LOG_DIR: 'logs',
         LOG_LEVEL: 'info',
@@ -38,6 +39,7 @@ describe('config', () => {
     ).toEqual({
       DOMAIN: 'localhost',
       DATABASE_URL: 'postgresql://xxx:xxx/xxx',
+      DATABASE_MAX_CONNECTIONS: 20,
       PORT: 3000,
       NODE_ENV: 'development',
       LOG_DIR: 'logs',
