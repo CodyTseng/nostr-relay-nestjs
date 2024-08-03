@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  BeforeEventHandle,
-  BeforeEventHandleResult,
   ClientContext,
-  Event,
+  HandleMessagePlugin,
+  HandleMessageResult,
+  IncomingMessage,
+  MessageType,
 } from '@nostr-relay/common';
 import { Config } from 'src/config';
 
 @Injectable()
-export class AccessControlPlugin implements BeforeEventHandle {
+export class AccessControlPlugin implements HandleMessagePlugin {
   private readonly blacklist: Set<string> | undefined;
   private readonly whitelist: Set<string> | undefined;
 
@@ -23,20 +24,30 @@ export class AccessControlPlugin implements BeforeEventHandle {
     }
   }
 
-  beforeEventHandle(_: ClientContext, event: Event): BeforeEventHandleResult {
+  async handleMessage(
+    ctx: ClientContext,
+    message: IncomingMessage,
+    next: () => Promise<HandleMessageResult>,
+  ): Promise<HandleMessageResult> {
+    if (message[0] !== MessageType.EVENT) {
+      return next();
+    }
+
+    const event = message[1];
     if (
       (this.blacklist && this.blacklist.has(event.pubkey)) ||
       (this.whitelist && !this.whitelist.has(event.pubkey))
     ) {
+      const success = false;
+      const message = 'blocked: you are banned from posting here';
+      ctx.sendMessage([MessageType.OK, event.id, success, message]);
       return {
-        canContinue: false,
-        result: {
-          success: false,
-          message: 'blocked: you are banned from posting here',
-        },
+        messageType: MessageType.EVENT,
+        success,
+        message,
       };
     }
 
-    return { canContinue: true };
+    return next();
   }
 }

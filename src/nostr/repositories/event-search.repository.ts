@@ -5,27 +5,24 @@ import { isNil } from 'lodash';
 import { Index, MeiliSearch } from 'meilisearch';
 import {
   buildMeiliSearchFilter,
-  FilterQuery,
   buildMeiliSearchSort,
+  FilterQuery,
 } from 'meilisearch-helper';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
 import { TEventIdWithScore } from '../types/event';
 
-const EVENT_FILTERABLE_ATTRIBUTES = [
-  'id',
-  'author',
-  'createdAt',
-  'kind',
-  'genericTags',
-  'delegator',
-  'expiredAt',
-  'dTagValue',
-] as const;
-type EventFilterableAttributes = (typeof EVENT_FILTERABLE_ATTRIBUTES)[number];
+type EventFilterableAttributes =
+  | 'id'
+  | 'author'
+  | 'createdAt'
+  | 'kind'
+  | 'genericTags'
+  | 'delegator'
+  | 'expiredAt'
+  | 'dTagValue';
 
-const EVENT_SORTABLE_ATTRIBUTES = ['createdAt'] as const;
-type EventSortableAttributes = (typeof EVENT_SORTABLE_ATTRIBUTES)[number];
+type EventSortableAttributes = 'createdAt';
 
 type EventDocument = {
   id: string;

@@ -26,6 +26,12 @@ describe('EventRepository', () => {
     await eventRepository.destroy();
   });
 
+  describe('isSearchSupported', () => {
+    it('should return true', () => {
+      expect(eventRepository.isSearchSupported()).toBe(true);
+    });
+  });
+
   describe('upsert', () => {
     it('should insert a new event', async () => {
       const event = createEvent({
