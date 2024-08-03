@@ -4,27 +4,52 @@ import { ClientContext, Event, MessageType } from '@nostr-relay/common';
 import { AccessControlPlugin } from './access-control.plugin';
 
 describe('AccessControlPlugin', () => {
-  let plugin: AccessControlPlugin;
-  let ctx: ClientContext;
-  let fakeSendMessage: jest.Mock;
-
-  beforeEach(() => {
-    plugin = new AccessControlPlugin(createMock<ConfigService>());
-    fakeSendMessage = jest.fn();
-
-    ctx = createMock<ClientContext>({
-      sendMessage: fakeSendMessage,
-    });
-  });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
 
+  describe('constructor', () => {
+    it('should create blacklist and whitelist if config is provided', () => {
+      const configService = createMock<ConfigService>({
+        get: jest.fn().mockReturnValue({
+          blacklist: ['blacklisted'],
+          whitelist: ['whitelisted'],
+        }),
+      });
+
+      const plugin = new AccessControlPlugin(configService);
+
+      expect(plugin).toBeDefined();
+      expect(plugin['blacklist']?.has('blacklisted')).toBe(true);
+      expect(plugin['whitelist']?.has('whitelisted')).toBe(true);
+    });
+  });
+
   describe('handleMessage', () => {
+    let plugin: AccessControlPlugin;
+    let ctx: ClientContext;
+    let fakeSendMessage: jest.Mock;
+    let fakeNext: jest.Mock;
+
+    beforeEach(() => {
+      plugin = new AccessControlPlugin(createMock<ConfigService>());
+      fakeSendMessage = jest.fn();
+      fakeNext = jest.fn();
+
+      ctx = createMock<ClientContext>({
+        sendMessage: fakeSendMessage,
+      });
+    });
+
+    it('should not block message if it is not an EVENT message', async () => {
+      await plugin.handleMessage(ctx, [MessageType.REQ, 'reqId', {}], fakeNext);
+
+      expect(fakeNext).toHaveBeenCalled();
+      expect(fakeSendMessage).not.toHaveBeenCalled();
+    });
+
     it('should block event if pubkey is in blacklist', async () => {
       (plugin as any)['blacklist'] = new Set(['blockedPubkey']);
-      const fakeNext = jest.fn();
       await plugin.handleMessage(
         ctx,
         [
@@ -48,7 +73,6 @@ describe('AccessControlPlugin', () => {
 
     it('should allow event if pubkey is not in blacklist', async () => {
       (plugin as any)['blacklist'] = new Set(['blockedPubkey']);
-      const fakeNext = jest.fn();
       await plugin.handleMessage(
         ctx,
         [
@@ -64,7 +88,6 @@ describe('AccessControlPlugin', () => {
 
     it('should block event if pubkey is not in whitelist', async () => {
       (plugin as any)['whitelist'] = new Set(['allowedPubkey']);
-      const fakeNext = jest.fn();
       await plugin.handleMessage(
         ctx,
         [
@@ -85,7 +108,6 @@ describe('AccessControlPlugin', () => {
 
     it('should allow event if there is in whitelist and not in blacklist', async () => {
       (plugin as any)['whitelist'] = new Set(['allowedPubkey']);
-      const fakeNext = jest.fn();
       await plugin.handleMessage(
         ctx,
         [
