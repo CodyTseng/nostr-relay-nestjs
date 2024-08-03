@@ -25,7 +25,7 @@ describe('WsThrottlerGuard', () => {
 
   it('should be fine', async () => {
     const guard = new WsThrottlerGuard(
-      [{ limit: 2, ttl: 2000 }],
+      [{ limit: 2, ttl: 10 }],
       storageService,
       new Reflector(),
     );
@@ -33,7 +33,14 @@ describe('WsThrottlerGuard', () => {
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    await expect(guard.canActivate(context)).rejects.toThrowError(
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      'rate-limited: slow down there chief',
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    await expect(guard.canActivate(context)).rejects.toThrow(
       'rate-limited: slow down there chief',
     );
   });
