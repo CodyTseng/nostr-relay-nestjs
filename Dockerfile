@@ -1,5 +1,5 @@
 # Building layer
-FROM node:18-alpine as build
+FROM node:lts-alpine3.20 as build
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Production layer
-FROM node:18-alpine as production
+FROM node:lts-alpine3.20 as production
 
 # Set environment variables
 ARG GIT_COMMIT_SHA
