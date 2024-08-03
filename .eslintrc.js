@@ -23,4 +23,12 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/ban-types': 'off',
   },
+  overrides: [
+    {
+      files: ['**/*.spec.ts', 'integration/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-unsafe-function-type': 'off',
+      },
+    },
+  ],
 };
