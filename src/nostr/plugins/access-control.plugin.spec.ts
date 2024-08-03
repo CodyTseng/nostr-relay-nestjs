@@ -1,72 +1,102 @@
-import { ConfigService } from '@nestjs/config';
 import { createMock } from '@golevelup/ts-jest';
+import { ConfigService } from '@nestjs/config';
+import { ClientContext, Event, MessageType } from '@nostr-relay/common';
 import { AccessControlPlugin } from './access-control.plugin';
-import { Event } from '@nostr-relay/common';
-import { Config } from 'src/config';
 
 describe('AccessControlPlugin', () => {
-  const blockResult = {
-    canContinue: false,
-    result: {
-      success: false,
-      message: 'blocked: you are banned from posting here',
-    },
-  };
-  let configService: ConfigService<Config, true>;
+  let plugin: AccessControlPlugin;
+  let ctx: ClientContext;
+  let fakeSendMessage: jest.Mock;
 
   beforeEach(() => {
-    configService = createMock<ConfigService>();
+    plugin = new AccessControlPlugin(createMock<ConfigService>());
+    fakeSendMessage = jest.fn();
+
+    ctx = createMock<ClientContext>({
+      sendMessage: fakeSendMessage,
+    });
   });
 
-  describe('beforeEventHandle', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('handleMessage', () => {
     it('should block event if pubkey is in blacklist', async () => {
-      jest
-        .spyOn(configService, 'get')
-        .mockReturnValue({ blacklist: ['blockedPubkey'] });
-      const result = new AccessControlPlugin(configService).beforeEventHandle(
-        {} as any,
-        {
-          pubkey: 'blockedPubkey',
-        } as Event,
+      (plugin as any)['blacklist'] = new Set(['blockedPubkey']);
+      const fakeNext = jest.fn();
+      await plugin.handleMessage(
+        ctx,
+        [
+          MessageType.EVENT,
+          {
+            id: 'blockedId',
+            pubkey: 'blockedPubkey',
+          } as Event,
+        ],
+        fakeNext,
       );
-      expect(result).toEqual(blockResult);
+
+      expect(fakeNext).not.toHaveBeenCalled();
+      expect(fakeSendMessage).toHaveBeenCalledWith([
+        MessageType.OK,
+        'blockedId',
+        false,
+        'blocked: you are banned from posting here',
+      ]);
     });
 
     it('should allow event if pubkey is not in blacklist', async () => {
-      jest.spyOn(configService, 'get').mockReturnValue({
-        blacklist: ['blockedPubkey'],
-      });
-      const result = new AccessControlPlugin(configService).beforeEventHandle(
-        {} as any,
-        { pubkey: 'allowedPubkey' } as Event,
+      (plugin as any)['blacklist'] = new Set(['blockedPubkey']);
+      const fakeNext = jest.fn();
+      await plugin.handleMessage(
+        ctx,
+        [
+          MessageType.EVENT,
+          { id: 'allowedId', pubkey: 'allowedPubkey' } as Event,
+        ],
+        fakeNext,
       );
-      expect(result).toEqual({ canContinue: true });
+
+      expect(fakeNext).toHaveBeenCalled();
+      expect(fakeSendMessage).not.toHaveBeenCalled();
     });
 
     it('should block event if pubkey is not in whitelist', async () => {
-      jest
-        .spyOn(configService, 'get')
-        .mockReturnValue({ whitelist: ['allowedPubkey'] });
-      const result = new AccessControlPlugin(configService).beforeEventHandle(
-        {} as any,
-        {
-          pubkey: 'notAllowedPubkey',
-        } as Event,
+      (plugin as any)['whitelist'] = new Set(['allowedPubkey']);
+      const fakeNext = jest.fn();
+      await plugin.handleMessage(
+        ctx,
+        [
+          MessageType.EVENT,
+          { id: 'notAllowedId', pubkey: 'notAllowedPubkey' } as Event,
+        ],
+        fakeNext,
       );
-      expect(result).toEqual(blockResult);
+
+      expect(fakeNext).not.toHaveBeenCalled();
+      expect(fakeSendMessage).toHaveBeenCalledWith([
+        MessageType.OK,
+        'notAllowedId',
+        false,
+        'blocked: you are banned from posting here',
+      ]);
     });
 
     it('should allow event if there is in whitelist and not in blacklist', async () => {
-      jest
-        .spyOn(configService, 'get')
-        .mockReturnValue({ whitelist: ['allowedPubkey'] });
-      const result = new AccessControlPlugin(configService).beforeEventHandle(
-        {} as any,
-        {
-          pubkey: 'allowedPubkey',
-        } as Event,
+      (plugin as any)['whitelist'] = new Set(['allowedPubkey']);
+      const fakeNext = jest.fn();
+      await plugin.handleMessage(
+        ctx,
+        [
+          MessageType.EVENT,
+          { id: 'allowedId', pubkey: 'allowedPubkey' } as Event,
+        ],
+        fakeNext,
       );
-      expect(result).toEqual({ canContinue: true });
+
+      expect(fakeNext).toHaveBeenCalled();
+      expect(fakeSendMessage).not.toHaveBeenCalled();
     });
   });
 });

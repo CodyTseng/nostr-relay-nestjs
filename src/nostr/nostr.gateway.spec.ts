@@ -22,9 +22,7 @@ describe('NostrGateway', () => {
       createMock<NostrRelayLogger>(),
       createMock<EventRepository>(),
       createMock<ConfigService>(),
-      createMock<AccessControlPlugin>({
-        beforeEventHandle: jest.fn().mockReturnValue({ canContinue: true }),
-      }),
+      new AccessControlPlugin(createMock<ConfigService>()),
     );
   });
 

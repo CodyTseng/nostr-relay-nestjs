@@ -55,7 +55,6 @@ interface GenericTagTable {
 
 @Injectable()
 export class EventRepository extends IEventRepository {
-  readonly isSearchSupported = true;
   private readonly db: Kysely<Database>;
 
   constructor(
@@ -75,6 +74,10 @@ export class EventRepository extends IEventRepository {
       }),
     });
     this.db = new Kysely<Database>({ dialect });
+  }
+
+  isSearchSupported(): boolean {
+    return true;
   }
 
   async upsert(event: Event) {
