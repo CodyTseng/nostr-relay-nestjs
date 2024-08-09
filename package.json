@@ -35,7 +35,7 @@
     "@nestjs/schedule": "^4.1.0",
     "@nestjs/throttler": "^5.2.0",
     "@nestjs/websockets": "^10.3.10",
-    "@nostr-relay/common": "^0.0.24",
+    "@nostr-relay/common": "^0.0.26",
     "@nostr-relay/core": "^0.0.24",
     "@nostr-relay/validator": "^0.0.24",
     "another-nestjs-ws-adapter": "^10.1.0",
