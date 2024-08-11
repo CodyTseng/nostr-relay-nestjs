@@ -177,7 +177,7 @@ describe('NostrRelayService', () => {
         .mockResolvedValue(result);
 
       expect(await nostrRelayService.findEvents(filters)).toStrictEqual(result);
-      expect(fakeRelayFindEvents).toHaveBeenCalledWith(filters);
+      expect(fakeRelayFindEvents).toHaveBeenCalledWith(filters, undefined);
     });
   });
 

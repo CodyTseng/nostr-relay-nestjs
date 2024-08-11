@@ -8,10 +8,12 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FindEventsDto, HandleEventDto, RequestEventsDto } from './dtos';
 import { EventEntity, FilterEntity } from './entities';
+import { ParseNostrAuthorizationGuard } from './guards';
 import { EventIdSchema } from './schemas';
 import { NostrRelayService } from './services/nostr-relay.service';
 import {
@@ -21,9 +23,11 @@ import {
   HandleEventVo,
   RequestEventsVo,
 } from './vos';
+import { Pubkey } from './decorators';
 
 @Controller('api/v1/events')
 @ApiTags('events')
+@UseGuards(ParseNostrAuthorizationGuard)
 export class EventController {
   constructor(private readonly nostrRelayService: NostrRelayService) {}
 
@@ -67,14 +71,17 @@ export class EventController {
     description: 'Invalid event ID',
     type: ErrorVo,
   })
-  async findEventById(@Param('id') id: string): Promise<FindEventByIdVo> {
+  async findEventById(
+    @Param('id') id: string,
+    @Pubkey() pubkey?: string,
+  ): Promise<FindEventByIdVo> {
     const { success: validateSuccess } = await EventIdSchema.safeParseAsync(id);
     if (!validateSuccess) {
       throw new BadRequestException('Invalid event ID');
     }
 
     const [event] = await this.nostrRelayService
-      .findEvents([{ ids: [id] }])
+      .findEvents([{ ids: [id] }], pubkey)
       .catch(() => []);
 
     if (!event) {
@@ -96,6 +103,7 @@ export class EventController {
   })
   async findEvents(
     @Query() findEventsDto: FindEventsDto,
+    @Pubkey() pubkey?: string,
   ): Promise<FindEventsVo> {
     let filter: FilterEntity = {};
     try {
@@ -107,7 +115,7 @@ export class EventController {
     }
 
     const events = await this.nostrRelayService
-      .findEvents([filter])
+      .findEvents([filter], pubkey)
       .catch(() => []);
     return { data: events };
   }
@@ -124,6 +132,7 @@ export class EventController {
   })
   async requestEvents(
     @Body() requestEventsDto: RequestEventsDto,
+    @Pubkey() pubkey?: string,
   ): Promise<RequestEventsVo> {
     let filters: FilterEntity[] = [];
     if (requestEventsDto.filters) {
@@ -140,7 +149,7 @@ export class EventController {
     }
 
     const events = await this.nostrRelayService
-      .findEvents(filters)
+      .findEvents(filters, pubkey)
       .catch(() => []);
     return { data: events };
   }

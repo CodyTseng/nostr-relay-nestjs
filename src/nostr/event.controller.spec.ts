@@ -5,6 +5,7 @@ import { Event, Filter } from '@nostr-relay/common';
 import * as request from 'supertest';
 import { EventController } from './event.controller';
 import { NostrRelayService } from './services/nostr-relay.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('EventController', () => {
   let app: INestApplication;
@@ -186,56 +187,77 @@ describe('EventController', () => {
       await request(app.getHttpServer())
         .get('/api/v1/events?ids=test')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ ids: ['test'] }]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ ids: ['test'] }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?ids=test1,test2')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([
-        { ids: ['test1', 'test2'] },
-      ]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ ids: ['test1', 'test2'] }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?ids[]=test')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ ids: ['test'] }]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ ids: ['test'] }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?ids[]=test1&ids[]=test2')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([
-        { ids: ['test1', 'test2'] },
-      ]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ ids: ['test1', 'test2'] }],
+        undefined,
+      );
 
       await request(app.getHttpServer()).get('/api/v1/events?ids=').expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{}]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{}], undefined);
 
       await request(app.getHttpServer())
         .get('/api/v1/events?kinds=1')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ kinds: [1] }]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ kinds: [1] }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?kinds=1,2')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ kinds: [1, 2] }]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ kinds: [1, 2] }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?limit=10')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ limit: 10 }]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ limit: 10 }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?d=test')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ '#d': ['test'] }]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ '#d': ['test'] }],
+        undefined,
+      );
 
       await request(app.getHttpServer())
         .get('/api/v1/events?d=test1,test2')
         .expect(200);
-      expect(fakeFindEvents).toHaveBeenLastCalledWith([
-        { '#d': ['test1', 'test2'] },
-      ]);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith(
+        [{ '#d': ['test1', 'test2'] }],
+        undefined,
+      );
     });
   });
 
@@ -287,6 +309,14 @@ describe('EventController', () => {
 
 @Module({
   controllers: [EventController],
-  providers: [NostrRelayService],
+  providers: [
+    NostrRelayService,
+    {
+      provide: ConfigService,
+      useValue: createMock<ConfigService>({
+        get: jest.fn(),
+      }),
+    },
+  ],
 })
 export class NostrModule {}

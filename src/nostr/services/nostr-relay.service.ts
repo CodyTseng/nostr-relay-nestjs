@@ -76,8 +76,8 @@ export class NostrRelayService {
     return await this.relay.handleEvent(event);
   }
 
-  async findEvents(filters: Filter[]) {
-    return await this.relay.findEvents(filters);
+  async findEvents(filters: Filter[], pubkey?: string) {
+    return await this.relay.findEvents(filters, pubkey);
   }
 
   async validateEvent(data: any) {
