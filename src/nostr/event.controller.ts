@@ -7,14 +7,20 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-import { HandleEventDto, RequestEventsDto } from './dtos';
+import { FindEventsDto, HandleEventDto, RequestEventsDto } from './dtos';
 import { EventEntity, FilterEntity } from './entities';
 import { EventIdSchema } from './schemas';
 import { NostrRelayService } from './services/nostr-relay.service';
-import { ErrorVo, GetEventByIdVo, RequestEventsVo } from './vos';
-import { HandleEventVo } from './vos/handle-event.vo';
+import {
+  ErrorVo,
+  FindEventByIdVo,
+  FindEventsVo,
+  HandleEventVo,
+  RequestEventsVo,
+} from './vos';
 
 @Controller('api/v1/events')
 @ApiTags('events')
@@ -51,17 +57,17 @@ export class EventController {
   }
 
   /**
-   * Get an event by its ID.
+   * Find an event by its ID.
    */
   @Get(':id')
-  @ApiResponse({ type: GetEventByIdVo })
+  @ApiResponse({ type: FindEventByIdVo })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Event not found' })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid event ID',
     type: ErrorVo,
   })
-  async getEventById(@Param('id') id: string): Promise<GetEventByIdVo> {
+  async findEventById(@Param('id') id: string): Promise<FindEventByIdVo> {
     const { success: validateSuccess } = await EventIdSchema.safeParseAsync(id);
     if (!validateSuccess) {
       throw new BadRequestException('Invalid event ID');
@@ -76,6 +82,34 @@ export class EventController {
     }
 
     return { data: event };
+  }
+
+  /**
+   * Find events based on a filter.
+   */
+  @Get()
+  @ApiResponse({ type: FindEventsVo })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid filters',
+    type: ErrorVo,
+  })
+  async findEvents(
+    @Query() findEventsDto: FindEventsDto,
+  ): Promise<FindEventsVo> {
+    let filter: FilterEntity = {};
+    try {
+      filter = await this.nostrRelayService.validateFilter(
+        this.preprocessFindEventsDto(findEventsDto),
+      );
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    const events = await this.nostrRelayService
+      .findEvents([filter])
+      .catch(() => []);
+    return { data: events };
   }
 
   /**
@@ -109,5 +143,43 @@ export class EventController {
       .findEvents(filters)
       .catch(() => []);
     return { data: events };
+  }
+
+  private preprocessFindEventsDto(findEventsDto: FindEventsDto) {
+    const filter: FilterEntity = {};
+    Object.keys(findEventsDto)
+      .filter(
+        (key) =>
+          [
+            'ids',
+            'authors',
+            'kinds',
+            'since',
+            'until',
+            'limit',
+            'search',
+          ].includes(key) || !!key.match(/^[a-zA-Z]$/),
+      )
+      .forEach((key) => {
+        let value = findEventsDto[key];
+        // skip empty arrays or strings
+        if (value.length === 0) {
+          return;
+        }
+        if (
+          !['since', 'until', 'limit', 'search'].includes(key) &&
+          !Array.isArray(value)
+        ) {
+          value = value.split(',');
+        }
+        if (['kinds', 'since', 'until', 'limit'].includes(key)) {
+          value = Array.isArray(value)
+            ? value.map((v) => parseInt(v))
+            : parseInt(value);
+        }
+        filter[key.match(/^[a-zA-Z]$/) ? `#${key}` : key] = value;
+      });
+
+    return filter;
   }
 }

@@ -1,5 +1,5 @@
 import { EventEntity } from '../entities';
 
-export class GetEventByIdVo {
+export class FindEventByIdVo {
   data: EventEntity;
 }

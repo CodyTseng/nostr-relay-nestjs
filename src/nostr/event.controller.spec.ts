@@ -131,6 +131,114 @@ describe('EventController', () => {
     });
   });
 
+  describe('/GET events', () => {
+    it('success', () => {
+      jest
+        .spyOn(nostrRelayService, 'validateFilter')
+        .mockImplementation(async (data) => data as Filter);
+      jest
+        .spyOn(nostrRelayService, 'findEvents')
+        .mockResolvedValue([{ id: 'test' } as Event]);
+
+      return request(app.getHttpServer())
+        .get('/api/v1/events')
+        .query({ ids: ['test'] })
+        .expect(200, { data: [{ id: 'test' }] });
+    });
+
+    it('invalid filters', () => {
+      jest
+        .spyOn(nostrRelayService, 'validateFilter')
+        .mockRejectedValue(new Error('Invalid filters'));
+
+      return request(app.getHttpServer())
+        .get('/api/v1/events')
+        .query({ ids: ['test'] })
+        .expect(400, {
+          message: 'Invalid filters',
+          error: 'Bad Request',
+          statusCode: 400,
+        });
+    });
+
+    it('return empty array when findEvents fails', () => {
+      jest
+        .spyOn(nostrRelayService, 'validateFilter')
+        .mockImplementation(async (data) => data as Filter);
+      jest
+        .spyOn(nostrRelayService, 'findEvents')
+        .mockRejectedValue(new Error());
+
+      return request(app.getHttpServer())
+        .get('/api/v1/events')
+        .query({ ids: ['test'] })
+        .expect(200, { data: [] });
+    });
+
+    it('preprocessFindEventsDto', async () => {
+      jest
+        .spyOn(nostrRelayService, 'validateFilter')
+        .mockImplementation(async (data) => data as Filter);
+      const fakeFindEvents = jest
+        .spyOn(nostrRelayService, 'findEvents')
+        .mockResolvedValue([]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?ids=test')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ ids: ['test'] }]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?ids=test1,test2')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([
+        { ids: ['test1', 'test2'] },
+      ]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?ids[]=test')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ ids: ['test'] }]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?ids[]=test1&ids[]=test2')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([
+        { ids: ['test1', 'test2'] },
+      ]);
+
+      await request(app.getHttpServer()).get('/api/v1/events?ids=').expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{}]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?kinds=1')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ kinds: [1] }]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?kinds=1,2')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ kinds: [1, 2] }]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?limit=10')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ limit: 10 }]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?d=test')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([{ '#d': ['test'] }]);
+
+      await request(app.getHttpServer())
+        .get('/api/v1/events?d=test1,test2')
+        .expect(200);
+      expect(fakeFindEvents).toHaveBeenLastCalledWith([
+        { '#d': ['test1', 'test2'] },
+      ]);
+    });
+  });
+
   describe('/POST events/request', () => {
     it('success', () => {
       jest
