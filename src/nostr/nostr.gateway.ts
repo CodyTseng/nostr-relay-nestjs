@@ -8,23 +8,19 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { NostrRelay, createOutgoingNoticeMessage } from '@nostr-relay/core';
-import { Validator } from '@nostr-relay/validator';
+import { createOutgoingNoticeMessage } from '@nostr-relay/core';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { WebSocket } from 'ws';
 import { ZodError } from 'zod';
-import { ValidationError, fromZodError } from 'zod-validation-error';
+import { fromZodError } from 'zod-validation-error';
 import { GlobalExceptionFilter } from '../common/filters';
 import { WsThrottlerGuard } from '../common/guards';
-import { Config } from '../config';
 import { LoggingInterceptor } from './interceptors';
-import { AccessControlPlugin } from './plugins';
-import { EventRepository } from './repositories';
 import { SubscriptionIdSchema } from './schemas';
 import { EventService } from './services/event.service';
-import { NostrRelayLogger } from './services/nostr-relay-logger.service';
-import { MetricService } from './services/metric.service';
+import { NostrRelayService } from './services/nostr-relay.service';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 256KB
@@ -33,45 +29,26 @@ import { MetricService } from './services/metric.service';
 @UseFilters(GlobalExceptionFilter)
 @UseGuards(WsThrottlerGuard)
 export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  private readonly relay: NostrRelay;
-  private readonly validator: Validator;
   private readonly messageHandlingConfig: MessageHandlingConfig;
 
   constructor(
     @InjectPinoLogger(NostrGateway.name)
     private readonly logger: PinoLogger,
     private readonly eventService: EventService,
-    private readonly metricService: MetricService,
-    nostrRelayLogger: NostrRelayLogger,
-    eventRepository: EventRepository,
+    private readonly nostrRelayService: NostrRelayService,
     configService: ConfigService<Config, true>,
-    accessControlPlugin: AccessControlPlugin,
   ) {
-    const domain = configService.get('domain');
-    const limitConfig = configService.get('limit', { infer: true });
-    const cacheConfig = configService.get('cache', { infer: true });
     this.messageHandlingConfig = configService.get('messageHandling', {
       infer: true,
     });
-    this.relay = new NostrRelay(eventRepository, {
-      domain,
-      logger: nostrRelayLogger,
-      ...limitConfig,
-      ...cacheConfig,
-    });
-    this.validator = new Validator();
-
-    this.relay.register(accessControlPlugin);
   }
 
   handleConnection(client: WebSocket) {
-    this.relay.handleConnection(client);
-    this.metricService.incrementConnectionCount();
+    this.nostrRelayService.handleConnection(client);
   }
 
   handleDisconnect(client: WebSocket) {
-    this.relay.handleDisconnect(client);
-    this.metricService.decrementConnectionCount();
+    this.nostrRelayService.handleDisconnect(client);
   }
 
   @SubscribeMessage('DEFAULT')
@@ -79,21 +56,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: WebSocket,
     @MessageBody() data: Array<any>,
   ) {
-    try {
-      const start = Date.now();
-      const msg = await this.validator.validateIncomingMessage(data);
-      if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
-        return;
-      }
-      await this.relay.handleMessage(client, msg);
-      this.metricService.pushProcessingTime(msg[0], Date.now() - start);
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        return createOutgoingNoticeMessage(error.message);
-      }
-      this.logger.error(error);
-      return createOutgoingNoticeMessage((error as Error).message);
-    }
+    return await this.nostrRelayService.handleMessage(client, data);
   }
 
   @SubscribeMessage('TOP')
@@ -105,13 +68,10 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (msg.length <= 2) return;
 
     try {
-      const subscriptionId = await SubscriptionIdSchema.parseAsync(msg[1]);
-
-      const filters = await Promise.all(
-        msg
-          .slice(2)
-          .map((filterDto) => this.validator.validateFilter(filterDto)),
-      );
+      const [, reqSubscriptionId, ...reqFilters] = msg;
+      const subscriptionId =
+        await SubscriptionIdSchema.parseAsync(reqSubscriptionId);
+      const filters = await this.nostrRelayService.validateFilters(reqFilters);
 
       const topIds = await this.eventService.findTopIds(filters);
 

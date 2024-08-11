@@ -9,11 +9,13 @@ import {
   Res,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiExcludeController } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Config } from '../config';
 import { MetricService } from './services/metric.service';
 
 @Controller()
+@ApiExcludeController()
 export class NostrController {
   private readonly relayInfoDoc: {
     name: string;

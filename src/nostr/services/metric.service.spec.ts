@@ -85,6 +85,13 @@ describe('metricService', () => {
     expect(mockCloseDigestReset).toHaveBeenCalled();
   });
 
+  it('should keep the length of metrics less than or equal to 24', () => {
+    for (let i = 0; i < 30; i++) {
+      metricService.recordMetric();
+    }
+    expect(metricService['metrics'].length).toBe(24);
+  });
+
   it('should get metrics', () => {
     const metrics = metricService.getMetrics();
     expect(metrics.startupTime).toBeDefined();

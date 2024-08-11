@@ -1,7 +1,9 @@
+import 'dotenv/config';
+
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import 'dotenv/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Express, static as ExpressStatic } from 'express';
 import * as hbs from 'hbs';
 import helmet from 'helmet';
@@ -39,6 +41,13 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService<Config, true>);
   const port = configService.get('port', { infer: true });
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Nostr Relay API')
+    .setVersion('v1')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(port);
 }
