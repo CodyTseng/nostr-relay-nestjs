@@ -45,6 +45,10 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Nostr Relay API')
     .setVersion('v1')
+    .setDescription(
+      'If you want to retrieve kind-4 events, you need to add an Authorization header with Nostr token. ' +
+        'More details can be found in the [NIP-98](https://github.com/nostr-protocol/nips/blob/master/98.md).',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
