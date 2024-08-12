@@ -15,8 +15,8 @@ describe('ParseNostrAuthorizationGuard', () => {
     );
   });
 
-  it('should directly return true if domain is not set', async () => {
-    (guard as any).domain = undefined;
+  it('should directly return true if hostname is not set', async () => {
+    (guard as any).hostname = undefined;
     const { request, context } = createMockContext();
     expect(await guard.canActivate(context)).toBe(true);
     expect(request.pubkey).toBeUndefined();

@@ -28,14 +28,14 @@ export class NostrRelayService {
     configService: ConfigService<Config, true>,
     accessControlPlugin: AccessControlPlugin,
   ) {
-    const domain = configService.get('domain');
+    const hostname = configService.get('hostname');
     const limitConfig = configService.get('limit', { infer: true });
     const cacheConfig = configService.get('cache', { infer: true });
     this.messageHandlingConfig = configService.get('messageHandling', {
       infer: true,
     });
     this.relay = new NostrRelay(eventRepository, {
-      domain,
+      hostname,
       logger: nostrRelayLogger,
       ...limitConfig,
       ...cacheConfig,

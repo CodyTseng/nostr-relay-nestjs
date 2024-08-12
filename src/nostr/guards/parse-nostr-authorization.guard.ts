@@ -8,14 +8,14 @@ import { URL } from 'url';
 @Injectable()
 export class ParseNostrAuthorizationGuard implements CanActivate {
   private readonly validator = new Validator();
-  private readonly domain: string | undefined;
+  private readonly hostname: string | undefined;
 
   constructor(configService: ConfigService) {
-    this.domain = configService.get('domain');
+    this.hostname = configService.get('hostname');
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (!this.domain) {
+    if (!this.hostname) {
       return true;
     }
 
@@ -47,7 +47,7 @@ export class ParseNostrAuthorizationGuard implements CanActivate {
       }
 
       const uTagValue = event.tags.find(([tagName]) => tagName === 'u')?.[1];
-      if (!uTagValue || new URL(uTagValue).hostname !== this.domain) {
+      if (!uTagValue || new URL(uTagValue).hostname !== this.hostname) {
         return true;
       }
 

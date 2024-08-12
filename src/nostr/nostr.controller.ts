@@ -52,8 +52,8 @@ export class NostrController {
     const limitConfig = configService.get('limit', { infer: true });
     const supported_nips = [1, 2, 4, 11, 13, 22, 26, 28, 40];
 
-    const domain = configService.get('domain', { infer: true });
-    if (domain) {
+    const hostname = configService.get('hostname', { infer: true });
+    if (hostname) {
       supported_nips.push(42);
     }
 

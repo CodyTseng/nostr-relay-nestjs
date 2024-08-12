@@ -4,6 +4,7 @@ export const EnvironmentSchema = z.object({
   DATABASE_URL: z.string(),
 
   /*==== optional ====*/
+  HOSTNAME: z.string().optional(),
   DOMAIN: z.string().optional(),
   NODE_ENV: z.string().default('development'),
   PORT: z

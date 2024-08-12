@@ -10,6 +10,7 @@ describe('config', () => {
   it('should validate environment successfully', () => {
     expect(
       validateEnvironment({
+        HOSTNAME: 'localhost',
         DOMAIN: 'localhost',
         DATABASE_URL: 'postgresql://xxx:xxx/xxx',
         DATABASE_MAX_CONNECTIONS: '20',
@@ -37,6 +38,7 @@ describe('config', () => {
         AUTH_MESSAGE_HANDLING_ENABLED: 'false',
       }),
     ).toEqual({
+      HOSTNAME: 'localhost',
       DOMAIN: 'localhost',
       DATABASE_URL: 'postgresql://xxx:xxx/xxx',
       DATABASE_MAX_CONNECTIONS: 20,
