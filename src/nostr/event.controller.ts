@@ -92,7 +92,8 @@ export class EventController {
   }
 
   /**
-   * Find events based on a filter.
+   * Find events based on a filter. This endpoint only supports a single filter.
+   * For multiple filters, use the POST /request endpoint.
    */
   @Get()
   @ApiResponse({ type: FindEventsVo })
@@ -121,7 +122,7 @@ export class EventController {
   }
 
   /**
-   * Request events based on filters.
+   * Request events based on filters. This endpoint supports multiple filters.
    */
   @Post('request')
   @ApiResponse({ type: RequestEventsVo })
