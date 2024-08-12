@@ -1,14 +1,11 @@
 import { createMock } from '@golevelup/ts-jest';
-import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
 import { ValidationError } from 'zod-validation-error';
 import { NostrGateway } from './nostr.gateway';
-import { AccessControlPlugin } from './plugins';
-import { EventRepository } from './repositories';
 import { EventService } from './services/event.service';
-import { MetricService } from './services/metric.service';
-import { NostrRelayLogger } from './services/nostr-relay-logger.service';
+import { NostrRelayService } from './services/nostr-relay.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
@@ -18,11 +15,8 @@ describe('NostrGateway', () => {
     nostrGateway = new NostrGateway(
       createMock<PinoLogger>(),
       createMock<EventService>(),
-      createMock<MetricService>(),
-      createMock<NostrRelayLogger>(),
-      createMock<EventRepository>(),
+      createMock<NostrRelayService>(),
       createMock<ConfigService>(),
-      new AccessControlPlugin(createMock<ConfigService>()),
     );
   });
 
@@ -34,7 +28,7 @@ describe('NostrGateway', () => {
     it('should call handleConnection', () => {
       const mockClient = {} as WebSocket;
       const spy = jest
-        .spyOn(nostrGateway['relay'], 'handleConnection')
+        .spyOn(nostrGateway['nostrRelayService'], 'handleConnection')
         .mockImplementation();
       nostrGateway.handleConnection(mockClient);
       expect(spy).toHaveBeenCalledWith(mockClient);
@@ -45,7 +39,7 @@ describe('NostrGateway', () => {
     it('should call handleDisconnect', () => {
       const mockClient = {} as WebSocket;
       const spy = jest
-        .spyOn(nostrGateway['relay'], 'handleDisconnect')
+        .spyOn(nostrGateway['nostrRelayService'], 'handleDisconnect')
         .mockImplementation();
       nostrGateway.handleDisconnect(mockClient);
       expect(spy).toHaveBeenCalledWith(mockClient);
@@ -56,55 +50,14 @@ describe('NostrGateway', () => {
     it('should call handleMessage', async () => {
       const mockClient = {} as WebSocket;
       const mockData: any = ['event'];
-      (nostrGateway as any).messageHandlingConfig = {
-        event: true,
-      };
-      jest
-        .spyOn(nostrGateway['validator'], 'validateIncomingMessage')
-        .mockResolvedValue(mockData);
       const nostrRelayHandleMessageSpy = jest
-        .spyOn(nostrGateway['relay'], 'handleMessage')
+        .spyOn(nostrGateway['nostrRelayService'], 'handleMessage')
         .mockImplementation();
       await nostrGateway.handleMessage(mockClient, mockData);
       expect(nostrRelayHandleMessageSpy).toHaveBeenCalledWith(
         mockClient,
         mockData,
       );
-    });
-
-    it('should return directly if type is not enable', async () => {
-      const mockClient = {} as WebSocket;
-      const mockData: any = ['test'];
-      (nostrGateway as any).messageHandlingConfig = {
-        event: true,
-      };
-      jest
-        .spyOn(nostrGateway['validator'], 'validateIncomingMessage')
-        .mockResolvedValue(mockData);
-      const nostrRelayHandleMessageSpy = jest
-        .spyOn(nostrGateway['relay'], 'handleMessage')
-        .mockImplementation();
-      await nostrGateway.handleMessage(mockClient, mockData);
-      expect(nostrRelayHandleMessageSpy).not.toHaveBeenCalled();
-    });
-
-    it('should return notice if message is invalid', async () => {
-      const mockClient = {} as WebSocket;
-      const mockData: any = ['test'];
-      (nostrGateway as any).messageHandlingConfig = {
-        event: true,
-      };
-      jest
-        .spyOn(nostrGateway['validator'], 'validateIncomingMessage')
-        .mockRejectedValue(new ValidationError('test'));
-      const result = await nostrGateway.handleMessage(mockClient, mockData);
-      expect(result).toEqual(['NOTICE', expect.any(String)]);
-
-      jest
-        .spyOn(nostrGateway['validator'], 'validateIncomingMessage')
-        .mockRejectedValue(new Error('test'));
-      const result2 = await nostrGateway.handleMessage(mockClient, mockData);
-      expect(result2).toEqual(['NOTICE', expect.any(String)]);
     });
   });
 
@@ -114,6 +67,9 @@ describe('NostrGateway', () => {
       (nostrGateway as any).messageHandlingConfig = {
         top: true,
       };
+      jest
+        .spyOn(nostrGateway['nostrRelayService'], 'validateFilter')
+        .mockResolvedValue({});
       const findTopIdsSpy = jest
         .spyOn(nostrGateway['eventService'], 'findTopIds')
         .mockResolvedValue(['test']);
@@ -158,6 +114,9 @@ describe('NostrGateway', () => {
       (nostrGateway as any).messageHandlingConfig = {
         top: true,
       };
+      jest
+        .spyOn(nostrGateway['nostrRelayService'], 'validateFilters')
+        .mockRejectedValue(new ValidationError('test'));
 
       const result = await nostrGateway.top(mockData);
       expect(result).toEqual(['NOTICE', expect.any(String)]);

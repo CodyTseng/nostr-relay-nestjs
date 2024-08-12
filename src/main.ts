@@ -1,7 +1,9 @@
+import 'dotenv/config';
+
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import 'dotenv/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Express, static as ExpressStatic } from 'express';
 import * as hbs from 'hbs';
 import helmet from 'helmet';
@@ -39,6 +41,17 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService<Config, true>);
   const port = configService.get('port', { infer: true });
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Nostr Relay API')
+    .setVersion('v1')
+    .setDescription(
+      'If you want to retrieve kind-4 events, you need to add an Authorization header with Nostr token. ' +
+        'More details can be found in the [NIP-98](https://github.com/nostr-protocol/nips/blob/master/98.md).',
+    )
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(port);
 }

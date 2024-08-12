@@ -11,7 +11,7 @@ import { throttlerConfig } from './throttler.config';
 export function config() {
   const env = validateEnvironment(process.env);
   return {
-    domain: env.DOMAIN,
+    hostname: env.HOSTNAME ?? env.DOMAIN,
     port: env.PORT ?? 3000,
     environment: env.NODE_ENV,
     database: databaseConfig(env),

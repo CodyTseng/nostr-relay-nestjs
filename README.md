@@ -35,6 +35,10 @@ If you'd like to help me test the reliability of this relay implementation, you 
 
 ## Extra Features
 
+### RESTful API
+
+You can see the API documentation at `/api` endpoint.
+
 ### TOP verb
 
 TOP verb accepts a subscription id and filters as specified in [NIP 01](https://github.com/nostr-protocol/nips/blob/master/01.md) for the verb REQ.
@@ -118,6 +122,7 @@ You can view some simple relay metrics on `/metrics` endpoint.
 ## TODO
 
 - [x] Unit test
+- [x] RESTful API
 - [ ] Metrics, Monitoring and Alerting
 - [ ] Support multi nodes
 - [ ] Support for Bitcoin Lightning Network payments
