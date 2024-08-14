@@ -34,7 +34,7 @@
     "@nestjs/platform-express": "^10.3.10",
     "@nestjs/schedule": "^4.1.0",
     "@nestjs/swagger": "^7.4.0",
-    "@nestjs/throttler": "^5.2.0",
+    "@nestjs/throttler": "^6.1.1",
     "@nestjs/websockets": "^10.3.10",
     "@nostr-relay/common": "^0.0.28",
     "@nostr-relay/core": "^0.0.28",
