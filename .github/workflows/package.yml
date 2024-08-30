@@ -9,8 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  UPDATE_WEBHOOK: ${{ vars.UPDATE_WEBHOOK }}
-
+  
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
@@ -56,4 +55,4 @@ jobs:
 
       - name: Notify via webhook
         run: |
-          curl -XPOST "${{ env.UPDATE_WEBHOOK }}"
+          curl -XPOST "${{ vars.UPDATE_WEBHOOK }}"
