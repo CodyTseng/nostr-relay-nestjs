@@ -1,4 +1,4 @@
-name: Create and publish a Docker image
+.name: Create and publish a Docker image
 
 # This workflow is wrote based on this document: https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions
 
@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  UPDATE_WEBHOOK: ${{ dev.UPDATE_WEBHOOK }}
+  UPDATE_WEBHOOK: ${{ env.dev.UPDATE_WEBHOOK }}
 
 jobs:
   build-and-push-image:
