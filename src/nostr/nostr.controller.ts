@@ -102,7 +102,7 @@ export class NostrController {
     return res
       .status(HttpStatus.OK)
       .send(
-        `Please use a Nostr client to connect. Powered by nostr-relay-nestjs. version: ${this.relayInfoDoc.version} (${this.relayInfoDoc.git_commit_sha})`,
+        `Please use a Nostr client to connect. Powered by dezh-enr-1. version: ${this.relayInfoDoc.version} (${this.relayInfoDoc.git_commit_sha})`,
       );
   }
 

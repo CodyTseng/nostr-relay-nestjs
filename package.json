@@ -1,13 +1,13 @@
 {
-  "name": "nostr-relay-nestjs",
+  "name": "enr-1",
   "version": "2.1.1",
-  "description": "A high-performance nostr relay, using PostgreSQL",
+  "description": "The JellyFish-Dezh temp relay",
   "author": "codytseng",
   "private": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CodyTseng/nostr-relay-nestjs"
+    "url": "git+https://github.com/dezh-tech/enr-1"
   },
   "scripts": {
     "build": "nest build",
