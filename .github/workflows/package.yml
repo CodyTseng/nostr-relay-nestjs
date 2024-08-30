@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-
+  UPDATE_WEBHOOK: ${{ env.UPDATE_WEBHOOK }}
 
 jobs:
   build-and-push-image:
@@ -53,3 +53,7 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+      - name: Notify via webhook
+        run: |
+          curl -XPOST "${{ env.UPDATE_WEBHOOK }}"
