@@ -1,6 +1,6 @@
 name: Create and publish a Docker image
 
-# This workflow is wrote based on this document: https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions
+# This workflow is written based on this document: https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions
 
 on:
   push:
@@ -52,7 +52,3 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
-
-      - name: Notify via webhook
-        run: |
-          curl -XPOST "${{ vars.UPDATE_WEBHOOK }}"
