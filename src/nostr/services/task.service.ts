@@ -19,7 +19,7 @@ export class TaskService {
     this.logger.info(`Deleted ${affected} expired events`);
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async recordMetric() {
     this.metricService.recordMetric();
   }
