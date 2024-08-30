@@ -35,7 +35,7 @@ export class AccessControlPlugin implements HandleMessagePlugin {
 
     const event = message[1];
     if (
-      (this.blacklist && this.blacklist.has(event.pubkey)) ||
+      (this.blacklist && this.blacklist.has(event.pubkey)) &&
       (this.whitelist && !this.whitelist.has(event.pubkey))
     ) {
       const success = false;
