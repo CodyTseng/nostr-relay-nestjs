@@ -1,7 +1,7 @@
 {
   "name": "enr-1",
   "version": "2.1.1",
-  "description": "The JellyFish-Dezh temp relay",
+  "description": "The JellyFish relay",
   "author": "codytseng",
   "private": true,
   "license": "MIT",

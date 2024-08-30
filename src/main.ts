@@ -34,7 +34,7 @@ async function bootstrap() {
     next();
   });
 
-  app.use('/favicon.ico', ExpressStatic('./resources/favicon.ico'));
+  app.use('/jellyfish.jpg', ExpressStatic('./resources/jellyfish.jpg'));
 
   const express: Express = app.getHttpAdapter().getInstance();
   express.disable('x-powered-by');
