@@ -25,9 +25,9 @@ export function loggerModuleFactory(
     });
   }
 
-  if (environment !== 'production') {
+  // if (environment !== 'production') {
     targets.push({ level, target: 'pino/file', options: { destination: 1 } });
-  }
+  // }
   return {
     pinoHttp: {
       transport: {
