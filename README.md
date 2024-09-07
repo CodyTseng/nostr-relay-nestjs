@@ -35,6 +35,14 @@ If you'd like to help me test the reliability of this relay implementation, you 
 
 ## Extra Features
 
+### WoT (Web of Trust)
+
+If you want to enable the WoT feature, you need to set the following environment variables:
+
+- `WOT_TRUST_ANCHOR_PUBKEY`: The public key of the trust anchor. Trust anchor is the root of the trust net.
+- `WOT_TRUST_DEPTH`: The depth of the trust net. If the trust depth is 1, the trust net will include the trust anchor and the trust anchor's following users. If the trust depth is 2, the trust net will include the trust anchor, the trust anchor's following users, and the trust anchor's following users' following users. Now the maximum trust depth is 2.
+- `WOT_FETCH_FOLLOW_LIST_FROM`: Comma-separated list of relay URLs to fetch follow list from (e.g., WOT_FETCH_FOLLOW_LIST_FROM=wss://nostr-relay.app,wss://relay.damus.io). This environment variable is optional. The relay will always fetch the follow list from the local database first.
+
 ### RESTful API
 
 You can see the API documentation at `/api` endpoint.

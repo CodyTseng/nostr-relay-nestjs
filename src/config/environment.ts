@@ -115,6 +115,30 @@ export const EnvironmentSchema = z.object({
   AUTH_MESSAGE_HANDLING_ENABLED: z
     .preprocess((enabled: string) => enabled === 'true', z.boolean())
     .optional(),
+
+  WOT_TRUST_ANCHOR_PUBKEY: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+  WOT_TRUST_DEPTH: z
+    .preprocess(
+      (depth: string) => parseInt(depth),
+      z.number().positive().int().max(2),
+    )
+    .optional(),
+  WOT_REFRESH_INTERVAL: z.number().positive().int().optional(),
+  WOT_FETCH_FOLLOW_LIST_FROM: z
+    .preprocess(
+      (str: string) => str.split(',').map((item) => item.trim()),
+      z.array(z.string().regex(/^wss?:\/\/.+/)),
+    )
+    .optional(),
+  WOT_SKIP_FILTERS: z
+    .preprocess(
+      (str: string) => JSON.parse(str),
+      z.array(z.any()), // TODO: add filter schema
+    )
+    .optional(),
 });
 export type Environment = z.infer<typeof EnvironmentSchema>;
 

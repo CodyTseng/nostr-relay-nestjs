@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Event, Filter } from '@nostr-relay/common';
 import { createOutgoingNoticeMessage, NostrRelay } from '@nostr-relay/core';
 import { Validator } from '@nostr-relay/validator';
+import { WotGuard } from '@nostr-relay/wot-guard';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
@@ -14,10 +15,11 @@ import { MetricService } from './metric.service';
 import { NostrRelayLogger } from './nostr-relay-logger.service';
 
 @Injectable()
-export class NostrRelayService {
+export class NostrRelayService implements OnApplicationBootstrap {
   private readonly relay: NostrRelay;
   private readonly messageHandlingConfig: MessageHandlingConfig;
   private readonly validator: Validator;
+  private readonly wotGuardPlugin: WotGuard;
 
   constructor(
     @InjectPinoLogger(NostrRelayService.name)
@@ -31,6 +33,7 @@ export class NostrRelayService {
     const hostname = configService.get('hostname');
     const limitConfig = configService.get('limit', { infer: true });
     const cacheConfig = configService.get('cache', { infer: true });
+    const wotConfig = configService.get('wot', { infer: true });
     this.messageHandlingConfig = configService.get('messageHandling', {
       infer: true,
     });
@@ -42,6 +45,23 @@ export class NostrRelayService {
     });
     this.validator = new Validator();
     this.relay.register(accessControlPlugin);
+
+    if (wotConfig.trustAnchorPubkey) {
+      this.wotGuardPlugin = new WotGuard({
+        trustAnchorPubkey: wotConfig.trustAnchorPubkey,
+        trustDepth: wotConfig.trustDepth,
+        refreshInterval: wotConfig.refreshInterval,
+        relayUrls: wotConfig.fetchFollowListFrom,
+        skipFilters: wotConfig.skipFilters,
+        logger: nostrRelayLogger,
+        eventRepository,
+      });
+      this.relay.register(this.wotGuardPlugin);
+    }
+  }
+
+  async onApplicationBootstrap() {
+    await this.wotGuardPlugin?.init();
   }
 
   handleConnection(client: WebSocket) {
