@@ -7,6 +7,7 @@ import { meiliSearchConfig } from './meili-search.config';
 import { messageHandlingConfig } from './message-handling.config';
 import { relayInfoConfig } from './relay-info.config';
 import { throttlerConfig } from './throttler.config';
+import { wotConfig } from './wot.config';
 
 export function config() {
   const env = validateEnvironment(process.env);
@@ -22,6 +23,7 @@ export function config() {
     throttler: throttlerConfig(env),
     cache: cacheConfig(env),
     messageHandling: messageHandlingConfig(env),
+    wot: wotConfig(env),
   };
 }
 export type Config = ReturnType<typeof config>;

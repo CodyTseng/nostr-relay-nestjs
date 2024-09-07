@@ -36,6 +36,11 @@ describe('config', () => {
         CLOSE_MESSAGE_HANDLING_ENABLED: 'false',
         TOP_MESSAGE_HANDLING_ENABLED: 'false',
         AUTH_MESSAGE_HANDLING_ENABLED: 'false',
+        WOT_TRUST_ANCHOR_PUBKEY:
+          '8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883',
+        WOT_TRUST_DEPTH: '2',
+        WOT_FETCH_FOLLOW_LIST_FROM: 'wss://relay.damus.io,wss://nos.lol',
+        WOT_SKIP_FILTERS: '[{"kinds":[2333]}]',
       }),
     ).toEqual({
       HOSTNAME: 'localhost',
@@ -69,6 +74,11 @@ describe('config', () => {
       CLOSE_MESSAGE_HANDLING_ENABLED: false,
       TOP_MESSAGE_HANDLING_ENABLED: false,
       AUTH_MESSAGE_HANDLING_ENABLED: false,
+      WOT_TRUST_ANCHOR_PUBKEY:
+        '8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883',
+      WOT_TRUST_DEPTH: 2,
+      WOT_FETCH_FOLLOW_LIST_FROM: ['wss://relay.damus.io', 'wss://nos.lol'],
+      WOT_SKIP_FILTERS: [{ kinds: [2333] }],
     });
   });
 });
