@@ -19,7 +19,7 @@ export class NostrRelayService implements OnApplicationBootstrap {
   private readonly relay: NostrRelay;
   private readonly messageHandlingConfig: MessageHandlingConfig;
   private readonly validator: Validator;
-  private readonly wotGuardPlugin: WotGuard;
+  private readonly wotGuardPlugin?: WotGuard;
 
   constructor(
     @InjectPinoLogger(NostrRelayService.name)
@@ -110,5 +110,14 @@ export class NostrRelayService implements OnApplicationBootstrap {
 
   async validateFilters(data: any) {
     return await this.validator.validateFilters(data);
+  }
+
+  checkPubkeyIsTrusted(pubkey: string) {
+    return {
+      wotEnabled: !!this.wotGuardPlugin,
+      trusted: this.wotGuardPlugin
+        ? this.wotGuardPlugin.checkPubkey(pubkey)
+        : true,
+    };
   }
 }

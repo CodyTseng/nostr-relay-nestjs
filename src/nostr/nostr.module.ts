@@ -10,9 +10,10 @@ import { MetricService } from './services/metric.service';
 import { NostrRelayLogger } from './services/nostr-relay-logger.service';
 import { NostrRelayService } from './services/nostr-relay.service';
 import { TaskService } from './services/task.service';
+import { WotController } from './wot.controller';
 
 @Module({
-  controllers: [NostrController, EventController],
+  controllers: [NostrController, EventController, WotController],
   providers: [
     EventRepository,
     EventSearchRepository,
