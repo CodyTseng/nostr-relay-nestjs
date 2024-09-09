@@ -59,7 +59,7 @@
     "zod-validation-error": "^3.3.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.8.0",
+    "@eslint/js": "^9.10.0",
     "@golevelup/ts-jest": "^0.5.0",
     "@nestjs/cli": "^10.4.2",
     "@nestjs/schematics": "^10.1.3",
