@@ -1,6 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
-import { ClientContext, Event, MessageType } from '@nostr-relay/common';
+import { Event } from '@nostr-relay/common';
 import { AccessControlPlugin } from './access-control.plugin';
 
 describe('AccessControlPlugin', () => {
@@ -27,13 +27,9 @@ describe('AccessControlPlugin', () => {
 
   describe('beforeHandleEvent', () => {
     let plugin: AccessControlPlugin;
-    let fakeSendMessage: jest.Mock;
-    let fakeNext: jest.Mock;
 
     beforeEach(() => {
       plugin = new AccessControlPlugin(createMock<ConfigService>());
-      fakeSendMessage = jest.fn();
-      fakeNext = jest.fn();
     });
 
     it('should block event if pubkey is in blacklist', async () => {
