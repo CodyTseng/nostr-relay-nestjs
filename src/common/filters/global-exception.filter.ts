@@ -5,11 +5,11 @@ import {
   HttpException,
   NotFoundException,
 } from '@nestjs/common';
+import { createOutgoingNoticeMessage } from '@nostr-relay/common';
+import { Response } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
 import { ClientException } from '../exceptions';
-import { Response } from 'express';
-import { createOutgoingNoticeMessage } from '@nostr-relay/core';
 
 @Catch(Error)
 export class GlobalExceptionFilter implements ExceptionFilter {

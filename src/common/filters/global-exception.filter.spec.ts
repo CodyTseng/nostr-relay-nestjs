@@ -1,9 +1,9 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ArgumentsHost, HttpException } from '@nestjs/common';
+import { createOutgoingNoticeMessage } from '@nostr-relay/common';
 import { PinoLogger } from 'nestjs-pino';
 import { ClientException } from '../exceptions';
 import { GlobalExceptionFilter } from './global-exception.filter';
-import { createOutgoingNoticeMessage } from '@nostr-relay/core';
 
 describe('GlobalExceptionFilter', () => {
   let globalExceptionFilter: GlobalExceptionFilter;

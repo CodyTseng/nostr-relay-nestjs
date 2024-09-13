@@ -8,7 +8,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { createOutgoingNoticeMessage } from '@nostr-relay/core';
+import { createOutgoingNoticeMessage } from '@nostr-relay/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';

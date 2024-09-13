@@ -1,7 +1,11 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Event, Filter } from '@nostr-relay/common';
-import { createOutgoingNoticeMessage, NostrRelay } from '@nostr-relay/core';
+import {
+  Event,
+  Filter,
+  createOutgoingNoticeMessage,
+} from '@nostr-relay/common';
+import { NostrRelay } from '@nostr-relay/core';
 import { Validator } from '@nostr-relay/validator';
 import { WotGuard } from '@nostr-relay/wot-guard';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';

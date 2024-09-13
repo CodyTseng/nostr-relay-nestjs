@@ -25,9 +25,8 @@ describe('AccessControlPlugin', () => {
     });
   });
 
-  describe('handleMessage', () => {
+  describe('beforeHandleEvent', () => {
     let plugin: AccessControlPlugin;
-    let ctx: ClientContext;
     let fakeSendMessage: jest.Mock;
     let fakeNext: jest.Mock;
 
@@ -35,90 +34,48 @@ describe('AccessControlPlugin', () => {
       plugin = new AccessControlPlugin(createMock<ConfigService>());
       fakeSendMessage = jest.fn();
       fakeNext = jest.fn();
-
-      ctx = createMock<ClientContext>({
-        sendMessage: fakeSendMessage,
-      });
-    });
-
-    it('should not block message if it is not an EVENT message', async () => {
-      await plugin.handleMessage(ctx, [MessageType.REQ, 'reqId', {}], fakeNext);
-
-      expect(fakeNext).toHaveBeenCalled();
-      expect(fakeSendMessage).not.toHaveBeenCalled();
     });
 
     it('should block event if pubkey is in blacklist', async () => {
       (plugin as any)['blacklist'] = new Set(['blockedPubkey']);
-      await plugin.handleMessage(
-        ctx,
-        [
-          MessageType.EVENT,
-          {
-            id: 'blockedId',
-            pubkey: 'blockedPubkey',
-          } as Event,
-        ],
-        fakeNext,
-      );
+      const result = plugin.beforeHandleEvent({
+        id: 'blockedId',
+        pubkey: 'blockedPubkey',
+      } as Event);
 
-      expect(fakeNext).not.toHaveBeenCalled();
-      expect(fakeSendMessage).toHaveBeenCalledWith([
-        MessageType.OK,
-        'blockedId',
-        false,
-        'blocked: you are banned from posting here',
-      ]);
+      expect(result.canHandle).toBe(false);
+      expect(result.message).toBe('blocked: you are banned from posting here');
     });
 
     it('should allow event if pubkey is not in blacklist', async () => {
       (plugin as any)['blacklist'] = new Set(['blockedPubkey']);
-      await plugin.handleMessage(
-        ctx,
-        [
-          MessageType.EVENT,
-          { id: 'allowedId', pubkey: 'allowedPubkey' } as Event,
-        ],
-        fakeNext,
-      );
+      const result = plugin.beforeHandleEvent({
+        id: 'allowedId',
+        pubkey: 'allowedPubkey',
+      } as Event);
 
-      expect(fakeNext).toHaveBeenCalled();
-      expect(fakeSendMessage).not.toHaveBeenCalled();
+      expect(result.canHandle).toBe(true);
     });
 
     it('should block event if pubkey is not in whitelist', async () => {
       (plugin as any)['whitelist'] = new Set(['allowedPubkey']);
-      await plugin.handleMessage(
-        ctx,
-        [
-          MessageType.EVENT,
-          { id: 'notAllowedId', pubkey: 'notAllowedPubkey' } as Event,
-        ],
-        fakeNext,
-      );
+      const result = plugin.beforeHandleEvent({
+        id: 'notAllowedId',
+        pubkey: 'notAllowedPubkey',
+      } as Event);
 
-      expect(fakeNext).not.toHaveBeenCalled();
-      expect(fakeSendMessage).toHaveBeenCalledWith([
-        MessageType.OK,
-        'notAllowedId',
-        false,
-        'blocked: you are banned from posting here',
-      ]);
+      expect(result.canHandle).toBe(false);
+      expect(result.message).toBe('blocked: you are banned from posting here');
     });
 
     it('should allow event if there is in whitelist and not in blacklist', async () => {
       (plugin as any)['whitelist'] = new Set(['allowedPubkey']);
-      await plugin.handleMessage(
-        ctx,
-        [
-          MessageType.EVENT,
-          { id: 'allowedId', pubkey: 'allowedPubkey' } as Event,
-        ],
-        fakeNext,
-      );
+      const result = plugin.beforeHandleEvent({
+        id: 'allowedId',
+        pubkey: 'allowedPubkey',
+      } as Event);
 
-      expect(fakeNext).toHaveBeenCalled();
-      expect(fakeSendMessage).not.toHaveBeenCalled();
+      expect(result.canHandle).toBe(true);
     });
   });
 });
