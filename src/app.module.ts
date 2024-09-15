@@ -5,9 +5,11 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { GlobalExceptionFilter } from './common/filters';
-import { loggerModuleFactory } from './common/utils/logger-module-factory';
 import { Config, config } from './config';
-import { NostrModule } from './nostr/nostr.module';
+import { Nip05Module } from './modules/nip-05/nip-05.module';
+import { NostrModule } from './modules/nostr/nostr.module';
+import { TaskModule } from './modules/task/task.mdodule';
+import { loggerModuleFactory } from './utils';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { NostrModule } from './nostr/nostr.module';
     }),
     ScheduleModule.forRoot(),
     NostrModule,
+    Nip05Module,
+    TaskModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: GlobalExceptionFilter }],
 })
