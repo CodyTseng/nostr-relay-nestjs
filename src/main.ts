@@ -11,7 +11,7 @@ import { Logger } from 'nestjs-pino';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { Config } from './config';
-import { createWsAdapter } from './create-ws-adapter';
+import { createWsAdapter } from './modules/nostr/gateway/create-ws-adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
