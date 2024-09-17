@@ -1,5 +1,4 @@
-import { BeforeApplicationShutdown, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BeforeApplicationShutdown, Inject, Injectable } from '@nestjs/common';
 import {
   Event,
   EventUtils,
@@ -7,12 +6,11 @@ import {
   getTimestampInSeconds,
   EventRepository as IEventRepository,
 } from '@nostr-relay/common';
-import { Kysely, PostgresDialect, sql } from 'kysely';
+import { Kysely, sql } from 'kysely';
 import { isNil } from 'lodash';
-import * as pg from 'pg';
-import { Config } from 'src/config';
 import { TEventIdWithScore } from '../../types/event';
 import { isGenericTagName, toGenericTag } from '../../utils';
+import { KYSELY_DB } from './constants';
 import { EventSearchRepository } from './event-search.repository';
 import { Database, EventRow } from './types';
 
@@ -21,25 +19,11 @@ export class EventRepository
   extends IEventRepository
   implements BeforeApplicationShutdown
 {
-  private readonly db: Kysely<Database>;
-
   constructor(
+    @Inject(KYSELY_DB) private readonly db: Kysely<Database>,
     private readonly eventSearchRepository: EventSearchRepository,
-    configService: ConfigService<Config, true>,
   ) {
     super();
-    const databaseConfig = configService.get('database', { infer: true });
-
-    const int8TypeId = 20;
-    pg.types.setTypeParser(int8TypeId, (val) => parseInt(val, 10));
-
-    const dialect = new PostgresDialect({
-      pool: new pg.Pool({
-        connectionString: databaseConfig.url,
-        max: databaseConfig.maxConnections,
-      }),
-    });
-    this.db = new Kysely<Database>({ dialect });
   }
 
   isSearchSupported(): boolean {
