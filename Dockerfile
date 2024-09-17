@@ -39,4 +39,4 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist .
 
 # Start the application
-CMD npm run migration:run && node src/main
+CMD node scripts/migrate-to-latest && node src/main
