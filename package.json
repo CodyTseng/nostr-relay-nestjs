@@ -13,8 +13,8 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d data-source",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d data-source",
+    "migration:run": "ts-node scripts/migrate-to-latest.ts",
+    "migration:revert": "ts-node scripts/migrate-down.ts",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -54,7 +54,6 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "tdigest": "^0.1.2",
-    "typeorm": "^0.3.20",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.1"
   },

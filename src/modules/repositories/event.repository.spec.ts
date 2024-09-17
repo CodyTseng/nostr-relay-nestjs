@@ -1,8 +1,8 @@
 import { createMock } from '@golevelup/ts-jest';
-import { ConfigService } from '@nestjs/config';
 import { EventKind, getTimestampInSeconds } from '@nostr-relay/common';
 import 'dotenv/config';
-import { Kysely } from 'kysely';
+import { Kysely, PostgresDialect } from 'kysely';
+import * as pg from 'pg';
 import { createEvent } from '../../../test-utils/event';
 import { EventSearchRepository } from './event-search.repository';
 import { EventRepository } from './event.repository';
@@ -14,10 +14,8 @@ describe('EventRepository', () => {
 
   beforeEach(async () => {
     eventRepository = new EventRepository(
+      createDb(),
       createMock<EventSearchRepository>(),
-      createMock<ConfigService>({
-        get: () => ({ url: process.env.TEST_DATABASE_URL, maxConnections: 50 }),
-      }),
     );
     db = eventRepository['db'];
   });
@@ -487,3 +485,16 @@ describe('EventRepository', () => {
     });
   });
 });
+
+function createDb() {
+  const int8TypeId = 20;
+  pg.types.setTypeParser(int8TypeId, (val) => parseInt(val, 10));
+
+  const dialect = new PostgresDialect({
+    pool: new pg.Pool({
+      connectionString: process.env.TEST_DATABASE_URL,
+      max: 50,
+    }),
+  });
+  return new Kysely<any>({ dialect });
+}

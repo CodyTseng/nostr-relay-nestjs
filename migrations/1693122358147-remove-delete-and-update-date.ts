@@ -1,19 +1,13 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Kysely, sql } from 'kysely';
 
-export class RemoveDeleteAndUpdateDate1693122358147
-  implements MigrationInterface
-{
-  name = 'RemoveDeleteAndUpdateDate1693122358147';
+export async function up(db: Kysely<any>): Promise<void> {
+  await sql`ALTER TABLE "events" DROP COLUMN "update_date"`.execute(db);
+  await sql`ALTER TABLE "events" DROP COLUMN "delete_date"`.execute(db);
+}
 
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "events" DROP COLUMN "update_date"`);
-    await queryRunner.query(`ALTER TABLE "events" DROP COLUMN "delete_date"`);
-  }
-
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "events" ADD "delete_date" TIMESTAMP`);
-    await queryRunner.query(
-      `ALTER TABLE "events" ADD "update_date" TIMESTAMP NOT NULL DEFAULT now()`,
-    );
-  }
+export async function down(db: Kysely<any>): Promise<void> {
+  await sql`ALTER TABLE "events" ADD "delete_date" TIMESTAMP`.execute(db);
+  await sql`ALTER TABLE "events" ADD "update_date" TIMESTAMP NOT NULL DEFAULT now()`.execute(
+    db,
+  );
 }
