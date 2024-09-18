@@ -9,6 +9,7 @@ import { get } from 'lodash';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, finalize } from 'rxjs';
 import { Config } from 'src/config';
+import { WebSocket } from 'ws';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -31,6 +32,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     const start = Date.now();
     const data = context.switchToWs().getData();
+    const client = context.switchToWs().getClient<WebSocket>();
 
     return next.handle().pipe(
       finalize(() => {
@@ -42,9 +44,12 @@ export class LoggingInterceptor implements NestInterceptor {
         )} request took ${executionTime}ms to execute`;
 
         if (executionTime < this.slowExecutionThreshold) {
-          this.logger.info({ data, executionTime }, msg);
+          this.logger.info({ data, executionTime, ip: client.ip }, msg);
         } else {
-          this.logger.warn({ data, executionTime }, `${msg} (slow)`);
+          this.logger.warn(
+            { data, executionTime, ip: client.ip },
+            `${msg} (slow)`,
+          );
         }
       }),
     );

@@ -9,7 +9,7 @@ import { createOutgoingNoticeMessage } from '@nostr-relay/common';
 import { Response } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
-import { ClientException } from '../exceptions';
+import { ClientException, ThrottlerException } from '../exceptions';
 
 @Catch(Error)
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -42,6 +42,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private handleWsException(error: Error, client: WebSocket) {
+    if (error instanceof ThrottlerException) {
+      return client.close(1008, 'rate-limited: slow down there chief');
+    }
     client.send(JSON.stringify(createOutgoingNoticeMessage(error.message)));
   }
 
