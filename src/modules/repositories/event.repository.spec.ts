@@ -493,7 +493,7 @@ function createDb() {
   const dialect = new PostgresDialect({
     pool: new pg.Pool({
       connectionString: process.env.TEST_DATABASE_URL,
-      max: 50,
+      max: 1,
     }),
   });
   return new Kysely<any>({ dialect });

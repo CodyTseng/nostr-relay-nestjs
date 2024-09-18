@@ -41,6 +41,7 @@ describe('LoggingInterceptor', () => {
       getType: () => 'ws',
       switchToWs: () => ({
         getData: () => 'test-data',
+        getClient: () => ({ ip: 'test-ip' }),
       }),
     } as ExecutionContext;
     const next = {
@@ -54,6 +55,7 @@ describe('LoggingInterceptor', () => {
       {
         data: 'test-data',
         executionTime: expect.any(Number),
+        ip: 'test-ip',
       },
       expect.any(String),
     );
@@ -64,6 +66,7 @@ describe('LoggingInterceptor', () => {
       getType: () => 'ws',
       switchToWs: () => ({
         getData: () => 'test-data',
+        getClient: () => ({ ip: 'test-ip' }),
       }),
     } as ExecutionContext;
     const next = {
@@ -77,6 +80,7 @@ describe('LoggingInterceptor', () => {
       {
         data: 'test-data',
         executionTime: expect.any(Number),
+        ip: 'test-ip',
       },
       expect.any(String),
     );

@@ -6,6 +6,7 @@ import { ValidationError } from 'zod-validation-error';
 import { EventService } from '../services/event.service';
 import { NostrRelayService } from '../services/nostr-relay.service';
 import { NostrGateway } from './nostr.gateway';
+import { Request } from 'express';
 
 describe('NostrGateway', () => {
   let nostrGateway: NostrGateway;
@@ -30,7 +31,7 @@ describe('NostrGateway', () => {
       const spy = jest
         .spyOn(nostrGateway['nostrRelayService'], 'handleConnection')
         .mockImplementation();
-      nostrGateway.handleConnection(mockClient);
+      nostrGateway.handleConnection(mockClient, createMock<Request>());
       expect(spy).toHaveBeenCalledWith(mockClient);
     });
   });

@@ -14,6 +14,7 @@ describe('WsThrottlerGuard', () => {
   });
 
   let storageService: ThrottlerStorageService;
+  let guard: WsThrottlerGuard;
 
   beforeEach(() => {
     storageService = new ThrottlerStorageService();
@@ -21,10 +22,11 @@ describe('WsThrottlerGuard', () => {
 
   afterEach(() => {
     storageService.onApplicationShutdown();
+    guard?.onApplicationShutdown();
   });
 
   it('should be fine', async () => {
-    const guard = new WsThrottlerGuard(
+    guard = new WsThrottlerGuard(
       [{ limit: 2, ttl: 10 }],
       storageService,
       new Reflector(),
@@ -38,6 +40,7 @@ describe('WsThrottlerGuard', () => {
     );
 
     await new Promise((resolve) => setTimeout(resolve, 10));
+    guard['blackList'].clear();
     await expect(guard.canActivate(context)).resolves.toBe(true);
     await expect(guard.canActivate(context)).resolves.toBe(true);
     await expect(guard.canActivate(context)).rejects.toThrow(
