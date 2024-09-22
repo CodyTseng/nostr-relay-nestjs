@@ -86,11 +86,35 @@ export const EnvironmentSchema = z.object({
     )
     .optional(),
 
+  THROTTLER_TTL: z
+    .preprocess((ttl: string) => parseInt(ttl), z.number().nonnegative())
+    .optional(),
   THROTTLER_LIMIT: z
     .preprocess((limit: string) => parseInt(limit), z.number().nonnegative())
     .optional(),
-  THROTTLER_TTL: z
+  THROTTLER_EVENT_TTL: z
     .preprocess((ttl: string) => parseInt(ttl), z.number().nonnegative())
+    .optional(),
+  THROTTLER_EVENT_LIMIT: z
+    .preprocess((limit: string) => parseInt(limit), z.number().nonnegative())
+    .optional(),
+  THROTTLER_EVENT_BLOCK_DURATION: z
+    .preprocess(
+      (duration: string) => parseInt(duration),
+      z.number().nonnegative(),
+    )
+    .optional(),
+  THROTTLER_REQ_TTL: z
+    .preprocess((ttl: string) => parseInt(ttl), z.number().nonnegative())
+    .optional(),
+  THROTTLER_REQ_LIMIT: z
+    .preprocess((limit: string) => parseInt(limit), z.number().nonnegative())
+    .optional(),
+  THROTTLER_REQ_BLOCK_DURATION: z
+    .preprocess(
+      (duration: string) => parseInt(duration),
+      z.number().nonnegative(),
+    )
     .optional(),
 
   EVENT_HANDLING_RESULT_CACHE_TTL: z

@@ -28,6 +28,10 @@ describe('NostrRelayService', () => {
     );
   });
 
+  afterEach(() => {
+    nostrRelayService.onApplicationShutdown();
+  });
+
   describe('constructor', () => {
     it('should create NostrRelayService', () => {
       expect(nostrRelayService).toBeDefined();

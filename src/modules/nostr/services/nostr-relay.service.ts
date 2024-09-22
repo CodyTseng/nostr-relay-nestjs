@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   Event,
@@ -6,6 +6,7 @@ import {
   createOutgoingNoticeMessage,
 } from '@nostr-relay/common';
 import { NostrRelay } from '@nostr-relay/core';
+import { Throttler } from '@nostr-relay/throttler';
 import { Validator } from '@nostr-relay/validator';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
@@ -19,10 +20,11 @@ import { NostrRelayLogger } from '../../share/nostr-relay-logger.service';
 import { AccessControlPlugin } from '../plugins';
 
 @Injectable()
-export class NostrRelayService {
+export class NostrRelayService implements OnApplicationShutdown {
   private readonly relay: NostrRelay;
   private readonly messageHandlingConfig: MessageHandlingConfig;
   private readonly validator: Validator;
+  private readonly throttler: Throttler;
 
   constructor(
     @InjectPinoLogger(NostrRelayService.name)
@@ -37,6 +39,7 @@ export class NostrRelayService {
     const hostname = configService.get('hostname');
     const limitConfig = configService.get('limit', { infer: true });
     const cacheConfig = configService.get('cache', { infer: true });
+    const throttlerConfig = configService.get('throttler.ws', { infer: true });
     this.messageHandlingConfig = configService.get('messageHandling', {
       infer: true,
     });
@@ -47,12 +50,19 @@ export class NostrRelayService {
       ...cacheConfig,
     });
     this.validator = new Validator();
+
+    this.throttler = new Throttler(throttlerConfig);
+    this.relay.register(this.throttler);
     this.relay.register(accessControlPlugin);
     this.relay.register(wotService.getWotGuardPlugin());
   }
 
-  handleConnection(client: WebSocket) {
-    this.relay.handleConnection(client);
+  onApplicationShutdown() {
+    this.throttler.destroy();
+  }
+
+  handleConnection(client: WebSocket, ip = 'unknown') {
+    this.relay.handleConnection(client, ip);
     this.metricService.incrementConnectionCount();
   }
 

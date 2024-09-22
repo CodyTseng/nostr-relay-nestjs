@@ -9,6 +9,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
+import { Request } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
@@ -43,8 +44,8 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  handleConnection(client: WebSocket) {
-    this.nostrRelayService.handleConnection(client);
+  handleConnection(client: WebSocket, req: Request) {
+    this.nostrRelayService.handleConnection(client, this.getIpFromReq(req));
   }
 
   handleDisconnect(client: WebSocket) {
@@ -87,5 +88,16 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(error);
       return createOutgoingNoticeMessage((error as Error).message);
     }
+  }
+
+  private getIpFromReq(req: Request): string | undefined {
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    if (!xForwardedFor) {
+      return req.socket.remoteAddress;
+    }
+    if (Array.isArray(xForwardedFor)) {
+      return xForwardedFor[0].trim();
+    }
+    return xForwardedFor.split(',')[0].trim();
   }
 }
