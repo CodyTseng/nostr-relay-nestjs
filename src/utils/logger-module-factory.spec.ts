@@ -15,15 +15,14 @@ describe('loggerModuleFactory', () => {
     const result = loggerModuleFactory(configService as any);
     expect(result).toEqual({
       pinoHttp: {
+        level: 'testLevel',
         transport: {
           targets: [
             {
-              level: 'testLevel',
               target: 'pino/file',
               options: { destination: 'testDir/common.log' },
             },
             {
-              level: 'testLevel',
               target: 'pino/file',
               options: { destination: 1 },
             },

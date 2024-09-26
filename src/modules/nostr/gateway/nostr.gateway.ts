@@ -18,6 +18,7 @@ import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { GlobalExceptionFilter } from '../../../common/filters';
 import { WsThrottlerGuard } from '../../../common/guards';
+import { getIpFromReq } from '../../../utils';
 import { LoggingInterceptor } from '../interceptors';
 import { SubscriptionIdSchema } from '../schemas';
 import { EventService } from '../services/event.service';
@@ -45,7 +46,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: WebSocket, req: Request) {
-    this.nostrRelayService.handleConnection(client, this.getIpFromReq(req));
+    this.nostrRelayService.handleConnection(client, getIpFromReq(req));
   }
 
   handleDisconnect(client: WebSocket) {
@@ -88,16 +89,5 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(error);
       return createOutgoingNoticeMessage((error as Error).message);
     }
-  }
-
-  private getIpFromReq(req: Request): string | undefined {
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (!xForwardedFor) {
-      return req.socket.remoteAddress;
-    }
-    if (Array.isArray(xForwardedFor)) {
-      return xForwardedFor[0].trim();
-    }
-    return xForwardedFor.split(',')[0].trim();
   }
 }

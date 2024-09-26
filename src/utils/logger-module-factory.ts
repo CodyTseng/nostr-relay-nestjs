@@ -19,17 +19,17 @@ export function loggerModuleFactory(
     }
 
     targets.push({
-      level,
       target: 'pino/file',
       options: { destination: path.join(dir, 'common.log') },
     });
   }
 
   if (environment !== 'production') {
-    targets.push({ level, target: 'pino/file', options: { destination: 1 } });
+    targets.push({ target: 'pino/file', options: { destination: 1 } });
   }
   return {
     pinoHttp: {
+      level,
       transport: {
         targets,
       },
