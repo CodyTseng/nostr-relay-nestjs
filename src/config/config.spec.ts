@@ -1,4 +1,6 @@
+import { z } from 'zod';
 import { config, validateEnvironment } from '.';
+import { arraySchema } from './environment';
 
 describe('config', () => {
   it('should load config successfully', () => {
@@ -47,6 +49,7 @@ describe('config', () => {
         WOT_TRUST_DEPTH: '2',
         WOT_FETCH_FOLLOW_LIST_FROM: 'wss://relay.damus.io,wss://nos.lol',
         WOT_SKIP_FILTERS: '[{"kinds":[2333]}]',
+        UNDEFINED: undefined,
       }),
     ).toEqual({
       HOSTNAME: 'localhost',
@@ -92,5 +95,10 @@ describe('config', () => {
       WOT_FETCH_FOLLOW_LIST_FROM: ['wss://relay.damus.io', 'wss://nos.lol'],
       WOT_SKIP_FILTERS: [{ kinds: [2333] }],
     });
+  });
+
+  it('array schema', () => {
+    expect(arraySchema(z.number()).parse([1, 2, 3])).toEqual([1, 2, 3]);
+    expect(arraySchema(z.number()).parse(1)).toEqual([1]);
   });
 });
