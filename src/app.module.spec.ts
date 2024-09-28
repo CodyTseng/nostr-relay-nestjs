@@ -9,6 +9,7 @@ describe('AppModule', () => {
 
   beforeAll(async () => {
     process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+    process.env.LOG_LEVEL = 'error';
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

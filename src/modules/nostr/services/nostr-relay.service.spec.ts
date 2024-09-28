@@ -8,7 +8,6 @@ import { ValidationError } from 'zod-validation-error';
 import { MetricService } from '../../metric/metric.service';
 import { EventRepository } from '../../repositories/event.repository';
 import { NostrRelayLogger } from '../../share/nostr-relay-logger.service';
-import { AccessControlPlugin } from '../plugins';
 import { NostrRelayService } from './nostr-relay.service';
 
 describe('NostrRelayService', () => {
@@ -22,10 +21,32 @@ describe('NostrRelayService', () => {
       metricService,
       createMock<NostrRelayLogger>(),
       createMock<EventRepository>(),
-      createMock<ConfigService>(),
-      createMock<AccessControlPlugin>(),
+      createMock<ConfigService>({
+        get: jest.fn().mockImplementation((key) => {
+          const config = {
+            limit: {
+              maxSubscriptionsPerClient: 20,
+              minPowDifficulty: 8,
+              blacklist: ['black'],
+              whitelist: ['white'],
+            },
+            messageHandling: {
+              event: true,
+              req: true,
+              close: true,
+              top: true,
+              auth: true,
+            },
+          };
+          return config[key];
+        }),
+      }),
       createMock<WotService>(),
     );
+  });
+
+  afterEach(() => {
+    nostrRelayService.onApplicationShutdown();
   });
 
   describe('constructor', () => {
@@ -36,17 +57,16 @@ describe('NostrRelayService', () => {
 
   describe('handleConnection', () => {
     it('should handle connection', () => {
-      const fakeRelayHandleConnection = jest.spyOn(
-        nostrRelayService,
-        'handleConnection',
-      );
+      const fakeRelayHandleConnection = jest
+        .spyOn(nostrRelayService['relay'], 'handleConnection')
+        .mockReturnValue();
       const fakeMetricServiceIncrementConnectionCount = jest.spyOn(
         metricService,
         'incrementConnectionCount',
       );
       const client = createMock<WebSocket>();
       nostrRelayService.handleConnection(client);
-      expect(fakeRelayHandleConnection).toHaveBeenCalledWith(client);
+      expect(fakeRelayHandleConnection).toHaveBeenCalledWith(client, 'unknown');
       expect(fakeMetricServiceIncrementConnectionCount).toHaveBeenCalled();
     });
   });
@@ -73,10 +93,9 @@ describe('NostrRelayService', () => {
       jest
         .spyOn(nostrRelayService['validator'], 'validateIncomingMessage')
         .mockImplementation(async (data) => data as IncomingReqMessage);
-      const fakeRelayHandleMessage = jest.spyOn(
-        nostrRelayService['relay'],
-        'handleMessage',
-      );
+      const fakeRelayHandleMessage = jest
+        .spyOn(nostrRelayService['relay'], 'handleMessage')
+        .mockResolvedValue();
       const fakeMetricServicePushProcessingTime = jest.spyOn(
         metricService,
         'pushProcessingTime',

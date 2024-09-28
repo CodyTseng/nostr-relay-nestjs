@@ -9,6 +9,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
+import { Request } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
@@ -17,6 +18,7 @@ import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { GlobalExceptionFilter } from '../../../common/filters';
 import { WsThrottlerGuard } from '../../../common/guards';
+import { getIpFromReq } from '../../../utils';
 import { LoggingInterceptor } from '../interceptors';
 import { SubscriptionIdSchema } from '../schemas';
 import { EventService } from '../services/event.service';
@@ -43,8 +45,8 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  handleConnection(client: WebSocket) {
-    this.nostrRelayService.handleConnection(client);
+  handleConnection(client: WebSocket, req: Request) {
+    this.nostrRelayService.handleConnection(client, getIpFromReq(req));
   }
 
   handleDisconnect(client: WebSocket) {

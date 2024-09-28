@@ -45,6 +45,26 @@ describe('ParseNostrAuthorizationGuard', () => {
     expect(request.pubkey).toBeUndefined();
   });
 
+  it('should directly return true if event is invalid', async () => {
+    const event = createEvent({
+      kind: 27235,
+      tags: [['u', 'http://localhost']],
+      created_at: Math.floor(Date.now() / 1000),
+    });
+    // modify event id to make it invalid
+    event.id =
+      '0000000000000000000000000000000000000000000000000000000000000000';
+
+    const token = Buffer.from(JSON.stringify(event)).toString('base64');
+    const authorization = 'Nostr ' + token;
+    const { request, context } = createMockContext({
+      authorization,
+    });
+
+    expect(await guard.canActivate(context)).toBe(true);
+    expect(request.pubkey).toBeUndefined();
+  });
+
   it('should directly return true if token is expired', async () => {
     const event = createEvent({
       kind: 27235,

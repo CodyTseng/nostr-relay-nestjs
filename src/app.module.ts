@@ -23,8 +23,9 @@ import { loggerModuleFactory } from './utils';
       inject: [ConfigService],
     }),
     ThrottlerModule.forRootAsync({
-      useFactory: (configService: ConfigService<Config, true>) =>
-        configService.get('throttler', { infer: true }),
+      useFactory: (configService: ConfigService<Config, true>) => {
+        return configService.get('throttler.restApi', { infer: true });
+      },
       inject: [ConfigService],
     }),
     ScheduleModule.forRoot(),

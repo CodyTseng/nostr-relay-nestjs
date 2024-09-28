@@ -1,4 +1,6 @@
+import { z } from 'zod';
 import { config, validateEnvironment } from '.';
+import { arraySchema } from './environment';
 
 describe('config', () => {
   it('should load config successfully', () => {
@@ -28,6 +30,12 @@ describe('config', () => {
         MAX_SUBSCRIPTIONS_PER_CLIENT: '100',
         THROTTLER_LIMIT: '100',
         THROTTLER_TTL: '1',
+        THROTTLER_EVENT_TTL: '1000',
+        THROTTLER_EVENT_LIMIT: '10',
+        THROTTLER_EVENT_BLOCK_DURATION: '600000',
+        THROTTLER_REQ_TTL: '1000',
+        THROTTLER_REQ_LIMIT: '100',
+        THROTTLER_REQ_BLOCK_DURATION: '600000',
         EVENT_HANDLING_RESULT_CACHE_TTL: '300000',
         FILTER_RESULT_CACHE_TTL: '10000',
         MEILI_SEARCH_SYNC_EVENT_KINDS: '0,1,30023',
@@ -41,6 +49,7 @@ describe('config', () => {
         WOT_TRUST_DEPTH: '2',
         WOT_FETCH_FOLLOW_LIST_FROM: 'wss://relay.damus.io,wss://nos.lol',
         WOT_SKIP_FILTERS: '[{"kinds":[2333]}]',
+        UNDEFINED: undefined,
       }),
     ).toEqual({
       HOSTNAME: 'localhost',
@@ -66,6 +75,12 @@ describe('config', () => {
       MAX_SUBSCRIPTIONS_PER_CLIENT: 100,
       THROTTLER_LIMIT: 100,
       THROTTLER_TTL: 1,
+      THROTTLER_EVENT_TTL: 1000,
+      THROTTLER_EVENT_LIMIT: 10,
+      THROTTLER_EVENT_BLOCK_DURATION: 600000,
+      THROTTLER_REQ_TTL: 1000,
+      THROTTLER_REQ_LIMIT: 100,
+      THROTTLER_REQ_BLOCK_DURATION: 600000,
       EVENT_HANDLING_RESULT_CACHE_TTL: 300000,
       FILTER_RESULT_CACHE_TTL: 10000,
       MEILI_SEARCH_SYNC_EVENT_KINDS: [0, 1, 30023],
@@ -80,5 +95,10 @@ describe('config', () => {
       WOT_FETCH_FOLLOW_LIST_FROM: ['wss://relay.damus.io', 'wss://nos.lol'],
       WOT_SKIP_FILTERS: [{ kinds: [2333] }],
     });
+  });
+
+  it('array schema', () => {
+    expect(arraySchema(z.number()).parse([1, 2, 3])).toEqual([1, 2, 3]);
+    expect(arraySchema(z.number()).parse(1)).toEqual([1]);
   });
 });

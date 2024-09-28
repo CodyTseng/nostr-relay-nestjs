@@ -1,5 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 import { WebSocket } from 'ws';
 import { ValidationError } from 'zod-validation-error';
@@ -27,11 +28,12 @@ describe('NostrGateway', () => {
   describe('handleConnection', () => {
     it('should call handleConnection', () => {
       const mockClient = {} as WebSocket;
+      const mockRequest = createMock<Request>();
       const spy = jest
         .spyOn(nostrGateway['nostrRelayService'], 'handleConnection')
         .mockImplementation();
-      nostrGateway.handleConnection(mockClient);
-      expect(spy).toHaveBeenCalledWith(mockClient);
+      nostrGateway.handleConnection(mockClient, mockRequest);
+      expect(spy).toHaveBeenCalledWith(mockClient, mockRequest);
     });
   });
 
