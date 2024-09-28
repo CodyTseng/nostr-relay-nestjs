@@ -34,11 +34,12 @@ export class ParseNostrAuthorizationGuard implements CanActivate {
         Buffer.from(token, 'base64').toString('utf-8'),
       );
       const event = await this.validator.validateEvent(JSON.parse(decoded));
-      const validateErrorMsg = EventUtils.validate(event, {
-        createdAtLowerLimit: 60,
-        createdAtUpperLimit: 60,
-      });
+      const validateErrorMsg = EventUtils.validate(event);
       if (validateErrorMsg) {
+        return true;
+      }
+
+      if (Math.abs(event.created_at - Math.floor(Date.now() / 1000)) > 60) {
         return true;
       }
 
