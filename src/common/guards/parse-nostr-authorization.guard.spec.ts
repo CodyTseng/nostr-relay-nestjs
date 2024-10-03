@@ -186,10 +186,10 @@ describe('ParseNostrAuthorizationGuard', () => {
     });
 
     expect(await guard.canActivate(context)).toBe(true);
-    expect(request.pubkey).toBeUndefined;
+    expect(request.pubkey).toBeUndefined();
   });
 
-  it('should parse pubkey sucessfully', async () => {
+  it('should parse pubkey successfully', async () => {
     const event = createEvent({
       kind: 27235,
       tags: [
