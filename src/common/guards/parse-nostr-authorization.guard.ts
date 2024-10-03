@@ -48,7 +48,21 @@ export class ParseNostrAuthorizationGuard implements CanActivate {
       }
 
       const uTagValue = event.tags.find(([tagName]) => tagName === 'u')?.[1];
-      if (!uTagValue || new URL(uTagValue).hostname !== this.hostname) {
+      if (!uTagValue) {
+        return true;
+      }
+      const url = new URL(uTagValue);
+      if (url.hostname !== this.hostname || url.pathname !== request.url) {
+        return true;
+      }
+
+      const methodTagValue = event.tags.find(
+        ([tagName]) => tagName === 'method',
+      )?.[1];
+      if (
+        !methodTagValue ||
+        methodTagValue.toUpperCase() !== request.method.toUpperCase()
+      ) {
         return true;
       }
 

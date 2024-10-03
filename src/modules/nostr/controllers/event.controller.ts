@@ -8,11 +8,9 @@ import {
   Param,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Pubkey } from '../../../common/decorators';
-import { ParseNostrAuthorizationGuard } from '../../../common/guards';
 import { FindEventsDto, HandleEventDto, RequestEventsDto } from '../dtos';
 import { EventEntity, FilterEntity } from '../entities';
 import { EventIdSchema } from '../schemas';
@@ -27,7 +25,6 @@ import {
 
 @Controller('api/v1/events')
 @ApiTags('events')
-@UseGuards(ParseNostrAuthorizationGuard)
 export class EventController {
   constructor(private readonly nostrRelayService: NostrRelayService) {}
 

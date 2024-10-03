@@ -1,4 +1,4 @@
-import { BeforeApplicationShutdown, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   Event,
   EventUtils,
@@ -10,20 +10,20 @@ import { Kysely, sql } from 'kysely';
 import { isNil } from 'lodash';
 import { TEventIdWithScore } from '../../types/event';
 import { isGenericTagName, toGenericTag } from '../../utils';
-import { KYSELY_DB } from './constants';
 import { EventSearchRepository } from './event-search.repository';
+import { KyselyDb } from './kysely-db';
 import { Database, EventRow } from './types';
 
 @Injectable()
-export class EventRepository
-  extends IEventRepository
-  implements BeforeApplicationShutdown
-{
+export class EventRepository extends IEventRepository {
+  private readonly db: Kysely<Database>;
+
   constructor(
-    @Inject(KYSELY_DB) private readonly db: Kysely<Database>,
+    kyselyDb: KyselyDb,
     private readonly eventSearchRepository: EventSearchRepository,
   ) {
     super();
+    this.db = kyselyDb.getDb();
   }
 
   isSearchSupported(): boolean {
@@ -331,9 +331,5 @@ export class EventRepository
       }
     });
     return [...genericTagSet];
-  }
-
-  async beforeApplicationShutdown() {
-    await this.db.destroy();
   }
 }
