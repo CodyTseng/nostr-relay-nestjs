@@ -17,15 +17,14 @@ describe('WotController', () => {
   it('should return trusted when pubkey is valid', async () => {
     jest
       .spyOn(wotController['wotService'], 'checkPubkeyIsTrusted')
-      .mockReturnValue({ wotEnabled: true, trusted: true });
+      .mockReturnValue(true);
 
     expect(
       wotController.trusted(
         'npub1syjmjy0dp62dhccq3g97fr87tngvpvzey08llyt6ul58m2zqpzps9wf6wl',
       ),
     ).toEqual({
-      wotEnabled: true,
-      trusted: true,
+      data: true,
     });
   });
 });

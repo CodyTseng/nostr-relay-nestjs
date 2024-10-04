@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Kysely } from 'kysely';
 import { KyselyDb } from './kysely-db';
-import { Database } from './types';
+import { Database, Nip05Row } from './types';
 
 @Injectable()
 export class Nip05Repository {
@@ -19,6 +19,24 @@ export class Nip05Repository {
       .executeTakeFirst();
 
     return result?.pubkey;
+  }
+
+  async getByName(name: string): Promise<Nip05Row | undefined> {
+    return this.db
+      .selectFrom('nip05')
+      .selectAll()
+      .where('name', '=', name)
+      .executeTakeFirst();
+  }
+
+  async list(limit = 10, after?: string): Promise<Nip05Row[]> {
+    let query = this.db.selectFrom('nip05').selectAll();
+
+    if (after) {
+      query = query.where('name', '>', after);
+    }
+
+    return query.orderBy('name').limit(limit).execute();
   }
 
   async register(name: string, pubkey: string): Promise<void> {

@@ -36,3 +36,4 @@ interface Nip05Table {
   pubkey: string;
   create_date: ColumnType<Date, string | undefined, string>;
 }
+export type Nip05Row = Selectable<Nip05Table>;

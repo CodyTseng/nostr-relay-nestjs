@@ -25,6 +25,7 @@ export class WotController {
     if (!/^[0-9a-f]{64}$/.test(pubkey)) {
       throw new BadRequestException('Invalid pubkey');
     }
-    return this.wotService.checkPubkeyIsTrusted(pubkey);
+    const isTrusted = this.wotService.checkPubkeyIsTrusted(pubkey);
+    return { data: isTrusted };
   }
 }

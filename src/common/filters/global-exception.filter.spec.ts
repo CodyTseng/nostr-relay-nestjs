@@ -1,5 +1,5 @@
 import { createMock } from '@golevelup/ts-jest';
-import { ArgumentsHost, HttpException } from '@nestjs/common';
+import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
 import { PinoLogger } from 'nestjs-pino';
 import { ClientException } from '../exceptions';
@@ -74,7 +74,11 @@ describe('GlobalExceptionFilter', () => {
       globalExceptionFilter.catch(error, host);
 
       expect(mockStatus).toHaveBeenCalledWith(500);
-      expect(mockSend).toHaveBeenCalledWith('Internal Server Error!');
+      expect(mockSend).toHaveBeenCalledWith({
+        message: 'Internal Server Error!',
+        error: 'Internal Error',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
     });
 
     it('should return ISE when catch a 5xx http exception', () => {
@@ -96,7 +100,11 @@ describe('GlobalExceptionFilter', () => {
       globalExceptionFilter.catch(error, host);
 
       expect(mockStatus).toHaveBeenCalledWith(501);
-      expect(mockSend).toHaveBeenCalledWith('Internal Server Error!');
+      expect(mockSend).toHaveBeenCalledWith({
+        message: 'Internal Server Error!',
+        error: 'Internal Error',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
     });
 
     it('should return error msg when catch a 4xx http exception', () => {
@@ -118,7 +126,7 @@ describe('GlobalExceptionFilter', () => {
       globalExceptionFilter.catch(error, host);
 
       expect(mockStatus).toHaveBeenCalledWith(404);
-      expect(mockSend).toHaveBeenCalledWith('test');
+      expect(mockSend).toHaveBeenCalledWith(error.getResponse());
     });
   });
 

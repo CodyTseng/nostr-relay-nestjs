@@ -37,10 +37,7 @@ export class WotService implements OnApplicationBootstrap {
 
   checkPubkeyIsTrusted(pubkey: string) {
     const wotEnabled = this.wotGuardPlugin.getEnabled();
-    return {
-      wotEnabled,
-      trusted: wotEnabled ? this.wotGuardPlugin.checkPubkey(pubkey) : true,
-    };
+    return wotEnabled ? this.wotGuardPlugin.checkPubkey(pubkey) : true;
   }
 
   async refreshWot() {
