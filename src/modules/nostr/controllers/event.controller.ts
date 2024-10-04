@@ -8,26 +8,18 @@ import {
   Param,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Pubkey } from '../../../common/decorators';
-import { ParseNostrAuthorizationGuard } from '../../../common/guards';
+import { ErrorVo } from '../../../common/vos';
 import { FindEventsDto, HandleEventDto, RequestEventsDto } from '../dtos';
 import { EventEntity, FilterEntity } from '../entities';
 import { EventIdSchema } from '../schemas';
 import { NostrRelayService } from '../services/nostr-relay.service';
-import {
-  ErrorVo,
-  FindEventByIdVo,
-  FindEventsVo,
-  HandleEventVo,
-  RequestEventsVo,
-} from '../vos';
+import { FindEventByIdVo, FindEventsVo, RequestEventsVo } from '../vos';
 
 @Controller('api/v1/events')
 @ApiTags('events')
-@UseGuards(ParseNostrAuthorizationGuard)
 export class EventController {
   constructor(private readonly nostrRelayService: NostrRelayService) {}
 
@@ -35,15 +27,12 @@ export class EventController {
    * Handle a new event.
    */
   @Post()
-  @ApiResponse({ type: HandleEventVo })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid event',
     type: ErrorVo,
   })
-  async handleEvent(
-    @Body() handleEventDto: HandleEventDto,
-  ): Promise<HandleEventVo> {
+  async handleEvent(@Body() handleEventDto: HandleEventDto): Promise<void> {
     let event: EventEntity;
     try {
       event = await this.nostrRelayService.validateEvent(handleEventDto);
@@ -56,8 +45,6 @@ export class EventController {
     if (!success) {
       throw new BadRequestException(message);
     }
-
-    return { message };
   }
 
   /**
@@ -65,7 +52,11 @@ export class EventController {
    */
   @Get(':id')
   @ApiResponse({ type: FindEventByIdVo })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Event not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Event not found',
+    type: ErrorVo,
+  })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid event ID',

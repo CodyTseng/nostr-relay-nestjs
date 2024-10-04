@@ -40,7 +40,7 @@ describe('EventController', () => {
       return request(app.getHttpServer())
         .post('/api/v1/events')
         .send({ id: 'test' })
-        .expect(201, { message: '' });
+        .expect(201);
     });
 
     it('invalid event', () => {

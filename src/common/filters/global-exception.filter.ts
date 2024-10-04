@@ -3,6 +3,7 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
+  HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
@@ -47,14 +48,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   private handleHttpException(error: Error, response: Response) {
     if (!(error instanceof HttpException)) {
-      return response.status(500).send('Internal Server Error!');
+      return response.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+        message: 'Internal Server Error!',
+        error: 'Internal Error',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
     }
 
     const status = error.getStatus();
     if (status >= 500 && status < 600) {
-      return response.status(status).send('Internal Server Error!');
+      return response.status(status).send({
+        message: 'Internal Server Error!',
+        error: 'Internal Error',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
     }
 
-    return response.status(status).send(error.message);
+    return response.status(status).send(error.getResponse());
   }
 }

@@ -27,10 +27,7 @@ describe('WotService', () => {
       .spyOn(wotService['wotGuardPlugin'], 'checkPubkey')
       .mockReturnValue(true);
 
-    expect(wotService.checkPubkeyIsTrusted('test')).toEqual({
-      wotEnabled: true,
-      trusted: true,
-    });
+    expect(wotService.checkPubkeyIsTrusted('test')).toEqual(true);
   });
 
   it('checkPubkeyIsTrusted (wot disabled)', () => {
@@ -38,10 +35,7 @@ describe('WotService', () => {
       .spyOn(wotService['wotGuardPlugin'], 'getEnabled')
       .mockReturnValue(false);
 
-    expect(wotService.checkPubkeyIsTrusted('test')).toEqual({
-      wotEnabled: false,
-      trusted: true,
-    });
+    expect(wotService.checkPubkeyIsTrusted('test')).toEqual(true);
   });
 
   it('refreshWot', async () => {

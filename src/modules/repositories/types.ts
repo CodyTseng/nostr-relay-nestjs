@@ -3,6 +3,7 @@ import { ColumnType, Generated, JSONColumnType, Selectable } from 'kysely';
 export interface Database {
   events: EventTable;
   generic_tags: GenericTagTable;
+  nip05: Nip05Table;
 }
 
 interface EventTable {
@@ -29,3 +30,10 @@ interface GenericTagTable {
   event_id: string;
   created_at: number;
 }
+
+interface Nip05Table {
+  name: string;
+  pubkey: string;
+  create_date: ColumnType<Date, string | undefined, string>;
+}
+export type Nip05Row = Selectable<Nip05Table>;
