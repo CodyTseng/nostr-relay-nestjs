@@ -127,6 +127,111 @@ Performance recommendations:
 - Monitor `MAX_SUBSCRIPTION_PER_CLIENT` impact on memory usage
 - Set appropriate `MIN_POW_DIFFICULTY` for spam prevention
 
+### Systemd Service Configuration
+
+Create a systemd service file for automatic startup:
+
+```bash
+sudo nano /etc/systemd/system/nostr-relay.service
+```
+
+Add this content:
+```ini
+[Unit]
+Description=Nostr Relay Service
+After=network.target postgresql.service nginx.service
+Wants=postgresql.service nginx.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/path/to/nostr-relay
+Environment=NODE_ENV=production
+Environment=PATH=/usr/bin:/usr/local/bin:/usr/local/node/bin
+
+ExecStart=/usr/bin/node dist/src/main.js
+
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+LogLevelMax=debug
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable nostr-relay
+sudo systemctl start nostr-relay
+```
+
+### Security with Fail2ban
+
+1. Install and configure fail2ban:
+```bash
+sudo apt update
+sudo apt install -y fail2ban
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+```
+
+2. Create Nostr relay jail configuration:
+```bash
+sudo tee /etc/fail2ban/jail.d/nostr-relay.conf << 'EOF'
+[nostr-relay]
+enabled = true
+port = 80,443
+filter = nostr-relay
+logpath = /var/log/nginx/access.log
+maxretry = 20
+findtime = 60
+bantime = 3600
+EOF
+```
+
+3. Create Nostr relay filter:
+```bash
+sudo tee /etc/fail2ban/filter.d/nostr-relay.conf << 'EOF'
+[Definition]
+failregex = ^<HOST> .* "(?:GET|POST|HEAD|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH) .*" (?:403|400|404|405) .*$
+            ^<HOST> .* "(WS|GET|POST)" .* (?:403|400|405) .*$
+ignoreregex =
+EOF
+```
+
+4. Enable and start fail2ban:
+```bash
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+### Service Management
+
+Common service management commands:
+
+```bash
+# View service status
+sudo systemctl status nostr-relay
+sudo systemctl status fail2ban
+
+# View logs
+journalctl -u nostr-relay -f
+tail -f /var/log/fail2ban.log
+
+# Restart services
+sudo systemctl restart nostr-relay
+sudo systemctl restart fail2ban
+
+# Check banned IPs
+sudo fail2ban-client status nostr-relay
+
+# Unban an IP
+sudo fail2ban-client set nostr-relay unbanip <IP_ADDRESS>
+```
+
 ### Nginx Configuration
 
 Configure Nginx as a reverse proxy with SSL termination:
@@ -171,54 +276,6 @@ server {
 SSL setup with Certbot:
 ```bash
 sudo certbot --nginx -d your-domain.com
-```
-
-### Service Management
-
-Create a systemd service for automatic management:
-
-```ini
-# /etc/systemd/system/nostr-relay.service
-[Unit]
-Description=Nostr Relay Service
-After=network.target postgresql.service
-Wants=postgresql.service
-
-[Service]
-Type=simple
-User=nostr
-Group=nostr
-WorkingDirectory=/path/to/relay
-Environment=NODE_ENV=production
-Environment=PORT=3000
-Environment=HOST=127.0.0.1
-ExecStart=/usr/bin/node dist/main.js
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-# Security hardening
-PrivateTmp=true
-NoNewPrivileges=true
-ProtectSystem=full
-ProtectHome=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Service management commands:
-```bash
-# Enable and start the service
-sudo systemctl enable nostr-relay
-sudo systemctl start nostr-relay
-
-# Check status
-sudo systemctl status nostr-relay
-
-# View logs
-journalctl -u nostr-relay -f
 ```
 
 ### Monitoring and Maintenance
