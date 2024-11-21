@@ -70,6 +70,139 @@ Example:
 ["TOP","test",["2359f4bdfe0bd2353aa7702dc1af23279197694823b8b4916b904a9940334192","622a875c9f9a4696eb4050fa5b0bba3a9b0531ec4a27398245af7369e6d40da8","d8989c65d26511b2e3ea42b0ebfcaf0ea885cb958419df4ddb334cb72556f950","ffcb0c9e0ace0b5d3928f30395bc9832763f8b583f2b1beb696f7c199f9f94d2","287147867bd00299553fa91e110d40206eea19a9142a4283832ee67e1407e6f2","ffaea8bc3b08db32af97f1ff595e68eee8a2f7b0a4a66dc2eff330f450855f6c","cddbc6cd4a0589d4a593e99a3a94426c85c6867b47d7eb751ce419c27f079b76","f2291ac6d206e898965b9e4ba6bbe5bb10118e6a74bd9f9f13597813979a254b","a101a2a44938dbb0a611bc00bd7ed4cb44d682fea4c14618bd1148567cd6fcc3","21990a723b491b6c594438a2ecf5d5e4898212635f59e82f1c736d994a86e907"]]
 ```
 
+## Installation and Setup
+
+### Prerequisites
+- Node.js (LTS version recommended)
+- Docker and Docker Compose
+- PostgreSQL 15 (if not using Docker)
+
+### Quick Start with Docker
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
+   cd nostr-relay-nestjs
+   ```
+
+2. Create environment file:
+   ```bash
+   cp .env.example .env
+   ```
+   Update the `.env` file with your configuration:
+   ```env
+   DATABASE_URL=postgresql://nostr_user:nostr_password@localhost:5432/nostr_relay
+   MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
+   ```
+
+3. Start PostgreSQL:
+   ```bash
+   docker compose up -d postgres
+   ```
+
+4. Install dependencies and run migrations:
+   ```bash
+   npm install
+   npx ts-node scripts/migrate-to-latest.ts
+   ```
+
+5. Start the application:
+   ```bash
+   npm run start
+   ```
+
+### Production Deployment
+For production deployment, follow these additional steps:
+
+1. Set secure passwords in `docker-compose.yml`:
+   ```yaml
+   postgres:
+     environment:
+       POSTGRES_USER: your_production_user
+       POSTGRES_PASSWORD: your_secure_password
+       POSTGRES_DB: your_database_name
+   ```
+
+2. Update `.env` with production settings:
+   ```env
+   DATABASE_URL=postgresql://your_production_user:your_secure_password@localhost:5432/your_database_name
+   ```
+
+3. Build and start in production mode:
+   ```bash
+   npm run build
+   NODE_ENV=production npm run start:prod
+   ```
+
+4. For high availability, consider:
+   - Using a process manager like PM2
+   - Setting up SSL/TLS termination
+   - Implementing database backups
+   - Monitoring with tools like Prometheus/Grafana
+
+### Database Migrations
+The system uses Kysely for database migrations. Migration files are in the `migrations` directory and handle:
+- Events table creation and indexing
+- Generic tags management
+- NIP-05 support
+- Performance optimizations
+
+To run migrations:
+```bash
+npx ts-node scripts/migrate-to-latest.ts
+```
+
+## Development Setup
+
+### Prerequisites
+
+1. **Docker Desktop for macOS**
+   - Download from https://www.docker.com/products/docker-desktop
+   - Choose Apple Silicon or Intel chip version as appropriate
+   - Install and start Docker Desktop
+   - Wait for Docker to finish starting (whale icon in menu bar becomes stable)
+
+### Database Setup
+
+1. **Start PostgreSQL and pgAdmin**
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Database Configuration**
+   - PostgreSQL:
+     - Database: nostr_relay
+     - User: nostr_user
+     - Password: nostr_password
+     - Port: 5432
+     - Connection URL: postgresql://nostr_user:nostr_password@localhost:5432/nostr_relay
+
+   - pgAdmin (Optional):
+     - URL: http://localhost:5050
+     - Email: admin@example.com
+     - Password: admin
+
+3. **Environment Setup**
+   Create a `.env` file in the project root:
+   ```env
+   DATABASE_URL=postgresql://nostr_user:nostr_password@localhost:5432/nostr_relay
+   MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
+   ```
+
+4. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+5. **Run Database Migrations**
+   ```bash
+   npm run migration:run
+   ```
+
+6. **Start Development Server**
+   ```bash
+   npm run start:dev
+   ```
+
 ## Quick Start
 
 ### Dockerfile
