@@ -21,6 +21,7 @@ import { MetricService } from '../../metric/metric.service';
 import { EventRepository } from '../../repositories/event.repository';
 import { NostrRelayLogger } from '../../share/nostr-relay-logger.service';
 import { BlacklistGuardPlugin, WhitelistGuardPlugin } from '../plugins';
+import { ReportEventValidator } from '../validators/report-event.validator';
 
 @Injectable()
 export class NostrRelayService implements OnApplicationShutdown {
@@ -37,6 +38,7 @@ export class NostrRelayService implements OnApplicationShutdown {
     eventRepository: EventRepository,
     configService: ConfigService<Config, true>,
     wotService: WotService,
+    private readonly reportEventValidator: ReportEventValidator,
   ) {
     const hostname = configService.get('hostname');
     const {
@@ -126,7 +128,14 @@ export class NostrRelayService implements OnApplicationShutdown {
     return await this.relay.findEvents(filters, pubkey);
   }
 
-  async validateEvent(data: any) {
+  async validateEvent(data: any): Promise<Event> {
+    // Validate report events
+    const reportValidationError = this.reportEventValidator.validate(data);
+    if (reportValidationError) {
+      throw new Error(reportValidationError);
+    }
+
+    // Continue with existing validation...
     return await this.validator.validateEvent(data);
   }
 
