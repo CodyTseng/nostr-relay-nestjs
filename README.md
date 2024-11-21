@@ -78,6 +78,7 @@ Example:
 - PostgreSQL 15 (if not using Docker)
 
 ### Quick Start with Docker
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
@@ -94,10 +95,14 @@ Example:
    MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
    ```
 
-3. Start PostgreSQL:
+3. Start PostgreSQL in development mode:
    ```bash
-   docker compose up -d postgres
+   docker compose --profile dev up -d
    ```
+   This starts:
+   - PostgreSQL with optimized settings
+   - pgAdmin for database management
+   - Health monitoring
 
 4. Install dependencies and run migrations:
    ```bash
@@ -111,44 +116,81 @@ Example:
    ```
 
 ### Production Deployment
-For production deployment, follow these additional steps:
 
-1. Set secure passwords in `docker-compose.yml`:
-   ```yaml
-   postgres:
-     environment:
-       POSTGRES_USER: your_production_user
-       POSTGRES_PASSWORD: your_secure_password
-       POSTGRES_DB: your_database_name
-   ```
+For production deployment, we provide a robust and secure setup:
 
-2. Update `.env` with production settings:
-   ```env
-   DATABASE_URL=postgresql://your_production_user:your_secure_password@localhost:5432/your_database_name
-   ```
+1. Configure secure credentials:
+   - Update PostgreSQL credentials in `docker-compose.yml`
+   - Set strong passwords for all services
+   - Update `.env` with production settings
 
-3. Build and start in production mode:
+2. Start the production stack:
    ```bash
-   npm run build
-   NODE_ENV=production npm run start:prod
+   docker compose --profile prod up -d
    ```
+   This enables:
+   - PostgreSQL with production-optimized settings
+   - Automatic daily backups with 7-day retention
+   - fail2ban for brute force protection
+   - Resource limits and monitoring
 
-4. For high availability, consider:
-   - Using a process manager like PM2
-   - Setting up SSL/TLS termination
-   - Implementing database backups
-   - Monitoring with tools like Prometheus/Grafana
+3. Security Features:
+   - Network access restrictions (localhost only)
+   - fail2ban protection against brute force attacks
+   - Secure logging configuration
+   - Regular security updates
 
-### Database Migrations
-The system uses Kysely for database migrations. Migration files are in the `migrations` directory and handle:
-- Events table creation and indexing
-- Generic tags management
-- NIP-05 support
-- Performance optimizations
+4. Performance Optimization:
+   - Optimized PostgreSQL settings for production workloads
+   - Connection pooling
+   - Query performance monitoring
+   - Automatic vacuum optimization
+
+5. High Availability:
+   - Automated backup system
+   - Health monitoring
+   - Graceful shutdown handling
+   - Resource management
+
+6. Monitoring and Maintenance:
+   - Performance metrics collection
+   - Security event logging
+   - Backup verification
+   - Resource usage monitoring
+
+### Development Tools
+
+When running in development mode (`--profile dev`):
+- **pgAdmin**: Access at http://localhost:5050
+  - Email: admin@example.com
+  - Password: admin
+- **PostgreSQL**: Optimized for development
+  - Host: localhost
+  - Port: 5432
+  - Database: nostr_relay
+  - User: nostr_user
+  - Password: nostr_password
+
+### Database Management
+
+The system includes:
+- Automated migrations using Kysely
+- Performance-optimized indexes
+- Backup and restore capabilities
+- Security hardening
 
 To run migrations:
 ```bash
 npx ts-node scripts/migrate-to-latest.ts
+```
+
+To restore from backup:
+```bash
+# List available backups
+ls -l backups/
+
+# Restore from specific backup
+docker exec -i nostr_relay_postgres pg_restore -U nostr_user -d nostr_relay < backups/backup_YYYYMMDD_HHMMSS.dump
 ```
 
 ## Development Setup
