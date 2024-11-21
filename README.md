@@ -26,6 +26,7 @@ If you'd like to help me test the reliability of this relay implementation, you 
 | [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                                       |   🔴   | No real deletion in a distributed system |
 | [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)                           |   🟢   |                                          |
 | [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)                                        |   🟢   |                                          |
+| [NIP-17: Report Events](https://github.com/nostr-protocol/nips/blob/master/17.md)                                        |   🟢   | Strict validation: requires `e` (event) and `p` (pubkey) tags, optional `k` (kind) tag, non-empty reason required |
 | [NIP-22: Event created_at Limits](https://github.com/nostr-protocol/nips/blob/master/22.md)                              |   🟢   |                                          |
 | [NIP-26: Delegated Event Signing](https://github.com/nostr-protocol/nips/blob/master/26.md)                              |   🟢   |                                          |
 | [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)                                          |   🟢   |                                          |
@@ -33,42 +34,6 @@ If you'd like to help me test the reliability of this relay implementation, you 
 | [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md)                  |   🟢   |                                          |
 | [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)                                     |   🔴   |                                          |
 | [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                                      |   🟢   |                                          |
-
-## Extra Features
-
-### WoT (Web of Trust)
-
-If you want to enable the WoT feature, you need to set the following environment variables:
-
-- `WOT_TRUST_ANCHOR_PUBKEY`: The public key of the trust anchor. Trust anchor is the root of the trust net.
-- `WOT_TRUST_DEPTH`: The depth of the trust net. If the trust depth is 1, the trust net will include the trust anchor and the trust anchor's following users. If the trust depth is 2, the trust net will include the trust anchor, the trust anchor's following users, and the trust anchor's following users' following users. Now the maximum trust depth is 2.
-- `WOT_FETCH_FOLLOW_LIST_FROM`: Comma-separated list of relay URLs to fetch follow list from (e.g., WOT_FETCH_FOLLOW_LIST_FROM=wss://nostr-relay.app,wss://relay.damus.io). This environment variable is optional. The relay will always fetch the follow list from the local database first.
-
-### RESTful API
-
-You can see the API documentation at `/api` endpoint. [Example](https://nostr-relay.app/api)
-
-### TOP verb
-
-TOP verb accepts a subscription id and filters as specified in [NIP 01](https://github.com/nostr-protocol/nips/blob/master/01.md) for the verb REQ.
-
-```json
-["TOP",<subscription_id>,<filters JSON>...]
-```
-
-And return the top N event IDs with the highest score (Scoring is determined by relay).
-
-```json
-["TOP",<subscription_id>,<event id array>]
-```
-
-Example:
-
-```json
-["TOP","test",{"search":"nostr bitcoin","kinds":[30023],"limit":10}]
-
-["TOP","test",["2359f4bdfe0bd2353aa7702dc1af23279197694823b8b4916b904a9940334192","622a875c9f9a4696eb4050fa5b0bba3a9b0531ec4a27398245af7369e6d40da8","d8989c65d26511b2e3ea42b0ebfcaf0ea885cb958419df4ddb334cb72556f950","ffcb0c9e0ace0b5d3928f30395bc9832763f8b583f2b1beb696f7c199f9f94d2","287147867bd00299553fa91e110d40206eea19a9142a4283832ee67e1407e6f2","ffaea8bc3b08db32af97f1ff595e68eee8a2f7b0a4a66dc2eff330f450855f6c","cddbc6cd4a0589d4a593e99a3a94426c85c6867b47d7eb751ce419c27f079b76","f2291ac6d206e898965b9e4ba6bbe5bb10118e6a74bd9f9f13597813979a254b","a101a2a44938dbb0a611bc00bd7ed4cb44d682fea4c14618bd1148567cd6fcc3","21990a723b491b6c594438a2ecf5d5e4898212635f59e82f1c736d994a86e907"]]
-```
 
 ## Installation and Setup
 
@@ -89,20 +54,11 @@ Example:
    ```bash
    cp .env.example .env
    ```
-   Update the `.env` file with your configuration:
-   ```env
-   DATABASE_URL=postgresql://nostr_user:nostr_password@localhost:5432/nostr_relay
-   MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
-   ```
 
 3. Start PostgreSQL in development mode:
    ```bash
    docker compose --profile dev up -d
    ```
-   This starts:
-   - PostgreSQL with optimized settings
-   - pgAdmin for database management
-   - Health monitoring
 
 4. Install dependencies and run migrations:
    ```bash
@@ -115,216 +71,253 @@ Example:
    npm run start
    ```
 
-### Production Deployment
+## Production Deployment Guide
 
-For production deployment, we provide a robust and secure setup:
+### Key Generation and Security
 
-1. Configure secure credentials:
-   - Update PostgreSQL credentials in `docker-compose.yml`
-   - Set strong passwords for all services
-   - Update `.env` with production settings
+Before deploying the relay, you must generate a key pair for relay authentication:
 
-2. Start the production stack:
+```bash
+# Generate keys using the provided script
+node scripts/generate-keys.js
+```
+
+The script will output:
+- A 64-character public key
+- A private key for authentication
+
+Important security notes:
+- Store the private key securely (e.g., password manager)
+- Never share or expose the private key
+- Add only the public key to your `.env` file
+- Verify the public key is exactly 64 characters
+
+### Environment Configuration
+
+Create a production `.env` file with these settings:
+
+```env
+# Required Core Settings
+DATABASE_URL=postgresql://user:password@localhost:5432/nostr_relay
+RELAY_PUBKEY=<your-64-character-public-key>
+
+# Server Configuration
+PORT=3000
+HOST=127.0.0.1
+
+# Performance Tuning
+MAX_SUBSCRIPTION_PER_CLIENT=20
+MAX_FILTERS_PER_SUBSCRIPTION=10
+MIN_POW_DIFFICULTY=0
+MAX_WS_PAGE_SIZE=100
+MAX_WS_RESPONSE_SIZE=1000
+MAX_WS_OUTGOING_RATE_LIMIT=3
+
+# Search Configuration
+MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
+
+# Optional Web of Trust Settings
+WOT_TRUST_ANCHOR_PUBKEY=
+WOT_TRUST_DEPTH=
+WOT_FETCH_FOLLOW_LIST_FROM=
+```
+
+Performance recommendations:
+- Adjust `MAX_WS_PAGE_SIZE` based on your server capacity
+- Monitor `MAX_SUBSCRIPTION_PER_CLIENT` impact on memory usage
+- Set appropriate `MIN_POW_DIFFICULTY` for spam prevention
+
+### Nginx Configuration
+
+Configure Nginx as a reverse proxy with SSL termination:
+
+```nginx
+# /etc/nginx/sites-available/nostr-relay.conf
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # WebSocket Proxy Configuration
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket timeout settings
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        
+        # Buffer settings
+        proxy_buffer_size 8k;
+        proxy_buffers 8 8k;
+    }
+}
+```
+
+SSL setup with Certbot:
+```bash
+sudo certbot --nginx -d your-domain.com
+```
+
+### Service Management
+
+Create a systemd service for automatic management:
+
+```ini
+# /etc/systemd/system/nostr-relay.service
+[Unit]
+Description=Nostr Relay Service
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=nostr
+Group=nostr
+WorkingDirectory=/path/to/relay
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOST=127.0.0.1
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Service management commands:
+```bash
+# Enable and start the service
+sudo systemctl enable nostr-relay
+sudo systemctl start nostr-relay
+
+# Check status
+sudo systemctl status nostr-relay
+
+# View logs
+journalctl -u nostr-relay -f
+```
+
+### Monitoring and Maintenance
+
+1. **Database Maintenance**:
    ```bash
-   docker compose --profile prod up -d
+   # Regular vacuum
+   psql -d nostr_relay -c "VACUUM ANALYZE;"
+   
+   # Backup database
+   pg_dump -Fc nostr_relay > backup_$(date +%Y%m%d).dump
+   
+   # Monitor database size
+   psql -d nostr_relay -c "SELECT pg_size_pretty(pg_database_size('nostr_relay'));"
    ```
-   This enables:
-   - PostgreSQL with production-optimized settings
-   - Automatic daily backups with 7-day retention
-   - fail2ban for brute force protection
-   - Resource limits and monitoring
 
-3. Security Features:
-   - Network access restrictions (localhost only)
-   - fail2ban protection against brute force attacks
-   - Secure logging configuration
-   - Regular security updates
+2. **Performance Monitoring**:
+   - Monitor WebSocket connections:
+   ```bash
+   # Check current connections
+   netstat -an | grep :3000 | wc -l
+   
+   # Monitor memory usage
+   ps aux | grep nostr-relay
+   ```
 
-4. Performance Optimization:
-   - Optimized PostgreSQL settings for production workloads
-   - Connection pooling
-   - Query performance monitoring
-   - Automatic vacuum optimization
+3. **Log Monitoring**:
+   ```bash
+   # Check for errors
+   journalctl -u nostr-relay -p err
+   
+   # Monitor real-time logs
+   journalctl -u nostr-relay -f
+   ```
 
-5. High Availability:
-   - Automated backup system
-   - Health monitoring
-   - Graceful shutdown handling
-   - Resource management
+4. **Backup Strategy**:
+   - Daily database backups
+   - Weekly configuration backups
+   - Regular SSL certificate renewal checks
+   - Periodic key rotation (if needed)
 
-6. Monitoring and Maintenance:
-   - Performance metrics collection
-   - Security event logging
-   - Backup verification
-   - Resource usage monitoring
+### Troubleshooting Guide
 
-### Development Tools
+1. **WebSocket Connection Issues**:
+   - Check Nginx logs: `tail -f /var/log/nginx/error.log`
+   - Verify WebSocket upgrade headers
+   - Test connection: `wscat -c wss://your-domain.com`
+   - Check firewall rules for port 443
+
+2. **Database Connection Problems**:
+   ```bash
+   # Check PostgreSQL logs
+   tail -f /var/log/postgresql/postgresql-15-main.log
+   
+   # Verify connection
+   psql -d $DATABASE_URL -c "SELECT 1;"
+   ```
+
+3. **Service Start Failures**:
+   ```bash
+   # Check detailed service status
+   systemctl status nostr-relay
+   
+   # Check journal logs
+   journalctl -u nostr-relay -n 100
+   
+   # Verify permissions
+   ls -la /path/to/relay
+   ```
+
+4. **Performance Issues**:
+   - Check system resources:
+     ```bash
+     top -u nostr
+     free -m
+     df -h
+     ```
+   - Monitor database connections:
+     ```bash
+     psql -d nostr_relay -c "SELECT count(*) FROM pg_stat_activity;"
+     ```
+   - Check for slow queries:
+     ```bash
+     psql -d nostr_relay -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
+     ```
+
+## Development Tools
 
 When running in development mode (`--profile dev`):
 - **pgAdmin**: Access at http://localhost:5050
   - Email: admin@example.com
   - Password: admin
-- **PostgreSQL**: Optimized for development
+- **PostgreSQL**: Development settings
   - Host: localhost
   - Port: 5432
   - Database: nostr_relay
   - User: nostr_user
   - Password: nostr_password
 
-### Database Management
-
-The system includes:
-- Automated migrations using Kysely
-- Performance-optimized indexes
-- Backup and restore capabilities
-- Security hardening
-
-To run migrations:
-```bash
-npx ts-node scripts/migrate-to-latest.ts
-```
-
-To restore from backup:
-```bash
-# List available backups
-ls -l backups/
-
-# Restore from specific backup
-docker exec -i nostr_relay_postgres pg_restore -U nostr_user -d nostr_relay < backups/backup_YYYYMMDD_HHMMSS.dump
-```
-
-## Development Setup
-
-### Prerequisites
-
-1. **Docker Desktop for macOS**
-   - Download from https://www.docker.com/products/docker-desktop
-   - Choose Apple Silicon or Intel chip version as appropriate
-   - Install and start Docker Desktop
-   - Wait for Docker to finish starting (whale icon in menu bar becomes stable)
-
-### Database Setup
-
-1. **Start PostgreSQL and pgAdmin**
-   ```bash
-   docker compose up -d
-   ```
-
-2. **Database Configuration**
-   - PostgreSQL:
-     - Database: nostr_relay
-     - User: nostr_user
-     - Password: nostr_password
-     - Port: 5432
-     - Connection URL: postgresql://nostr_user:nostr_password@localhost:5432/nostr_relay
-
-   - pgAdmin (Optional):
-     - URL: http://localhost:5050
-     - Email: admin@example.com
-     - Password: admin
-
-3. **Environment Setup**
-   Create a `.env` file in the project root:
-   ```env
-   DATABASE_URL=postgresql://nostr_user:nostr_password@localhost:5432/nostr_relay
-   MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
-   ```
-
-4. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-5. **Run Database Migrations**
-   ```bash
-   npm run migration:run
-   ```
-
-6. **Start Development Server**
-   ```bash
-   npm run start:dev
-   ```
-
-## Quick Start
-
-### Dockerfile
-
-Build image
-
-```bash
-./scripts/build.sh
-```
-
-Create `.env` file based on [example.env](./example.env) file
-
-```.env
-DATABASE_URL=postgresql://username:password@host:port/database
-```
-
-Run container
-
-```bash
-./scripts/run.sh
-```
-
-### Local Development
-
-First of all, you need to have a PostgreSQL database running.
-
-Clone the repository and install dependencies
-
-```bash
-git clone https://github.com/CodyTseng/nostr-relay-nestjs.git
-cd nostr-relay-nestjs
-npm install
-```
-
-Create `.env` file based on [example.env](./example.env) file
-
-```.env
-DATABASE_URL=postgresql://username:password@host:port/database
-```
-
-Execute migration scripts
-
-```bash
-npm run migration:run
-```
-
-Start the server
-
-```bash
-npm run start
-```
-
-## Metrics
-
-You can view some simple relay metrics on `/metrics` endpoint.
-
-<img alt="Metrics snapshot" src="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/metrics-snapshot.png" width="520">
-
-## TODO
-
-- [x] Unit test
-- [x] RESTful API
-- [ ] Metrics, Monitoring and Alerting
-- [ ] Support multi nodes
-- [ ] Support for Bitcoin Lightning Network payments
-
-## Architecture
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png">
-  <img alt="Architecture Diagram" src="https://github.com/CodyTseng/resources/raw/master/nostr-relay-nestjs/img/structure-light.png" height="600">
-</picture>
-
-## Donate
-
-If you like this project, you can buy me a coffee :) ⚡️ codytseng@getalby.com ⚡️
-
 ## License
 
-This project is MIT licensed.
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FCodyTseng%2Fnostr-relay-nestjs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FCodyTseng%2Fnostr-relay-nestjs?ref=badge_large)
+This project is licensed under the MIT License - see the LICENSE file for details.
