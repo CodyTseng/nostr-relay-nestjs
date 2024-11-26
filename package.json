@@ -52,7 +52,7 @@
     "meilisearch": "^0.43.0",
     "meilisearch-helper": "^1.2.0",
     "nestjs-pino": "^4.1.0",
-    "nostr-tools": "^2.7.2",
+    "nostr-tools": "^2.10.4",
     "pg": "^8.13.0",
     "pino-http": "^10.3.0",
     "reflect-metadata": "^0.2.2",
