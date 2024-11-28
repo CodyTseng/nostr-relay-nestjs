@@ -22,7 +22,7 @@ For production requirements, see the [Deployment Guide](deployment.md#system-req
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/CodyTseng/nostr-relay-nestjs.git
+git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
 cd nostr-relay-nestjs
 ```
 
