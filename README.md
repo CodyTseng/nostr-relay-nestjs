@@ -101,6 +101,219 @@ WS_MAX_FILTER_LENGTH=1024         # Maximum length of subscription filters
    npm run start
    ```
 
+## Deployment Guide
+
+This section provides detailed instructions for deploying the relay on a production server (tested on Ubuntu/DigitalOcean).
+
+### Prerequisites
+
+- Node.js (v18+)
+- PostgreSQL
+- Nginx
+- PM2 (`npm install -g pm2`)
+- Domain name with DNS configured
+
+### Step 1: Initial Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/CodyTseng/nostr-relay-nestjs.git
+cd nostr-relay-nestjs
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Generate relay keys:
+```bash
+node generate-keys.js
+# Save the output - you'll need the public key for the .env file
+```
+
+### Step 2: Database Setup
+
+1. Install PostgreSQL:
+```bash
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+```
+
+2. Create database and user:
+```bash
+sudo -u postgres psql
+
+CREATE DATABASE nostr_relay;
+CREATE USER nostr_relay WITH ENCRYPTED PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE nostr_relay TO nostr_relay;
+\q
+```
+
+### Step 3: Environment Configuration
+
+1. Create .env file:
+```bash
+cp example.env .env
+```
+
+2. Configure essential variables:
+```env
+# Database
+DATABASE_URL=postgresql://nostr_relay:your_password@localhost:5432/nostr_relay
+
+# Relay Configuration
+RELAY_NAME="Your Relay Name"
+RELAY_DESCRIPTION="Your relay description"
+RELAY_PUBKEY="your-public-key-from-generate-keys"
+MIN_POW_DIFFICULTY=1
+
+# Server Configuration
+PORT=3000
+HOST=127.0.0.1
+```
+
+### Step 4: Build and Deploy
+
+1. Build the application:
+```bash
+npm run build
+```
+
+2. Set up PM2 for process management:
+```bash
+pm2 start dist/src/main.js --name nostr-relay
+pm2 save
+pm2 startup
+```
+
+### Step 5: Nginx Configuration
+
+1. Create Nginx configuration:
+```bash
+sudo nano /etc/nginx/sites-available/your-domain
+```
+
+2. Add the following configuration:
+```nginx
+# HTTP -> HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your-domain.com;
+    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Main HTTPS server
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name your-domain.com;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
+
+    # WebSocket and HTTP proxy configuration
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket timeouts
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_buffering off;
+
+        # Allow large uploads
+        client_max_body_size 10M;
+    }
+}
+```
+
+3. Enable the configuration:
+```bash
+sudo ln -s /etc/nginx/sites-available/your-domain /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Step 6: SSL Certificate
+
+1. Install Certbot:
+```bash
+sudo apt install certbot python3-certbot-nginx
+```
+
+2. Obtain SSL certificate:
+```bash
+sudo certbot --nginx -d your-domain.com
+```
+
+### Common Issues and Troubleshooting
+
+1. **Port 3000 Already in Use**
+   - Check for existing processes: `lsof -i :3000`
+   - Kill conflicting process: `kill -9 <PID>`
+   - Ensure no systemd services are auto-starting: `systemctl list-units | grep nostr`
+
+2. **Database Connection Issues**
+   - Verify PostgreSQL is running: `systemctl status postgresql`
+   - Check connection string in .env
+   - Ensure database user has proper permissions
+
+3. **WebSocket Connection Failed**
+   - Verify Nginx configuration
+   - Check PM2 process status: `pm2 status`
+   - Review logs: `pm2 logs nostr-relay`
+
+### Monitoring and Maintenance
+
+1. View application logs:
+```bash
+pm2 logs nostr-relay
+```
+
+2. Monitor performance:
+```bash
+pm2 monit
+```
+
+3. Check metrics:
+```bash
+curl http://localhost:3000/metrics
+```
+
+4. Restart the relay:
+```bash
+pm2 restart nostr-relay
+```
+
+### Adding to Public Directories
+
+Once your relay is running, consider adding it to public directories:
+- [nostr.watch](https://nostr.watch/add)
+- [nostr.info](https://nostr.info)
+
+Use your WebSocket URL: `wss://your-domain.com`
+
 ## Production Deployment Guide
 
 ### Key Generation and Security
