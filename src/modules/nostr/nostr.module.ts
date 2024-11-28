@@ -9,11 +9,18 @@ import { NostrGateway } from './gateway/nostr.gateway';
 import { EventService } from './services/event.service';
 import { NostrRelayService } from './services/nostr-relay.service';
 import { ReportEventValidator } from './validators/report-event.validator';
+import { ConnectionManagerService } from './services/connection-manager.service';
 
 @Module({
-  imports: [ShareModule, RepositoriesModule, WotModule, MetricModule],
-  controllers: [NostrController, EventController],
-  providers: [NostrGateway, EventService, NostrRelayService, ReportEventValidator],
-  exports: [NostrRelayService],
+  imports: [RepositoriesModule, MetricModule, ShareModule, WotModule],
+  controllers: [EventController, NostrController],
+  providers: [
+    EventService,
+    NostrRelayService,
+    NostrGateway,
+    ReportEventValidator,
+    ConnectionManagerService,
+  ],
+  exports: [EventService, NostrRelayService],
 })
 export class NostrModule {}

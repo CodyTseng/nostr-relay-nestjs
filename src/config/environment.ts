@@ -80,7 +80,18 @@ export const EnvironmentSchema = z.object({
   WOT_SKIP_FILTERS: arraySchema(
     z.any(), // TODO: add filter schema
   ).optional(),
+
+  // WebSocket Security Settings
+  WS_MAX_MESSAGE_SIZE: z.number().int().positive().optional(),
+  WS_MAX_CONNECTIONS_PER_IP: z.number().int().positive().optional(),
+  WS_RATE_LIMIT_TTL: z.number().int().positive().optional(),
+  WS_RATE_LIMIT_COUNT: z.number().int().positive().optional(),
+  WS_AUTH_TIMEOUT: z.number().int().positive().optional(),
+  WS_MAX_EVENT_SIZE: z.number().int().positive().optional(),
+  WS_MAX_SUBSCRIPTION_FILTERS: z.number().int().positive().optional(),
+  WS_MAX_FILTER_LENGTH: z.number().int().positive().optional(),
 });
+
 export type Environment = z.infer<typeof EnvironmentSchema>;
 
 export function validateEnvironment(env: Record<string, unknown>) {

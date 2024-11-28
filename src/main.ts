@@ -11,7 +11,8 @@ import { Logger } from 'nestjs-pino';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { Config } from './config';
-import { createWsAdapter } from './modules/nostr/gateway/create-ws-adapter';
+import { createEnhancedWsAdapter } from './modules/nostr/gateway/enhanced-ws-adapter';
+import { ConnectionManagerService } from './modules/nostr/services/connection-manager.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -23,7 +24,9 @@ async function bootstrap() {
   hbs.registerHelper('json', (context) => JSON.stringify(context));
   app.setViewEngine('hbs');
 
-  const wsAdapter = createWsAdapter(app);
+  const connectionManager = app.get(ConnectionManagerService);
+  const configService = app.get(ConfigService<Config, true>);
+  const wsAdapter = createEnhancedWsAdapter(app, connectionManager, configService);
   app.useWebSocketAdapter(wsAdapter);
 
   app.use(helmet());
@@ -39,7 +42,6 @@ async function bootstrap() {
   const express: Express = app.getHttpAdapter().getInstance();
   express.disable('x-powered-by');
 
-  const configService = app.get(ConfigService<Config, true>);
   const port = configService.get('port', { infer: true });
 
   const swaggerConfig = new DocumentBuilder()
