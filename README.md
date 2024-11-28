@@ -5,13 +5,66 @@
 
 A high-performance Nostr relay implementation powered by [NestJS](https://nestjs.com/) and PostgreSQL.
 
-## Documentation
+## Getting Started
 
-- [Installation Guide](docs/installation.md) - Complete setup instructions
-- [Deployment Guide](docs/deployment.md) - Production deployment walkthrough
-- [Security Guide](docs/security.md) - Security best practices and configuration
+1. **New to Nostr Relay?**
+   - Start with our [Installation Guide](docs/installation.md) for setup instructions
+   - Follow our [Quick Start](#quick-start) section below
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
+2. **Ready for Production?**
+   - Follow our [Deployment Guide](docs/deployment.md) for production setup
+   - Review our [Security Guide](docs/security.md) for best practices
+   - Set up proper [Monitoring](docs/monitoring.md) for your relay
+
+3. **Quick Deploy**
+   [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
+
+## Documentation Roadmap
+
+Our documentation is organized to help you at every stage:
+
+1. [Installation Guide](docs/installation.md)
+   - Complete setup instructions
+   - Development environment setup
+   - Basic configuration
+
+2. [Deployment Guide](docs/deployment.md)
+   - Production deployment walkthrough
+   - Server setup and configuration
+   - Nginx and SSL setup
+
+3. [Security Guide](docs/security.md)
+   - Security best practices
+   - Rate limiting configuration
+   - Access control setup
+
+4. [Monitoring Guide](docs/monitoring.md)
+   - System monitoring
+   - Performance optimization
+   - Maintenance procedures
+   - Troubleshooting
+
+## Quick Start
+
+1. Clone and install:
+```bash
+git clone https://github.com/CodyTseng/nostr-relay-nestjs.git
+cd nostr-relay-nestjs
+npm install
+```
+
+2. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+
+3. Start the relay:
+```bash
+npm run start:dev
+```
+
+For detailed setup instructions, see our [Installation Guide](docs/installation.md).
 
 ## Features
 
