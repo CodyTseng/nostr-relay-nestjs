@@ -3,13 +3,13 @@
 [![Coverage Status](https://coveralls.io/repos/github/CodyTseng/nostr-relay-nestjs/badge.svg?branch=master)](https://coveralls.io/github/CodyTseng/nostr-relay-nestjs?branch=master)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FCodyTseng%2Fnostr-relay-nestjs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FCodyTseng%2Fnostr-relay-nestjs?ref=badge_shield)
 
-Powered by [nostr-relay](https://github.com/CodyTseng/nostr-relay) & [NestJS](https://nestjs.com/).
+A high-performance Nostr relay implementation powered by [NestJS](https://nestjs.com/) and PostgreSQL.
 
-A high-performance nostr relay, using PostgreSQL.
+## Documentation
 
-If you'd like to help me test the reliability of this relay implementation, you can add wss://nostr-relay.app to your relay list (it's free) 💜⚡️
-
-> **Note:** Please use the released version of this code. The latest version may contain changes to migration scripts and other elements that are not finalized.
+- [Installation Guide](docs/installation.md) - Complete setup instructions
+- [Deployment Guide](docs/deployment.md) - Production deployment walkthrough
+- [Security Guide](docs/security.md) - Security best practices and configuration
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
 
