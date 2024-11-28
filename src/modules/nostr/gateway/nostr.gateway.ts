@@ -26,6 +26,10 @@ import { NostrRelayService } from '../services/nostr-relay.service';
 
 @WebSocketGateway({
   maxPayload: 256 * 1024, // 256KB
+  path: '/',
+  cors: true,
+  transports: ['websocket'],
+  allowUpgrades: false
 })
 @UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
