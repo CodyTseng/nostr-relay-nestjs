@@ -13,6 +13,12 @@ export const EnvironmentSchema = z.object({
   PORT: z.number().int().positive().optional(),
   GIT_COMMIT_SHA: z.string().optional(),
   DATABASE_MAX_CONNECTIONS: z.number().int().positive().optional(),
+  DATABASE_MIN_CONNECTIONS: z.number().int().positive().optional(),
+  DATABASE_IDLE_TIMEOUT: z.number().int().positive().optional(),
+  DATABASE_CONNECTION_TIMEOUT: z.number().int().positive().optional(),
+  DATABASE_SSL: z.boolean().optional(),
+  DATABASE_STATEMENT_TIMEOUT: z.number().int().positive().optional(),
+  DATABASE_QUERY_TIMEOUT: z.number().int().positive().optional(),
 
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
