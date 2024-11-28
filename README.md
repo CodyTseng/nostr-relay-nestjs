@@ -605,6 +605,60 @@ sudo certbot --nginx -d your-domain.com
      psql -d nostr_relay -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
      ```
 
+## Testing Your Installation
+
+You can verify your relay is working properly using these terminal commands:
+
+1. Test the NIP-11 information endpoint:
+```bash
+curl -i -H "Accept: application/nostr+json" https://your-domain.com
+```
+
+A successful response should look like:
+```json
+{
+  "name": "Your Relay Name",
+  "description": "Your relay description",
+  "pubkey": "your-public-key",
+  "supported_nips": [1, 2, 4, 11, 13, 22, 26, 28, 40],
+  "software": "git+https://github.com/CodyTseng/nostr-relay-nestjs",
+  "version": "2.2.0"
+  // ... other configuration details
+}
+```
+
+2. Test SSL/WebSocket endpoint:
+```bash
+nc -zv your-domain.com 443
+```
+
+You should see: `Connection to your-domain.com port 443 [tcp/https] succeeded!`
+
+3. Check security headers:
+```bash
+curl -I https://your-domain.com
+```
+
+Look for these important headers:
+- `strict-transport-security` (HSTS)
+- `x-frame-options`
+- `x-content-type-options`
+- `content-security-policy`
+
+### Common Issues
+
+1. If curl returns "Connection refused":
+   - Check if Nginx is running: `systemctl status nginx`
+   - Verify your firewall allows port 443: `sudo ufw status`
+
+2. If WebSocket connection fails:
+   - Check Nginx error logs: `tail -f /var/log/nginx/error.log`
+   - Verify PM2 process is running: `pm2 status`
+
+3. If SSL certificate issues occur:
+   - Verify certificate renewal: `certbot certificates`
+   - Check SSL configuration: `nginx -t`
+
 ## Development Tools
 
 When running in development mode (`--profile dev`):
