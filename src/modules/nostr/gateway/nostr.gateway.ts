@@ -50,7 +50,21 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: WebSocket, req: Request) {
-    this.nostrRelayService.handleConnection(client, getIpFromReq(req));
+    try {
+      let ip = 'unknown';
+      
+      if (req) {
+        const extractedIp = getIpFromReq(req);
+        if (extractedIp) {
+          ip = extractedIp;
+        }
+      }
+      
+      this.nostrRelayService.handleConnection(client, ip);
+    } catch (error) {
+      this.logger.error('Error in handleConnection:', error);
+      this.nostrRelayService.handleConnection(client, 'unknown');
+    }
   }
 
   handleDisconnect(client: WebSocket) {

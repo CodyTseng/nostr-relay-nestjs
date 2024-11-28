@@ -622,6 +622,14 @@ ls -la /path/to/relay
      psql -d nostr_relay -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
      ```
 
+## Recent Changes
+
+### 2024 Updates
+- Fixed WebSocket connection handling to properly manage undefined request objects and headers
+- Improved IP address extraction from WebSocket connections
+- Enhanced error handling in the NostrGateway
+- Fixed circular dependency in NostrRelayService
+
 ## Testing Your Installation
 
 You can verify your relay is working properly using these terminal commands:

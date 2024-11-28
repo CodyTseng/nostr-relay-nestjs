@@ -17,12 +17,12 @@ import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { WebSocket } from 'ws';
 import { ValidationError } from 'zod-validation-error';
-import { WotService } from '../../../modules/wot/wot.service';
 import { MetricService } from '../../metric/metric.service';
 import { EventRepository } from '../../repositories/event.repository';
 import { NostrRelayLogger } from '../../share/nostr-relay-logger.service';
 import { BlacklistGuardPlugin, WhitelistGuardPlugin } from '../plugins';
 import { ReportEventValidator } from '../validators/report-event.validator';
+import { WotService } from '../../../modules/wot/wot.service';
 
 @Injectable()
 export class NostrRelayService implements OnApplicationShutdown {
@@ -35,14 +35,14 @@ export class NostrRelayService implements OnApplicationShutdown {
     @InjectPinoLogger(NostrRelayService.name)
     private readonly logger: PinoLogger,
     private readonly metricService: MetricService,
-    nostrRelayLogger: NostrRelayLogger,
-    eventRepository: EventRepository,
-    configService: ConfigService<Config, true>,
-    wotService: WotService,
+    private readonly eventRepository: EventRepository,
+    private readonly configService: ConfigService<Config, true>,
+    private readonly wotService: WotService,
+    private readonly nostrRelayLogger: NostrRelayLogger,
     private readonly reportEventValidator: ReportEventValidator,
   ) {
-    const hostname = configService.get('hostname');
-    const limitConfig = configService.get('limit', { infer: true });
+    const hostname = this.configService.get('hostname');
+    const limitConfig = this.configService.get('limit', { infer: true });
     const {
       createdAtLowerLimit,
       createdAtUpperLimit,
@@ -51,14 +51,14 @@ export class NostrRelayService implements OnApplicationShutdown {
       blacklist,
       whitelist,
     } = limitConfig;
-    const cacheConfig = configService.get('cache', { infer: true });
-    const throttlerConfig = configService.get('throttler.ws', { infer: true });
-    this.messageHandlingConfig = configService.get('messageHandling', {
+    const cacheConfig = this.configService.get('cache', { infer: true });
+    const throttlerConfig = this.configService.get('throttler.ws', { infer: true });
+    this.messageHandlingConfig = this.configService.get('messageHandling', {
       infer: true,
     });
-    this.relay = new NostrRelay(eventRepository, {
+    this.relay = new NostrRelay(this.eventRepository, {
       hostname,
-      logger: nostrRelayLogger,
+      logger: this.nostrRelayLogger,
       maxSubscriptionsPerClient,
       ...cacheConfig,
     });
@@ -82,7 +82,7 @@ export class NostrRelayService implements OnApplicationShutdown {
       );
     }
 
-    const orGuardPlugin = new OrGuard(wotService.getWotGuardPlugin());
+    const orGuardPlugin = new OrGuard(this.wotService.getWotGuardPlugin());
 
     if (minPowDifficulty > 0) {
       this.relay.register(new PowGuard(minPowDifficulty));
