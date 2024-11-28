@@ -96,6 +96,13 @@ export const EnvironmentSchema = z.object({
   WS_MAX_EVENT_SIZE: z.number().int().positive().optional(),
   WS_MAX_SUBSCRIPTION_FILTERS: z.number().int().positive().optional(),
   WS_MAX_FILTER_LENGTH: z.number().int().positive().optional(),
+
+  // Group Chat Settings
+  GROUP_MAX_MEMBERS: z.number().int().positive().optional(),
+  GROUP_MAX_METADATA_LENGTH: z.number().int().positive().optional(),
+  GROUP_MAX_MESSAGE_LENGTH: z.number().int().positive().optional(),
+  GROUP_MESSAGE_RATE_LIMIT: z.number().int().positive().optional(),
+  GROUP_MESSAGE_RATE_PERIOD: z.number().int().positive().optional(),
 });
 
 export type Environment = z.infer<typeof EnvironmentSchema>;

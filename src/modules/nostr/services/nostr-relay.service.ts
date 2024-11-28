@@ -21,6 +21,7 @@ import { MetricService } from '../../metric/metric.service';
 import { EventRepository } from '../../repositories/event.repository';
 import { NostrRelayLogger } from '../../share/nostr-relay-logger.service';
 import { BlacklistGuardPlugin, WhitelistGuardPlugin } from '../plugins';
+import { GroupEventValidator } from '../validators/group-event.validator';
 import { ReportEventValidator } from '../validators/report-event.validator';
 import { WotService } from '../../../modules/wot/wot.service';
 
@@ -40,6 +41,7 @@ export class NostrRelayService implements OnApplicationShutdown {
     private readonly wotService: WotService,
     private readonly nostrRelayLogger: NostrRelayLogger,
     private readonly reportEventValidator: ReportEventValidator,
+    private readonly groupEventValidator: GroupEventValidator,
   ) {
     const hostname = this.configService.get('hostname');
     const limitConfig = this.configService.get('limit', { infer: true });
@@ -146,6 +148,12 @@ export class NostrRelayService implements OnApplicationShutdown {
     const reportValidationError = this.reportEventValidator.validate(data);
     if (reportValidationError) {
       throw new Error(reportValidationError);
+    }
+
+    // Validate group events
+    const groupValidationError = this.groupEventValidator.validate(data);
+    if (groupValidationError) {
+      throw new Error(groupValidationError);
     }
 
     // Continue with existing validation...

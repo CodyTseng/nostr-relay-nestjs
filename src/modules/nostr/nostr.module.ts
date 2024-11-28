@@ -8,6 +8,7 @@ import { NostrController } from './controllers/nostr.controller';
 import { NostrGateway } from './gateway/nostr.gateway';
 import { EventService } from './services/event.service';
 import { NostrRelayService } from './services/nostr-relay.service';
+import { GroupEventValidator } from './validators/group-event.validator';
 import { ReportEventValidator } from './validators/report-event.validator';
 import { ConnectionManagerService } from './services/connection-manager.service';
 
@@ -19,6 +20,7 @@ import { ConnectionManagerService } from './services/connection-manager.service'
     NostrRelayService,
     NostrGateway,
     ReportEventValidator,
+    GroupEventValidator,
     ConnectionManagerService,
   ],
   exports: [EventService, NostrRelayService],
