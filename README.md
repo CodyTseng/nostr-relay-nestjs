@@ -50,6 +50,14 @@ If you'd like to help me test the reliability of this relay implementation, you 
 - **Request Rate Limiting**: Separate rate limits for different types of requests (EVENT, REQ)
 - **Block Duration**: Configurable blocking period for clients exceeding rate limits
 
+### Database Security
+- **Connection Pooling**: Configurable minimum and maximum connections
+- **Query Timeouts**: Automatic termination of long-running queries
+- **SSL Enforcement**: Secure database connections with SSL/TLS
+- **Statement Timeouts**: Protection against resource-intensive queries
+- **Idle Connection Management**: Automatic cleanup of idle connections
+- **Error Logging**: Comprehensive logging of database errors and warnings
+
 ### Configuration
 You can configure these security features through environment variables:
 
@@ -63,6 +71,15 @@ WS_AUTH_TIMEOUT=30000             # Authentication timeout in milliseconds
 WS_MAX_EVENT_SIZE=32768           # Maximum event size in bytes (default: 32KB)
 WS_MAX_SUBSCRIPTION_FILTERS=10     # Maximum number of subscription filters
 WS_MAX_FILTER_LENGTH=1024         # Maximum length of subscription filters
+
+# Database Security Settings
+DATABASE_MIN_CONNECTIONS=2      # Minimum number of connections in pool
+DATABASE_MAX_CONNECTIONS=10     # Maximum number of connections in pool
+DATABASE_IDLE_TIMEOUT=10000    # Idle connection timeout in milliseconds
+DATABASE_CONNECTION_TIMEOUT=5000 # Connection timeout in milliseconds
+DATABASE_SSL=true              # Enable SSL for database connections
+DATABASE_STATEMENT_TIMEOUT=30000 # Statement timeout in milliseconds
+DATABASE_QUERY_TIMEOUT=15000   # Query timeout in milliseconds
 ```
 
 ## Installation and Setup
@@ -569,25 +586,25 @@ sudo certbot --nginx -d your-domain.com
    - Check firewall rules for port 443
 
 2. **Database Connection Problems**:
-   ```bash
-   # Check PostgreSQL logs
-   tail -f /var/log/postgresql/postgresql-15-main.log
-   
-   # Verify connection
-   psql -d $DATABASE_URL -c "SELECT 1;"
-   ```
+```bash
+# Check PostgreSQL logs
+tail -f /var/log/postgresql/postgresql-15-main.log
+
+# Verify connection
+psql -d $DATABASE_URL -c "SELECT 1;"
+```
 
 3. **Service Start Failures**:
-   ```bash
-   # Check detailed service status
-   systemctl status nostr-relay
-   
-   # Check journal logs
-   journalctl -u nostr-relay -n 100
-   
-   # Verify permissions
-   ls -la /path/to/relay
-   ```
+```bash
+# Check detailed service status
+systemctl status nostr-relay
+
+# Check journal logs
+journalctl -u nostr-relay -n 100
+
+# Verify permissions
+ls -la /path/to/relay
+```
 
 4. **Performance Issues**:
    - Check system resources:
