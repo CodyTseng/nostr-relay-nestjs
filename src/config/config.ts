@@ -6,6 +6,7 @@ import { loggerConfig } from './logger.config';
 import { meiliSearchConfig } from './meili-search.config';
 import { messageHandlingConfig } from './message-handling.config';
 import { relayInfoConfig } from './relay-info.config';
+import { securityConfig } from './security.config';
 import { throttlerConfig } from './throttler.config';
 import { wotConfig } from './wot.config';
 
@@ -24,6 +25,7 @@ export function config() {
     cache: cacheConfig(env),
     messageHandling: messageHandlingConfig(env),
     wot: wotConfig(env),
+    security: securityConfig(env),
   };
 }
 export type Config = ReturnType<typeof config>;

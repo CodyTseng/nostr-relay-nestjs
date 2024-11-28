@@ -60,13 +60,13 @@ export class NostrController {
       supported_nips,
       limitation: {
         max_message_length: 128 * 1024, // 128 KB
-        max_subscriptions: limitConfig.maxSubscriptionsPerClient,
+        max_subscriptions: limitConfig.maxSubscriptionsPerClient ?? 10, // Default to 10 if undefined
         max_filters: 10,
         max_limit: 1000,
         max_subid_length: 128,
         max_event_tags: 2000,
         max_content_length: 102400,
-        min_pow_difficulty: limitConfig.minPowDifficulty,
+        min_pow_difficulty: limitConfig.minPowDifficulty ?? 0, // Default to 0 if undefined
         auth_required: false,
         payment_required: false,
         restricted_writes: false,

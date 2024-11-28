@@ -9,50 +9,51 @@ import { WebSocket } from 'ws';
 import { getIpFromReq } from '../../../utils';
 import { Request } from 'express';
 
+export interface EnhancedWebSocket extends WebSocket {
+  authenticated?: boolean;
+}
+
 export function createEnhancedWsAdapter(
   app: INestApplication,
   connectionManager: ConnectionManagerService,
   configService: ConfigService<Config, true>,
 ) {
   const adapter = new WsAdapter(app);
-  const securityConfig = configService.get('security', { infer: true });
+  const securityConfig = configService.get<SecurityConfig>('security');
+
+  if (!securityConfig) {
+    throw new Error('Security configuration is required');
+  }
 
   // Enhance the handleUpgrade method to implement connection limits
-  const originalHandleUpgrade = adapter.handleUpgrade.bind(adapter);
-  adapter.handleUpgrade = (request: Request, socket: any, head: any) => {
-    const ip = getIpFromReq(request);
-    
-    if (!connectionManager.canConnect(ip)) {
-      socket.write('HTTP/1.1 429 Too Many Connections\r\n\r\n');
-      socket.destroy();
-      return;
-    }
-
-    originalHandleUpgrade(request, socket, head);
-  };
-
-  // Add connection tracking
-  adapter.bindClientConnect = (client: WebSocket, request: Request) => {
-    const ip = getIpFromReq(request);
-    connectionManager.registerConnection(client, ip);
-
-    client.on('close', () => {
-      connectionManager.removeConnection(client, ip);
+  const originalHandleUpgrade = adapter.bindClientConnect.bind(adapter);
+  adapter.bindClientConnect = (server: any, callback: Function) => {
+    originalHandleUpgrade.call(adapter, server, (client: EnhancedWebSocket, req: Request) => {
+      const ip = getIpFromReq(req);
+      if (ip && connectionManager.canConnect(ip)) {
+        connectionManager.registerConnection(client, ip);
+        client.on('close', () => {
+          if (ip) connectionManager.removeConnection(client, ip);
+        });
+        callback(client);
+      } else {
+        client.close(1008, 'Too many connections');
+      }
     });
   };
 
   // Enhanced message preprocessor with security checks
-  adapter.setMessagePreprocessor((message: any) => {
+  adapter.setMessagePreprocessor((message: any, client: EnhancedWebSocket) => {
     try {
       // 1. Size check
       const messageSize = Buffer.byteLength(JSON.stringify(message));
       if (messageSize > securityConfig.websocket.maxMessageSize) {
-        throw new Error('Message size exceeds limit');
+        return;
       }
 
       // 2. Basic structure validation
       if (!Array.isArray(message) || message.length < 1) {
-        return null;
+        return;
       }
 
       // 3. Type checking
@@ -67,7 +68,7 @@ export function createEnhancedWsAdapter(
           'TOP',
         ].includes(type)
       ) {
-        return null;
+        return;
       }
 
       // 4. Type-specific payload validation
@@ -79,7 +80,6 @@ export function createEnhancedWsAdapter(
           validateReqPayload(message.slice(1), securityConfig);
           break;
         case MessageType.AUTH:
-          // Mark client as authenticated on valid AUTH message
           connectionManager.markAuthenticated(client);
           break;
       }
@@ -89,9 +89,8 @@ export function createEnhancedWsAdapter(
         data: message,
       };
     } catch (error) {
-      // Log error and return null to reject the message
       console.error('Message preprocessing error:', error);
-      return null;
+      return;
     }
   });
 
@@ -110,8 +109,6 @@ function validateEventPayload(
   if (payloadSize > config.websocket.payloadLimits.maxEventSize) {
     throw new Error('Event size exceeds limit');
   }
-
-  // Add more specific event validation as needed
 }
 
 function validateReqPayload(

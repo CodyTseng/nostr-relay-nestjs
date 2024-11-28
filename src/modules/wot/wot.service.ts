@@ -1,6 +1,7 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { WotGuard } from '@nostr-relay/wot-guard';
+import { WotGuard, WotGuardOptions } from '@nostr-relay/wot-guard';
+import { Filter } from '@nostr-relay/common';
 import { Config } from 'src/config';
 import { EventRepository } from '../repositories/event.repository';
 import { NostrRelayLogger } from '../share/nostr-relay-logger.service';
@@ -16,12 +17,21 @@ export class WotService implements OnApplicationBootstrap {
   ) {
     const wotConfig = configService.get('wot', { infer: true });
 
+    // Convert string filters to Filter objects
+    const skipFilters = wotConfig?.skipFilters?.map((filter: string) => {
+      try {
+        return JSON.parse(filter) as Filter;
+      } catch {
+        return null;
+      }
+    }).filter((filter): filter is Filter => filter !== null) ?? [];
+
     this.wotGuardPlugin = new WotGuard({
       enabled: !!wotConfig.trustAnchorPubkey,
       trustAnchorPubkey: wotConfig.trustAnchorPubkey,
       trustDepth: wotConfig.trustDepth,
       relayUrls: wotConfig.fetchFollowListFrom,
-      skipFilters: wotConfig.skipFilters,
+      skipFilters,
       logger: nostrRelayLogger,
       eventRepository,
     });

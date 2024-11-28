@@ -3,12 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../../config';
 import { SecurityConfig } from '../../../config/security.config';
-import { WebSocket } from 'ws';
+import { EnhancedWebSocket } from '../gateway/enhanced-ws-adapter';
 
 @Injectable()
 export class ConnectionManagerService {
-  private readonly ipConnections: Map<string, Set<WebSocket>> = new Map();
-  private readonly clientAuthTimeouts: Map<WebSocket, NodeJS.Timeout> = new Map();
+  private readonly ipConnections: Map<string, Set<EnhancedWebSocket>> = new Map();
+  private readonly clientAuthTimeouts: Map<EnhancedWebSocket, NodeJS.Timeout> = new Map();
   private readonly securityConfig: SecurityConfig;
 
   constructor(
@@ -16,7 +16,11 @@ export class ConnectionManagerService {
     private readonly logger: PinoLogger,
     private readonly configService: ConfigService<Config, true>,
   ) {
-    this.securityConfig = this.configService.get('security', { infer: true });
+    const securityConfig = this.configService.get<SecurityConfig>('security');
+    if (!securityConfig) {
+      throw new Error('Security configuration is required');
+    }
+    this.securityConfig = securityConfig;
   }
 
   canConnect(ip: string): boolean {
@@ -24,7 +28,7 @@ export class ConnectionManagerService {
     return connections < this.securityConfig.websocket.maxConnectionsPerIp;
   }
 
-  registerConnection(client: WebSocket, ip: string): void {
+  registerConnection(client: EnhancedWebSocket, ip: string): void {
     if (!this.ipConnections.has(ip)) {
       this.ipConnections.set(ip, new Set());
     }
@@ -42,7 +46,7 @@ export class ConnectionManagerService {
     this.clientAuthTimeouts.set(client, timeout);
   }
 
-  removeConnection(client: WebSocket, ip: string): void {
+  removeConnection(client: EnhancedWebSocket, ip: string): void {
     this.ipConnections.get(ip)?.delete(client);
     if (this.ipConnections.get(ip)?.size === 0) {
       this.ipConnections.delete(ip);
@@ -56,8 +60,8 @@ export class ConnectionManagerService {
     }
   }
 
-  markAuthenticated(client: WebSocket): void {
-    (client as any).authenticated = true;
+  markAuthenticated(client: EnhancedWebSocket): void {
+    client.authenticated = true;
     const timeout = this.clientAuthTimeouts.get(client);
     if (timeout) {
       clearTimeout(timeout);

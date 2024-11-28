@@ -35,6 +35,36 @@ If you'd like to help me test the reliability of this relay implementation, you 
 | [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)                                     |   🔴   |                                          |
 | [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                                      |   🟢   |                                          |
 
+## Enhanced Security Features
+
+### WebSocket Security
+- **Connection Limits**: Configurable maximum connections per IP address
+- **Message Size Restrictions**: Limits on WebSocket message sizes to prevent abuse
+- **Authentication Timeouts**: Automatic disconnection of unauthenticated clients after a configurable period
+- **Event Size Limits**: Maximum size limits for individual events
+- **Subscription Controls**: Limits on the number of subscription filters per client
+- **Filter Length Restrictions**: Maximum length limits for subscription filters
+
+### Rate Limiting
+- **Event Rate Limiting**: Configurable limits on event submissions per time window
+- **Request Rate Limiting**: Separate rate limits for different types of requests (EVENT, REQ)
+- **Block Duration**: Configurable blocking period for clients exceeding rate limits
+
+### Configuration
+You can configure these security features through environment variables:
+
+```env
+# WebSocket Security Settings
+WS_MAX_MESSAGE_SIZE=65536          # Maximum WebSocket message size in bytes (default: 64KB)
+WS_MAX_CONNECTIONS_PER_IP=10       # Maximum concurrent connections per IP
+WS_RATE_LIMIT_TTL=60000           # Rate limit time window in milliseconds
+WS_RATE_LIMIT_COUNT=30            # Maximum requests per time window
+WS_AUTH_TIMEOUT=30000             # Authentication timeout in milliseconds
+WS_MAX_EVENT_SIZE=32768           # Maximum event size in bytes (default: 32KB)
+WS_MAX_SUBSCRIPTION_FILTERS=10     # Maximum number of subscription filters
+WS_MAX_FILTER_LENGTH=1024         # Maximum length of subscription filters
+```
+
 ## Installation and Setup
 
 ### Prerequisites

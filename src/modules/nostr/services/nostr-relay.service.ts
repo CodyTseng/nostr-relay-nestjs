@@ -10,6 +10,7 @@ import { CreatedAtLimitGuard } from '@nostr-relay/created-at-limit-guard';
 import { OrGuard } from '@nostr-relay/or-guard';
 import { PowGuard } from '@nostr-relay/pow-guard';
 import { Throttler } from '@nostr-relay/throttler';
+import type { ThrottlerOptions } from '@nestjs/throttler';
 import { Validator } from '@nostr-relay/validator';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
@@ -41,6 +42,7 @@ export class NostrRelayService implements OnApplicationShutdown {
     private readonly reportEventValidator: ReportEventValidator,
   ) {
     const hostname = configService.get('hostname');
+    const limitConfig = configService.get('limit', { infer: true });
     const {
       createdAtLowerLimit,
       createdAtUpperLimit,
@@ -48,7 +50,7 @@ export class NostrRelayService implements OnApplicationShutdown {
       maxSubscriptionsPerClient,
       blacklist,
       whitelist,
-    } = configService.get('limit', { infer: true });
+    } = limitConfig;
     const cacheConfig = configService.get('cache', { infer: true });
     const throttlerConfig = configService.get('throttler.ws', { infer: true });
     this.messageHandlingConfig = configService.get('messageHandling', {
@@ -62,30 +64,41 @@ export class NostrRelayService implements OnApplicationShutdown {
     });
     this.validator = new Validator();
 
-    this.throttler = new Throttler(throttlerConfig);
+    const throttlerOptions: ThrottlerOptions = {
+      name: 'event',
+      ttl: throttlerConfig.EVENT.ttl,
+      limit: throttlerConfig.EVENT.limit
+    };
+
+    this.throttler = new Throttler(throttlerOptions as any);
     this.relay.register(this.throttler);
 
-    const createdAtLimitGuardPlugin = new CreatedAtLimitGuard({
-      lowerLimit: createdAtLowerLimit,
-      upperLimit: createdAtUpperLimit,
-    });
+    if (createdAtLowerLimit || createdAtUpperLimit) {
+      this.relay.register(
+        new CreatedAtLimitGuard({
+          lowerLimit: createdAtLowerLimit,
+          upperLimit: createdAtUpperLimit,
+        }),
+      );
+    }
+
     const orGuardPlugin = new OrGuard(wotService.getWotGuardPlugin());
 
     if (minPowDifficulty > 0) {
-      const powGuardPlugin = new PowGuard(minPowDifficulty);
-      orGuardPlugin.addGuard(powGuardPlugin);
+      this.relay.register(new PowGuard(minPowDifficulty));
     }
+
     if (blacklist?.length) {
       const blacklistGuardPlugin = new BlacklistGuardPlugin(blacklist);
       this.relay.register(blacklistGuardPlugin);
     }
+
     if (whitelist?.length) {
       const whitelistGuardPlugin = new WhitelistGuardPlugin(whitelist);
       orGuardPlugin.addGuard(whitelistGuardPlugin);
     }
 
     this.relay.register(orGuardPlugin);
-    this.relay.register(createdAtLimitGuardPlugin);
   }
 
   onApplicationShutdown() {
