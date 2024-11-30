@@ -5,7 +5,6 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Express, static as ExpressStatic } from 'express';
-import * as hbs from 'hbs';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { join } from 'path';
@@ -22,9 +21,15 @@ async function bootstrap() {
     });
     app.useLogger(app.get(Logger));
 
+    // Set up view engine
     app.setBaseViewsDir(join(__dirname, '..', 'views'));
-    hbs.registerHelper('json', (context) => JSON.stringify(context));
     app.setViewEngine('hbs');
+    
+    // Register Handlebars helpers after engine is set
+    const handlebars = require('hbs');
+    handlebars.registerHelper('json', function(context) {
+      return JSON.stringify(context);
+    });
 
     const moduleRef = app.select(ConnectionManagerModule);
     const connectionManager = moduleRef.get(ConnectionManagerService);
