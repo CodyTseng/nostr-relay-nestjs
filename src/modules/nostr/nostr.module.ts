@@ -10,10 +10,10 @@ import { EventService } from './services/event.service';
 import { NostrRelayService } from './services/nostr-relay.service';
 import { GroupEventValidator } from './validators/group-event.validator';
 import { ReportEventValidator } from './validators/report-event.validator';
-import { ConnectionManagerService } from './services/connection-manager.service';
+import { ConnectionManagerModule } from '../connection-manager/connection-manager.module';
 
 @Module({
-  imports: [RepositoriesModule, MetricModule, ShareModule, WotModule],
+  imports: [RepositoriesModule, MetricModule, ShareModule, WotModule, ConnectionManagerModule],
   controllers: [EventController, NostrController],
   providers: [
     EventService,
@@ -21,7 +21,6 @@ import { ConnectionManagerService } from './services/connection-manager.service'
     NostrGateway,
     ReportEventValidator,
     GroupEventValidator,
-    ConnectionManagerService,
   ],
   exports: [EventService, NostrRelayService],
 })

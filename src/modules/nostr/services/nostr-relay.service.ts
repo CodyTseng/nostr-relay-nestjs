@@ -1,22 +1,13 @@
-import { Injectable, OnApplicationShutdown } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  Event,
-  Filter,
-  createOutgoingNoticeMessage,
-} from '@nostr-relay/common';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { ConnectionManagerService, EnhancedWebSocket } from '@/modules/connection-manager/connection-manager.service';
+import { NostrValidatorService } from './nostr-validator.service';
 import { NostrRelay } from '@nostr-relay/core';
-import { CreatedAtLimitGuard } from '@nostr-relay/created-at-limit-guard';
-import { OrGuard } from '@nostr-relay/or-guard';
 import { PowGuard } from '@nostr-relay/pow-guard';
 import { Throttler } from '@nostr-relay/throttler';
-import type { ThrottlerOptions } from '@nestjs/throttler';
-import { Validator } from '@nostr-relay/validator';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { Config } from 'src/config';
-import { MessageHandlingConfig } from 'src/config/message-handling.config';
-import { EnhancedWebSocket } from '../gateway/custom-ws-adapter';
-import { ValidationError } from 'zod-validation-error';
+import { ThrottlerOptions } from '@nestjs/throttler';
+import { Config } from '@/config';
 import { MetricService } from '../../metric/metric.service';
 import { EventRepository } from '../../repositories/event.repository';
 import { NostrRelayLogger } from '../../share/nostr-relay-logger.service';
@@ -24,13 +15,18 @@ import { BlacklistGuardPlugin, WhitelistGuardPlugin } from '../plugins';
 import { GroupEventValidator } from '../validators/group-event.validator';
 import { ReportEventValidator } from '../validators/report-event.validator';
 import { WotService } from '../../../modules/wot/wot.service';
-import { ConnectionManagerService } from '../../../modules/connection-manager/connection-manager.service';
+import { CreatedAtLimitGuard } from '@nostr-relay/created-at-limit-guard';
+import { OrGuard } from '@nostr-relay/or-guard';
+import { IncomingMessage } from '@nostr-relay/common';
+
+interface ThrottlerConfig {
+  ttl: number;
+  limit: number;
+}
 
 @Injectable()
-export class NostrRelayService implements OnApplicationShutdown {
+export class NostrRelayService {
   private readonly relay: NostrRelay;
-  private readonly messageHandlingConfig: MessageHandlingConfig;
-  private readonly validator: Validator;
   private readonly throttler: Throttler;
 
   constructor(
@@ -38,15 +34,14 @@ export class NostrRelayService implements OnApplicationShutdown {
     private readonly logger: PinoLogger,
     private readonly metricService: MetricService,
     private readonly eventRepository: EventRepository,
-    private readonly configService: ConfigService<Config, true>,
+    private readonly connectionManager: ConnectionManagerService,
+    private readonly validator: NostrValidatorService,
+    private readonly configService: ConfigService<Config>,
     private readonly wotService: WotService,
     private readonly nostrRelayLogger: NostrRelayLogger,
     private readonly reportEventValidator: ReportEventValidator,
     private readonly groupEventValidator: GroupEventValidator,
-    private readonly connectionManager: ConnectionManagerService,
   ) {
-    const hostname = this.configService.get('hostname');
-    const limitConfig = this.configService.get('limit', { infer: true });
     const {
       createdAtLowerLimit,
       createdAtUpperLimit,
@@ -54,26 +49,25 @@ export class NostrRelayService implements OnApplicationShutdown {
       maxSubscriptionsPerClient,
       blacklist,
       whitelist,
-    } = limitConfig;
-    const cacheConfig = this.configService.get('cache', { infer: true });
-    const throttlerConfig = this.configService.get('throttler.ws', { infer: true });
-    this.messageHandlingConfig = this.configService.get('messageHandling', {
-      infer: true,
-    });
+      cacheConfig,
+      throttlerConfig,
+      hostname,
+    } = this.configService.get('messageHandling', {});
+
     this.relay = new NostrRelay(this.eventRepository, {
       hostname,
       logger: this.nostrRelayLogger,
       maxSubscriptionsPerClient,
       ...cacheConfig,
     });
-    this.validator = new Validator();
 
+    // Initialize throttler with default values if not configured
+    const ttl = throttlerConfig?.EVENT?.ttl ?? 60000;
+    const limit = throttlerConfig?.EVENT?.limit ?? 100;
     const throttlerOptions: ThrottlerOptions = {
-      name: 'event',
-      ttl: throttlerConfig.EVENT.ttl,
-      limit: throttlerConfig.EVENT.limit
+      ttl,
+      limit,
     };
-
     this.throttler = new Throttler(throttlerOptions as any);
     this.relay.register(this.throttler);
 
@@ -128,30 +122,31 @@ export class NostrRelayService implements OnApplicationShutdown {
     try {
       const start = Date.now();
       const msg = await this.validator.validateIncomingMessage(message);
-      if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
+      if (!this.configService.get('messageHandling')[msg[0].toLowerCase()]) {
         return;
       }
 
-      await this.relay.handleMessage(client, msg);
+      await this.relay.handleMessage(client, msg as IncomingMessage);
       const end = Date.now();
       this.metricService.pushProcessingTime(msg[0], end - start);
+      this.logger.debug('Message processed in %dms', end - start);
     } catch (error) {
-      if (error instanceof ValidationError) {
-        client.send(JSON.stringify(createOutgoingNoticeMessage(error.message)));
-        return;
+      if (error instanceof Error) {
+        client.send(JSON.stringify(['NOTICE', error.message]));
+        this.logger.error('Error handling message: %s', error);
       }
-      client.send(JSON.stringify(createOutgoingNoticeMessage((error as Error).message)));
     }
   }
 
   private handleAdminMessage(client: EnhancedWebSocket, message: any[]): void {
     if (message[1] === 'GET_CONNECTIONS') {
       const connections = this.connectionManager.getConnections();
+      const connectionEntries = Array.from(connections.entries());
       const connectionInfo = {
-        total: connections.size,
-        active: connections.size,
-        authenticated: Array.from(connections).filter((c: EnhancedWebSocket) => c.authenticated).length,
-        connections: Array.from(connections).map((conn: EnhancedWebSocket) => ({
+        total: connectionEntries.length,
+        active: connectionEntries.length,
+        authenticated: connectionEntries.filter(([_, c]: [string, EnhancedWebSocket]) => c.authenticated).length,
+        connections: connectionEntries.map(([_, conn]: [string, EnhancedWebSocket]) => ({
           id: conn.id,
           authenticated: conn.authenticated,
           connectedAt: conn.connectedAt
@@ -161,15 +156,15 @@ export class NostrRelayService implements OnApplicationShutdown {
     }
   }
 
-  async handleEvent(event: Event) {
+  async handleEvent(event: any) {
     return await this.relay.handleEvent(event);
   }
 
-  async findEvents(filters: Filter[], pubkey?: string) {
+  async findEvents(filters: any[], pubkey?: string) {
     return await this.relay.findEvents(filters, pubkey);
   }
 
-  async validateEvent(data: any): Promise<Event> {
+  async validateEvent(data: any): Promise<any> {
     // Validate report events
     const reportValidationError = this.reportEventValidator.validate(data);
     if (reportValidationError) {
@@ -192,5 +187,32 @@ export class NostrRelayService implements OnApplicationShutdown {
 
   async validateFilters(data: any) {
     return await this.validator.validateFilters(data);
+  }
+
+  async getStats(): Promise<any> {
+    try {
+      const connections = this.connectionManager.getConnections();
+      const connectionEntries = Array.from(connections.entries());
+      
+      const authenticatedCount = connectionEntries
+        .filter(([_, client]: [string, EnhancedWebSocket]) => client.authenticated)
+        .length;
+
+      const connectedClients = connectionEntries
+        .map(([_, client]: [string, EnhancedWebSocket]) => ({
+          id: client.id,
+          authenticated: client.authenticated,
+          pubkey: client.pubkey,
+          connectedAt: client.connectedAt
+        }));
+
+      return {
+        authenticated: authenticatedCount,
+        connections: connectedClients,
+      };
+    } catch (error) {
+      this.logger.error('Error getting stats: %s', error);
+      throw error;
+    }
   }
 }

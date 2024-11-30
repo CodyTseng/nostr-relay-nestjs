@@ -12,7 +12,8 @@ import { join } from 'path';
 import { AppModule } from '@/app.module';
 import { Config } from '@/config';
 import { CustomWebSocketAdapter } from '@/modules/nostr/gateway/custom-ws-adapter';
-import { ConnectionManagerService } from '@/modules/nostr/services/connection-manager.service';
+import { ConnectionManagerModule } from '@/modules/connection-manager/connection-manager.module';
+import { ConnectionManagerService } from '@/modules/connection-manager/connection-manager.service';
 
 async function bootstrap() {
   try {
@@ -25,7 +26,8 @@ async function bootstrap() {
     hbs.registerHelper('json', (context) => JSON.stringify(context));
     app.setViewEngine('hbs');
 
-    const connectionManager = app.get(ConnectionManagerService);
+    const moduleRef = app.select(ConnectionManagerModule);
+    const connectionManager = moduleRef.get(ConnectionManagerService);
     const configService = app.get(ConfigService<Config, true>);
     const wsAdapter = new CustomWebSocketAdapter(app, connectionManager, configService);
     app.useWebSocketAdapter(wsAdapter);

@@ -3,7 +3,7 @@ import { MessageMappingProperties } from '@nestjs/websockets';
 import { Observable } from 'rxjs';
 import { randomUUID } from 'crypto';
 import * as WebSocket from 'ws';
-import { ConnectionManagerService } from '../services/connection-manager.service';
+import { ConnectionManagerService } from '@/modules/connection-manager/connection-manager.service';
 import { SecurityConfig } from '@/config/security.config';
 import { MessageType } from '../utils/message-type';
 
