@@ -26,6 +26,9 @@ export function config() {
     messageHandling: messageHandlingConfig(env),
     wot: wotConfig(env),
     security: securityConfig(env),
+    swagger: {
+      enabled: env.NODE_ENV === 'development' || env.ENABLE_SWAGGER === 'true',
+    },
   };
 }
 export type Config = ReturnType<typeof config>;

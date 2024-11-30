@@ -24,6 +24,8 @@ export const EnvironmentSchema = z.object({
   LOG_LEVEL: z.string().optional(),
   LOG_SLOW_EXECUTION_THRESHOLD: z.number().int().positive().optional(),
 
+  ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
+
   MEILI_SEARCH_HOST: z.string().optional(),
   MEILI_SEARCH_API_KEY: z.string().optional(),
   MEILI_SEARCH_SYNC_EVENT_KINDS: arraySchema(

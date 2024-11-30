@@ -6,23 +6,21 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Express, static as ExpressStatic } from 'express';
 import helmet from 'helmet';
-import { Logger } from 'nestjs-pino';
 import { join } from 'path';
 import { AppModule } from '@/app.module';
 import { Config } from '@/config';
 import { CustomWebSocketAdapter } from '@/modules/nostr/gateway/custom-ws-adapter';
 import { ConnectionManagerModule } from '@/modules/connection-manager/connection-manager.module';
 import { ConnectionManagerService } from '@/modules/connection-manager/connection-manager.service';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+  
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-      bufferLogs: true,
-      logger: false, // Disable default logger
+      bufferLogs: false,
     });
-    
-    // Initialize Pino logger
-    app.useLogger(app.get(Logger));
 
     // Set up view engine
     app.setBaseViewsDir(join(__dirname, '..', 'views'));
@@ -37,41 +35,35 @@ async function bootstrap() {
     const moduleRef = app.select(ConnectionManagerModule);
     const connectionManager = moduleRef.get(ConnectionManagerService);
     const configService = app.get(ConfigService<Config, true>);
-    const wsAdapter = new CustomWebSocketAdapter(app, connectionManager, configService);
-    app.useWebSocketAdapter(wsAdapter);
 
     app.use(helmet());
     app.enableCors();
-    app.use((_req, res, next) => {
-      res.setHeader('cross-origin-opener-policy', 'cross-origin');
-      res.setHeader('cross-origin-resource-policy', 'cross-origin');
-      next();
-    });
+    app.use(ExpressStatic(join(__dirname, '..', 'public')));
+    
+    const wsAdapter = new CustomWebSocketAdapter(app, connectionManager, configService);
+    app.useWebSocketAdapter(wsAdapter);
 
-    app.use('/favicon.ico', ExpressStatic('./resources/favicon.ico'));
+    // Setup Swagger if enabled
+    const swaggerConfig = configService.get('swagger');
+    if (swaggerConfig?.enabled) {
+      const config = new DocumentBuilder()
+        .setTitle('Nostr Relay')
+        .setDescription('Nostr relay API description')
+        .setVersion('1.0')
+        .build();
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('api', app, document);
+    }
 
-    const express: Express = app.getHttpAdapter().getInstance();
-    express.disable('x-powered-by');
-
-    const port = configService.get('port', { infer: true });
+    const port = configService.get('port');
     const hostname = configService.get('hostname', { infer: true });
 
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Nostr Relay API')
-      .setVersion('v1')
-      .setDescription(
-        'If you want to retrieve kind-4 events, you need to add an Authorization header with Nostr token. ' +
-          'More details can be found in the [NIP-98](https://github.com/nostr-protocol/nips/blob/master/98.md).',
-      )
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api', app, document);
-
     await app.listen(port, hostname ?? '127.0.0.1');
-    console.log(`Application is running on: ${await app.getUrl()}`);
+    logger.log(`Application is running on: ${await app.getUrl()}`);
   } catch (error) {
-    console.error('Error during application bootstrap:', error);
+    logger.error('Error during application bootstrap:', error);
     process.exit(1);
   }
 }
+
 bootstrap();
