@@ -18,7 +18,10 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       bufferLogs: true,
+      logger: false, // Disable default logger
     });
+    
+    // Initialize Pino logger
     app.useLogger(app.get(Logger));
 
     // Set up view engine
