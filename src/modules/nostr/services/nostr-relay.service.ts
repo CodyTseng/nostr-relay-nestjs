@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ConnectionManagerService, EnhancedWebSocket } from '@/modules/connection-manager/connection-manager.service';
 import { NostrValidatorService } from './nostr-validator.service';
 import { NostrRelay } from '@nostr-relay/core';
@@ -30,8 +29,7 @@ export class NostrRelayService {
   private readonly throttler: Throttler;
 
   constructor(
-    @InjectPinoLogger(NostrRelayService.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: Logger,
     private readonly metricService: MetricService,
     private readonly eventRepository: EventRepository,
     private readonly connectionManager: ConnectionManagerService,

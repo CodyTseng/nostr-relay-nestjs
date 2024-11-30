@@ -1,19 +1,17 @@
-import { BeforeApplicationShutdown, Injectable } from '@nestjs/common';
+import { BeforeApplicationShutdown, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Kysely, PostgresDialect } from 'kysely';
 import * as pg from 'pg';
 import { Config } from 'src/config';
 import { Database } from './types';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class KyselyDb implements BeforeApplicationShutdown {
-  private readonly db: Kysely<Database>;
+  public readonly db: Kysely<Database>;
 
   constructor(
     config: ConfigService<Config, true>,
-    @InjectPinoLogger(KyselyDb.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: Logger,
   ) {
     const databaseConfig = config.get('database', { infer: true });
 

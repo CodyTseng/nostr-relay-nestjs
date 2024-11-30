@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { get } from 'lodash';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Observable, finalize } from 'rxjs';
 import { Config } from 'src/config';
 
@@ -14,8 +13,7 @@ import { Config } from 'src/config';
 export class LoggingInterceptor implements NestInterceptor {
   private readonly slowExecutionThreshold: number;
   constructor(
-    @InjectPinoLogger(LoggingInterceptor.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: any, // Replaced Pino logger with NestJS Logger
     configService: ConfigService<Config, true>,
   ) {
     this.slowExecutionThreshold = configService.get('logger', {
@@ -42,7 +40,7 @@ export class LoggingInterceptor implements NestInterceptor {
         )} request took ${executionTime}ms to execute`;
 
         if (executionTime < this.slowExecutionThreshold) {
-          this.logger.info({ data, executionTime }, msg);
+          this.logger.log({ data, executionTime }, msg);
         } else {
           this.logger.warn({ data, executionTime }, `${msg} (slow)`);
         }

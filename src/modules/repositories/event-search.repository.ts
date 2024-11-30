@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Event, Filter, getTimestampInSeconds } from '@nostr-relay/common';
 import { isNil } from 'lodash';
@@ -8,7 +8,6 @@ import {
   buildMeiliSearchSort,
   FilterQuery,
 } from 'meilisearch-helper';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from '../../config';
 import { TEventIdWithScore } from '../../types/event';
 
@@ -51,8 +50,8 @@ export class EventSearchRepository implements OnApplicationBootstrap {
   private readonly syncEventKinds: number[];
 
   constructor(
-    @InjectPinoLogger(EventSearchRepository.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: Logger,
+    private readonly log: Logger,
     configService: ConfigService<Config, true>,
   ) {
     const { host, apiKey, syncEventKinds } = configService.get('meiliSearch', {
@@ -140,7 +139,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
         this.toEventDocument(event, additionalFields),
       ]);
     } catch (error) {
-      this.logger.error(error);
+      this.log.error(error);
     }
   }
 
@@ -160,7 +159,7 @@ export class EventSearchRepository implements OnApplicationBootstrap {
         }),
       });
     } catch (error) {
-      this.logger.error(error);
+      this.log.error(error);
     }
   }
 

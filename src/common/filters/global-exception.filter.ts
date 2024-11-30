@@ -4,19 +4,18 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
-import { Response } from 'express';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Request, Response } from 'express';
 import { WebSocket } from 'ws';
 import { ClientException } from '../exceptions';
 
 @Catch(Error)
 export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(
-    @InjectPinoLogger(GlobalExceptionFilter.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: Logger,
   ) {}
 
   catch(error: Error, host: ArgumentsHost) {
