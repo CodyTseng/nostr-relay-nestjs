@@ -20,8 +20,8 @@ export class TaskService {
   }
 
   @Cron(CronExpression.EVERY_HOUR)
-  async updateMetrics() {
-    this.metricService.updateMetrics();
-    this.logger.log('Updated metrics');
+  async recordMetrics() {
+    this.metricService.recordMetric();
+    this.logger.log('Recorded metrics');
   }
 }
