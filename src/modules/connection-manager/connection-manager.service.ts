@@ -32,6 +32,10 @@ export class ConnectionManagerService {
   ) {}
 
   registerConnection(client: EnhancedWebSocket): void {
+    if (!client.id) {
+      this.logger.error('Cannot register client without ID');
+      return;
+    }
     this.connections.set(client.id, client);
     this.logger.info('Client connected: %s', client.id);
   }
