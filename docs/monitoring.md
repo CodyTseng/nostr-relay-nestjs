@@ -1,312 +1,244 @@
-# Monitoring and Maintenance Guide
+# Monitoring Guide
 
-This guide covers monitoring, maintenance, and operational procedures for your Nostr Relay.
-
-## Table of Contents
-- [System Monitoring](#system-monitoring)
-- [Application Monitoring](#application-monitoring)
-- [Database Monitoring](#database-monitoring)
-- [Log Management](#log-management)
-- [Backup Procedures](#backup-procedures)
-- [Update Procedures](#update-procedures)
-- [Health Checks](#health-checks)
-- [Troubleshooting](#troubleshooting)
+This guide covers monitoring and maintaining your Nostr relay.
 
 ## System Monitoring
 
-### Resource Monitoring
+### Resource Usage
+
+1. **CPU Usage**
 ```bash
-# Install monitoring tools
-sudo apt install htop iotop nethogs
-
-# Monitor system resources
-htop                  # CPU and memory usage
-iotop                 # Disk I/O
-nethogs               # Network usage by process
-```
-
-### Disk Usage
-```bash
-# Check disk space
-df -h
-
-# Find large files/directories
-du -sh /* | sort -hr | head -n 10
-
-# Monitor disk I/O
-iostat -x 1
-```
-
-## Application Monitoring
-
-### PM2 Process Management
-```bash
-# View process status
-pm2 status
-
-# Monitor processes in real-time
 pm2 monit
+```
 
-# View application logs
+2. **Memory Usage**
+```bash
+pm2 status
+```
+
+3. **Disk Usage**
+```bash
+df -h
+du -sh /path/to/relay
+```
+
+### Database Monitoring
+
+1. **Connection Status**
+```sql
+SELECT * FROM pg_stat_activity;
+```
+
+2. **Database Size**
+```sql
+SELECT pg_size_pretty(pg_database_size('nostr_relay'));
+```
+
+3. **Table Sizes**
+```sql
+SELECT 
+    relname as "Table",
+    pg_size_pretty(pg_total_relation_size(relid)) As "Size"
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY pg_total_relation_size(relid) DESC;
+```
+
+## Performance Monitoring
+
+### WebSocket Metrics
+
+1. **Active Connections**
+```javascript
+const activeConnections = await relay.getConnectionCount();
+```
+
+2. **Message Rate**
+```javascript
+const messageRate = await relay.getMessageRate();
+```
+
+3. **Subscription Count**
+```javascript
+const subscriptions = await relay.getSubscriptionCount();
+```
+
+### Event Metrics
+
+1. **Event Processing Rate**
+```javascript
+const eventRate = await relay.getEventRate();
+```
+
+2. **Event Size Distribution**
+```javascript
+const eventSizes = await relay.getEventSizeDistribution();
+```
+
+3. **Event Types Distribution**
+```javascript
+const eventTypes = await relay.getEventTypeDistribution();
+```
+
+## Log Analysis
+
+### Application Logs
+
+1. **View Real-time Logs**
+```bash
 pm2 logs nostr-relay
-
-# Rotate logs
-pm2 install pm2-logrotate
-pm2 set pm2-logrotate:max_size 10M
-pm2 set pm2-logrotate:retain 7
 ```
 
-### Performance Metrics
+2. **Error Tracking**
 ```bash
-# Monitor WebSocket connections
-netstat -an | grep :8000 | wc -l
-
-# Check open file descriptors
-lsof -p $(pgrep -f nostr-relay) | wc -l
+pm2 logs nostr-relay --err --lines 100
 ```
 
-## Database Monitoring
-
-### Connection Monitoring
+3. **Log Patterns**
 ```bash
-# Check active connections
-sudo -u postgres psql -c "SELECT * FROM pg_stat_activity;"
-
-# Monitor connection count
-watch -n 5 "sudo -u postgres psql -c 'SELECT count(*) FROM pg_stat_activity;'"
+grep "error" /path/to/logs/nostr-relay.log
 ```
-
-### Database Statistics
-```bash
-# Database size
-sudo -u postgres psql -c "SELECT pg_size_pretty(pg_database_size('nostr_relay'));"
-
-# Table sizes
-sudo -u postgres psql -d nostr_relay -c "
-SELECT 
-    table_name,
-    pg_size_pretty(pg_total_relation_size(table_name)) as total_size,
-    pg_size_pretty(pg_table_size(table_name)) as table_size,
-    pg_size_pretty(pg_indexes_size(table_name)) as index_size
-FROM (
-    SELECT ('"'\"' || schemaname || '"'\"."'\"' || tablename || '"'\"')::regclass AS table_name
-    FROM pg_tables
-    WHERE schemaname = 'public'
-) AS tables
-ORDER BY pg_total_relation_size(table_name) DESC;
-"
-```
-
-### Performance Monitoring
-```bash
-# Check index usage
-sudo -u postgres psql -d nostr_relay -c "
-SELECT 
-    schemaname || '.' || relname as table,
-    indexrelname as index,
-    pg_size_pretty(pg_relation_size(i.indexrelid)) as index_size,
-    idx_scan as index_scans
-FROM pg_stat_user_indexes ui
-JOIN pg_index i ON ui.indexrelid = i.indexrelid
-WHERE NOT indisunique AND idx_scan < 50 AND pg_relation_size(relid) > 5 * 8192
-ORDER BY pg_relation_size(i.indexrelid) / nullif(idx_scan, 0) DESC NULLS FIRST,
-         pg_relation_size(i.indexrelid) DESC;
-"
-```
-
-## Log Management
 
 ### Nginx Logs
+
+1. **Access Logs**
 ```bash
-# Monitor access logs in real-time
 tail -f /var/log/nginx/access.log
+```
 
-# Monitor error logs
+2. **Error Logs**
+```bash
 tail -f /var/log/nginx/error.log
-
-# Analyze access patterns
-goaccess /var/log/nginx/access.log
 ```
 
-### System Logs
-```bash
-# View system logs
-journalctl -f
+## Performance Optimization
 
-# View authentication logs
-tail -f /var/log/auth.log
+### Database Optimization
+
+1. **Index Maintenance**
+```sql
+ANALYZE events;
+REINDEX TABLE events;
 ```
 
-## Backup Procedures
+2. **Vacuum**
+```sql
+VACUUM ANALYZE events;
+```
 
-### Database Backup
+3. **Query Performance**
+```sql
+EXPLAIN ANALYZE SELECT * FROM events WHERE ...;
+```
+
+### Application Optimization
+
+1. **Connection Pool**
+```env
+DATABASE_MIN_CONNECTIONS=2
+DATABASE_MAX_CONNECTIONS=10
+```
+
+2. **Cache Settings**
+```env
+CACHE_TTL=3600
+CACHE_MAX_ITEMS=10000
+```
+
+## Alerting
+
+### System Alerts
+
+1. **Disk Space**
 ```bash
 #!/bin/bash
-# Save as /usr/local/bin/backup-nostr-relay.sh
-
-# Configuration
-BACKUP_DIR="/backup/postgresql"
-RETENTION_DAYS=7
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Create backup directory if it doesn't exist
-mkdir -p "$BACKUP_DIR"
-
-# Perform backup
-pg_dump -U postgres nostr_relay > "$BACKUP_DIR/nostr_relay_$TIMESTAMP.sql"
-
-# Compress backup
-gzip "$BACKUP_DIR/nostr_relay_$TIMESTAMP.sql"
-
-# Remove old backups
-find "$BACKUP_DIR" -name "nostr_relay_*.sql.gz" -mtime +$RETENTION_DAYS -delete
-```
-
-### Configuration Backup
-```bash
-#!/bin/bash
-# Save as /usr/local/bin/backup-config.sh
-
-BACKUP_DIR="/backup/config"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Create backup directory
-mkdir -p "$BACKUP_DIR"
-
-# Backup configuration files
-tar czf "$BACKUP_DIR/config_$TIMESTAMP.tar.gz" \
-    /etc/nginx/sites-available/* \
-    /etc/postgresql/*/main/postgresql.conf \
-    /etc/postgresql/*/main/pg_hba.conf \
-    /opt/nostr-relay/.env
-```
-
-## Update Procedures
-
-### Application Updates
-```bash
-# Update application
-cd /opt/nostr-relay
-git pull
-npm install
-npm run build
-pm2 restart nostr-relay
-
-# Verify status
-pm2 status nostr-relay
-curl -I https://your-domain.com
-```
-
-### System Updates
-```bash
-# Update system packages
-sudo apt update
-sudo apt upgrade -y
-
-# Check if reboot is required
-if [ -f /var/run/reboot-required ]; then
-    echo "Reboot required"
+THRESHOLD=90
+USAGE=$(df -h / | tail -1 | awk '{print $5}' | cut -d'%' -f1)
+if [ $USAGE -gt $THRESHOLD ]; then
+    echo "Disk usage above ${THRESHOLD}%"
 fi
 ```
 
-## Health Checks
-
-### Basic Health Check Script
+2. **Memory Usage**
 ```bash
 #!/bin/bash
-# Save as /usr/local/bin/health-check.sh
+FREE_MEM=$(free | grep Mem | awk '{print $4/$2 * 100.0}')
+if [ $(echo "$FREE_MEM < 20" | bc) -eq 1 ]; then
+    echo "Low memory warning"
+fi
+```
 
-check_service() {
-    if systemctl is-active --quiet $1; then
-        echo "✅ $1 is running"
-    else
-        echo "❌ $1 is not running"
-    fi
+### Application Alerts
+
+1. **Connection Count**
+```javascript
+if (activeConnections > maxConnections) {
+    alert('Too many connections');
 }
-
-# Check system resources
-echo "=== System Resources ==="
-df -h / | tail -n 1
-free -h | grep Mem
-uptime
-
-# Check services
-echo -e "\n=== Services ==="
-check_service postgresql
-check_service nginx
-
-# Check PM2 process
-echo -e "\n=== PM2 Process ==="
-pm2 jlist | grep -q '"name":"nostr-relay"' && echo "✅ nostr-relay is running" || echo "❌ nostr-relay is not running"
-
-# Check SSL certificate
-echo -e "\n=== SSL Certificate ==="
-certbot certificates | grep "Expiry Date"
-
-# Check database
-echo -e "\n=== Database ==="
-sudo -u postgres psql -d nostr_relay -c "SELECT count(*) FROM events;" || echo "❌ Database query failed"
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-1. **High CPU Usage**
-```bash
-# Find CPU-intensive processes
-top -c
-
-# Check PM2 metrics
-pm2 monit
+2. **Error Rate**
+```javascript
+if (errorRate > threshold) {
+    alert('High error rate detected');
+}
 ```
 
-2. **Memory Issues**
-```bash
-# Check memory usage
-free -h
-vmstat 1
+## Maintenance Procedures
 
-# Check PM2 memory usage
-pm2 status
+### Regular Maintenance
+
+1. **Log Rotation**
+```bash
+/etc/logrotate.d/nostr-relay
 ```
 
-3. **Disk Space Issues**
-```bash
-# Find large files
-find / -type f -size +100M -exec ls -lh {} \;
-
-# Clean up logs
-journalctl --vacuum-time=7d
+2. **Database Cleanup**
+```sql
+DELETE FROM events WHERE created_at < NOW() - INTERVAL '30 days';
 ```
 
-4. **Database Performance**
+3. **Backup Verification**
 ```bash
-# Check slow queries
-sudo -u postgres psql -d nostr_relay -c "
-SELECT 
-    pid,
-    now() - pg_stat_activity.query_start AS duration,
-    query,
-    state
-FROM pg_stat_activity
-WHERE (now() - pg_stat_activity.query_start) > interval '5 minutes';
-"
+pg_dump -U nostr_user nostr_relay > backup.sql
+psql -U nostr_user -d nostr_relay_test < backup.sql
 ```
 
 ### Emergency Procedures
 
-1. **Quick Process Restart**
+1. **Quick Restart**
 ```bash
 pm2 restart nostr-relay
 ```
 
-2. **Database Emergency Stop**
+2. **Database Recovery**
 ```bash
-sudo systemctl stop postgresql
+pg_restore -U nostr_user -d nostr_relay backup.sql
 ```
 
-3. **Emergency Backup**
+3. **Service Recovery**
 ```bash
-pg_dump -U postgres nostr_relay > emergency_backup_$(date +%Y%m%d_%H%M%S).sql
+sudo systemctl restart nginx
+pm2 reload nostr-relay
 ```
+
+## Documentation
+
+### Metrics Documentation
+
+1. **System Metrics**
+- CPU Usage
+- Memory Usage
+- Disk Usage
+- Network I/O
+
+2. **Application Metrics**
+- Active Connections
+- Message Rate
+- Event Rate
+- Error Rate
+
+3. **Database Metrics**
+- Query Performance
+- Connection Count
+- Table Sizes
+- Index Usage

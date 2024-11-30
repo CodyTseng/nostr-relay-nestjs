@@ -15,7 +15,7 @@ import { Validator } from '@nostr-relay/validator';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
-import { WebSocket } from 'ws';
+import { EnhancedWebSocket } from '../gateway/custom-ws-adapter';
 import { ValidationError } from 'zod-validation-error';
 import { MetricService } from '../../metric/metric.service';
 import { EventRepository } from '../../repositories/event.repository';
@@ -24,6 +24,7 @@ import { BlacklistGuardPlugin, WhitelistGuardPlugin } from '../plugins';
 import { GroupEventValidator } from '../validators/group-event.validator';
 import { ReportEventValidator } from '../validators/report-event.validator';
 import { WotService } from '../../../modules/wot/wot.service';
+import { ConnectionManagerService } from '../../../modules/connection-manager/connection-manager.service';
 
 @Injectable()
 export class NostrRelayService implements OnApplicationShutdown {
@@ -42,6 +43,7 @@ export class NostrRelayService implements OnApplicationShutdown {
     private readonly nostrRelayLogger: NostrRelayLogger,
     private readonly reportEventValidator: ReportEventValidator,
     private readonly groupEventValidator: GroupEventValidator,
+    private readonly connectionManager: ConnectionManagerService,
   ) {
     const hostname = this.configService.get('hostname');
     const limitConfig = this.configService.get('limit', { infer: true });
@@ -107,31 +109,55 @@ export class NostrRelayService implements OnApplicationShutdown {
     this.throttler.destroy();
   }
 
-  handleConnection(client: WebSocket, ip = 'unknown') {
+  handleConnection(client: EnhancedWebSocket, ip = 'unknown') {
     this.relay.handleConnection(client, ip);
     this.metricService.incrementConnectionCount();
   }
 
-  handleDisconnect(client: WebSocket) {
+  handleDisconnect(client: EnhancedWebSocket) {
     this.relay.handleDisconnect(client);
     this.metricService.decrementConnectionCount();
   }
 
-  async handleMessage(client: WebSocket, data: Array<any>) {
+  async handleMessage(client: EnhancedWebSocket, message: any[]): Promise<void> {
+    if (message[0] === 'ADMIN') {
+      this.handleAdminMessage(client, message);
+      return;
+    }
+
     try {
       const start = Date.now();
-      const msg = await this.validator.validateIncomingMessage(data);
+      const msg = await this.validator.validateIncomingMessage(message);
       if (!this.messageHandlingConfig[msg[0].toLowerCase()]) {
         return;
       }
+
       await this.relay.handleMessage(client, msg);
-      this.metricService.pushProcessingTime(msg[0], Date.now() - start);
+      const end = Date.now();
+      this.metricService.pushProcessingTime(msg[0], end - start);
     } catch (error) {
       if (error instanceof ValidationError) {
-        return createOutgoingNoticeMessage(error.message);
+        client.send(JSON.stringify(createOutgoingNoticeMessage(error.message)));
+        return;
       }
-      this.logger.error(error);
-      return createOutgoingNoticeMessage((error as Error).message);
+      client.send(JSON.stringify(createOutgoingNoticeMessage((error as Error).message)));
+    }
+  }
+
+  private handleAdminMessage(client: EnhancedWebSocket, message: any[]): void {
+    if (message[1] === 'GET_CONNECTIONS') {
+      const connections = this.connectionManager.getConnections();
+      const connectionInfo = {
+        total: connections.size,
+        active: connections.size,
+        authenticated: Array.from(connections).filter((c: EnhancedWebSocket) => c.authenticated).length,
+        connections: Array.from(connections).map((conn: EnhancedWebSocket) => ({
+          id: conn.id,
+          authenticated: conn.authenticated,
+          connectedAt: conn.connectedAt
+        }))
+      };
+      client.send(JSON.stringify(['CONNECTIONS', connectionInfo]));
     }
   }
 

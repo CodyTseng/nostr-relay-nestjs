@@ -1,138 +1,119 @@
-import { INestApplication } from '@nestjs/common';
-import { MessageType } from '@nostr-relay/common';
-import { WsAdapter } from 'another-nestjs-ws-adapter';
-import { ConfigService } from '@nestjs/config';
-import { Config } from '../../../config';
-import { SecurityConfig } from '../../../config/security.config';
+import { INestApplication, WebSocketAdapter } from '@nestjs/common';
+import { MessageMappingProperties } from '@nestjs/websockets';
+import { Observable } from 'rxjs';
+import { randomUUID } from 'crypto';
+import * as WebSocket from 'ws';
 import { ConnectionManagerService } from '../services/connection-manager.service';
-import { WebSocket } from 'ws';
-import { getIpFromReq } from '../../../utils';
-import { Request } from 'express';
+import { SecurityConfig } from '@/config/security.config';
+import { MessageType } from '../utils/message-type';
 
 export interface EnhancedWebSocket extends WebSocket {
-  authenticated?: boolean;
+  id: string;
+  authenticated: boolean;
+  challenge?: string;
+  connectedAt: Date;
+}
+
+function createWebSocketServer(
+  connectionManager: ConnectionManagerService,
+  securityConfig: SecurityConfig,
+): WebSocketAdapter {
+  const adapter: WebSocketAdapter = {
+    create(port: number, options: any = {}): any {
+      return new WebSocket.Server({ port, ...options });
+    },
+
+    bindClientConnect(server: any, callback: Function): void {
+      server.on('connection', (socket: WebSocket) => {
+        const enhancedSocket = Object.assign(socket, {
+          id: randomUUID(),
+          authenticated: false,
+          connectedAt: new Date(),
+        }) as EnhancedWebSocket;
+
+        connectionManager.registerConnection(enhancedSocket);
+
+        socket.on('close', () => {
+          connectionManager.removeConnection(enhancedSocket);
+        });
+
+        socket.on('message', async (data: Buffer) => {
+          try {
+            const message = JSON.parse(data.toString());
+
+            // Handle AUTH message for NIP-42
+            if (message[0] === 'AUTH') {
+              await connectionManager.handleAuth(enhancedSocket, message);
+              return;
+            }
+
+            // Check if message requires authentication
+            if (connectionManager.requiresAuth(message) && !enhancedSocket.authenticated) {
+              socket.send(JSON.stringify(['NOTICE', 'Authentication required for this request']));
+              return;
+            }
+
+            // 1. Size check
+            const messageSize = Buffer.byteLength(JSON.stringify(message));
+            if (messageSize > securityConfig.websocket.maxMessageSize) {
+              return;
+            }
+
+            // 2. Basic structure validation
+            if (!Array.isArray(message) || message.length < 1) {
+              return;
+            }
+
+            // 3. Type checking
+            const [type] = message;
+            if (
+              typeof type !== 'string' ||
+              ![
+                MessageType.EVENT,
+                MessageType.REQ,
+                MessageType.CLOSE,
+                MessageType.AUTH,
+                'TOP',
+              ].includes(type)
+            ) {
+              return;
+            }
+
+            callback({
+              event: type === 'TOP' ? 'TOP' : 'DEFAULT',
+              data: message,
+            });
+          } catch (error) {
+            console.error('Message preprocessing error:', error);
+          }
+        });
+      });
+    },
+
+    bindMessageHandlers(
+      client: WebSocket,
+      handlers: MessageMappingProperties[],
+      transform: (data: any) => Observable<any>,
+    ): void {
+      // This method is not needed for our implementation
+    },
+
+    close(server: any): void {
+      server.close();
+    },
+  };
+
+  return adapter;
 }
 
 export function createEnhancedWsAdapter(
   app: INestApplication,
   connectionManager: ConnectionManagerService,
-  configService: ConfigService<Config, true>,
-) {
-  const adapter = new WsAdapter(app);
-  const securityConfig = configService.get<SecurityConfig>('security');
-
+  securityConfig: SecurityConfig,
+): WebSocketAdapter {
   if (!securityConfig) {
     throw new Error('Security configuration is required');
   }
 
-  // Enhance the handleUpgrade method to implement connection limits
-  const originalHandleUpgrade = adapter.bindClientConnect.bind(adapter);
-  adapter.bindClientConnect = (server: any, callback: Function) => {
-    originalHandleUpgrade.call(adapter, server, (client: EnhancedWebSocket, req: Request) => {
-      const ip = getIpFromReq(req);
-      if (ip && connectionManager.canConnect(ip)) {
-        connectionManager.registerConnection(client, ip);
-        client.on('close', () => {
-          if (ip) connectionManager.removeConnection(client, ip);
-        });
-        callback(client);
-      } else {
-        client.close(1008, 'Too many connections');
-      }
-    });
-  };
-
-  // Enhanced message preprocessor with security checks
-  adapter.setMessagePreprocessor((message: any, client: EnhancedWebSocket) => {
-    try {
-      // 1. Size check
-      const messageSize = Buffer.byteLength(JSON.stringify(message));
-      if (messageSize > securityConfig.websocket.maxMessageSize) {
-        return;
-      }
-
-      // 2. Basic structure validation
-      if (!Array.isArray(message) || message.length < 1) {
-        return;
-      }
-
-      // 3. Type checking
-      const [type] = message;
-      if (
-        typeof type !== 'string' ||
-        ![
-          MessageType.EVENT,
-          MessageType.REQ,
-          MessageType.CLOSE,
-          MessageType.AUTH,
-          'TOP',
-        ].includes(type)
-      ) {
-        return;
-      }
-
-      // 4. Type-specific payload validation
-      switch (type) {
-        case MessageType.EVENT:
-          validateEventPayload(message[1], securityConfig);
-          break;
-        case MessageType.REQ:
-          validateReqPayload(message.slice(1), securityConfig);
-          break;
-        case MessageType.AUTH:
-          connectionManager.markAuthenticated(client);
-          break;
-      }
-
-      return {
-        event: type === 'TOP' ? 'TOP' : 'DEFAULT',
-        data: message,
-      };
-    } catch (error) {
-      console.error('Message preprocessing error:', error);
-      return;
-    }
-  });
-
-  return adapter;
-}
-
-function validateEventPayload(
-  payload: any,
-  config: SecurityConfig,
-): void {
-  if (!payload || typeof payload !== 'object') {
-    throw new Error('Invalid event payload');
-  }
-
-  const payloadSize = Buffer.byteLength(JSON.stringify(payload));
-  if (payloadSize > config.websocket.payloadLimits.maxEventSize) {
-    throw new Error('Event size exceeds limit');
-  }
-}
-
-function validateReqPayload(
-  payload: any[],
-  config: SecurityConfig,
-): void {
-  if (payload.length < 2) {
-    throw new Error('Invalid request payload');
-  }
-
-  const [subscriptionId, ...filters] = payload;
-  
-  if (typeof subscriptionId !== 'string') {
-    throw new Error('Invalid subscription ID');
-  }
-
-  if (filters.length > config.websocket.payloadLimits.maxSubscriptionFilters) {
-    throw new Error('Too many subscription filters');
-  }
-
-  for (const filter of filters) {
-    const filterSize = Buffer.byteLength(JSON.stringify(filter));
-    if (filterSize > config.websocket.payloadLimits.maxFilterLength) {
-      throw new Error('Filter size exceeds limit');
-    }
-  }
+  return createWebSocketServer(connectionManager, securityConfig);
 }

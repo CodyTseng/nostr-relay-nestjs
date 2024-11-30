@@ -1,55 +1,185 @@
 # NIP-29: Group Chat Events
 
-This document describes the implementation of [NIP-29](https://github.com/nostr-protocol/nips/blob/master/29.md) in our Nostr relay.
+This guide covers the implementation of NIP-29 (Group Chat Events) in our Nostr relay.
 
-## Supported Event Kinds
+## Overview
 
-| Event Kind | Description           |
-|------------|-----------------------|
-| 39000      | Group Creation       |
-| 39001      | Group Metadata       |
-| 39002      | Group Message        |
-| 39003      | Group Member Approval|
-| 39004      | Group Invite         |
+NIP-29 extends Nostr's capabilities to support group chats through specific event kinds and tags.
 
-## Configuration
+### Event Kinds
 
-The following environment variables can be configured for group chat functionality:
+- `41`: Group Creation
+- `42`: Group Metadata
+- `43`: Group Members/Admins
+- `44`: Group Message
 
-```env
-GROUP_MAX_MEMBERS=100
-GROUP_MAX_METADATA_LENGTH=10000
-GROUP_MAX_MESSAGE_LENGTH=16384
-GROUP_MESSAGE_RATE_LIMIT=60
-GROUP_MESSAGE_RATE_PERIOD=60
+## Implementation Details
+
+### Group Creation (Kind 41)
+
+```javascript
+{
+  "kind": 41,
+  "content": "",
+  "tags": [
+    ["g", "group-id"],
+    ["name", "Group Name"],
+    ["about", "Group Description"],
+    ["picture", "https://example.com/group.jpg"]
+  ]
+}
 ```
 
-## Event Validation
+### Group Metadata (Kind 42)
 
-Group events are validated according to the NIP-29 specification:
+```javascript
+{
+  "kind": 42,
+  "content": "",
+  "tags": [
+    ["g", "group-id"],
+    ["name", "Updated Group Name"],
+    ["about", "Updated Description"]
+  ]
+}
+```
 
-1. **Group Creation (39000)**
-   - Must include group public key
-   - Can specify initial members and settings
+### Group Members/Admins (Kind 43)
 
-2. **Group Metadata (39001)**
-   - Must be signed by group admin
-   - Contains group name, description, and settings
+```javascript
+{
+  "kind": 43,
+  "content": "",
+  "tags": [
+    ["g", "group-id"],
+    ["p", "member-pubkey-1", "admin"],
+    ["p", "member-pubkey-2", "member"]
+  ]
+}
+```
 
-3. **Group Messages (39002)**
-   - Must be from approved group members
-   - Subject to message length and rate limits
+### Group Message (Kind 44)
 
-4. **Member Approval (39003)**
-   - Must be signed by group admin
-   - Contains member public key and approval status
+```javascript
+{
+  "kind": 44,
+  "content": "Hello group!",
+  "tags": [
+    ["g", "group-id"],
+    ["e", "reply-to-event-id"],
+    ["p", "mentioned-pubkey"]
+  ]
+}
+```
 
-5. **Group Invites (39004)**
-   - Must be from existing group member
-   - Contains invite details and recipient
+## Usage Examples
 
-## Rate Limiting
+### Creating a Group
 
-Group messages are subject to rate limiting to prevent spam:
-- Default: 60 messages per 60 seconds per user
-- Configurable via environment variables
+```javascript
+const event = {
+  kind: 41,
+  created_at: Math.floor(Date.now() / 1000),
+  tags: [
+    ['g', 'test-group-id'],
+    ['name', 'Test Group'],
+    ['about', 'Test group for NIP-29']
+  ],
+  content: '',
+  pubkey: publicKey,
+};
+
+const signedEvent = nostrTools.finalizeEvent(event, privateKey);
+ws.send(JSON.stringify(['EVENT', signedEvent]));
+```
+
+### Sending a Group Message
+
+```javascript
+const event = {
+  kind: 44,
+  created_at: Math.floor(Date.now() / 1000),
+  tags: [
+    ['g', 'test-group-id']
+  ],
+  content: 'Hello group members!',
+  pubkey: publicKey,
+};
+
+const signedEvent = nostrTools.finalizeEvent(event, privateKey);
+ws.send(JSON.stringify(['EVENT', signedEvent]));
+```
+
+### Subscribing to Group Messages
+
+```javascript
+const subscription = ['REQ', 'group-sub', {
+  kinds: [44],
+  '#g': ['test-group-id']
+}];
+
+ws.send(JSON.stringify(subscription));
+```
+
+## Validation Rules
+
+1. **Group Creation (Kind 41)**
+   - Must have a unique group ID
+   - Must have a name tag
+   - Creator becomes first admin
+
+2. **Group Metadata (Kind 42)**
+   - Must reference existing group
+   - Only admins can update
+
+3. **Members/Admins (Kind 43)**
+   - Must reference existing group
+   - Only admins can modify
+   - Must maintain at least one admin
+
+4. **Messages (Kind 44)**
+   - Must reference existing group
+   - Sender must be member/admin
+   - Optional reply and mention tags
+
+## Error Handling
+
+### Common Errors
+
+1. **Group Not Found**
+```javascript
+{
+  "error": "group_not_found",
+  "message": "Group with ID {group-id} does not exist"
+}
+```
+
+2. **Permission Denied**
+```javascript
+{
+  "error": "permission_denied",
+  "message": "User is not admin/member of the group"
+}
+```
+
+3. **Invalid Event**
+```javascript
+{
+  "error": "invalid_event",
+  "message": "Missing required tags for group event"
+}
+```
+
+## Testing
+
+Use our test script to verify NIP-29 implementation:
+
+```bash
+node test-nips.js
+```
+
+The test script verifies:
+1. Group creation
+2. Metadata updates
+3. Member management
+4. Message sending/receiving

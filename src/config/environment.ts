@@ -5,6 +5,14 @@ export const arraySchema = <T extends z.ZodTypeAny>(schema: T) =>
 
 export const EnvironmentSchema = z.object({
   DATABASE_URL: z.string(),
+  DATABASE_SSL_MODE: z.enum(['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full']).optional(),
+  DATABASE_SSL: z.boolean().optional(),
+  DATABASE_MAX_CONNECTIONS: z.coerce.number().optional(),
+  DATABASE_MIN_CONNECTIONS: z.coerce.number().optional(),
+  DATABASE_IDLE_TIMEOUT: z.coerce.number().optional(),
+  DATABASE_CONNECTION_TIMEOUT: z.coerce.number().optional(),
+  DATABASE_STATEMENT_TIMEOUT: z.coerce.number().optional(),
+  DATABASE_QUERY_TIMEOUT: z.coerce.number().optional(),
 
   /*==== optional ====*/
   HOSTNAME: z.string().optional(),
@@ -12,14 +20,6 @@ export const EnvironmentSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.number().int().positive().optional(),
   GIT_COMMIT_SHA: z.string().optional(),
-  DATABASE_MAX_CONNECTIONS: z.number().int().positive().optional(),
-  DATABASE_MIN_CONNECTIONS: z.number().int().positive().optional(),
-  DATABASE_IDLE_TIMEOUT: z.number().int().positive().optional(),
-  DATABASE_CONNECTION_TIMEOUT: z.number().int().positive().optional(),
-  DATABASE_SSL: z.boolean().optional(),
-  DATABASE_STATEMENT_TIMEOUT: z.number().int().positive().optional(),
-  DATABASE_QUERY_TIMEOUT: z.number().int().positive().optional(),
-
   LOG_DIR: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
   LOG_SLOW_EXECUTION_THRESHOLD: z.number().int().positive().optional(),

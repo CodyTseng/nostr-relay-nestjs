@@ -10,6 +10,7 @@ import { Config, config } from './config';
 import { Nip05Module } from './modules/nip-05/nip-05.module';
 import { NostrModule } from './modules/nostr/nostr.module';
 import { TaskModule } from './modules/task/task.mdodule';
+import { ConnectionManagerModule } from './modules/connection-manager/connection-manager.module';
 import { loggerModuleFactory } from './utils';
 
 @Module({
@@ -33,6 +34,7 @@ import { loggerModuleFactory } from './utils';
     NostrModule,
     Nip05Module,
     TaskModule,
+    ConnectionManagerModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

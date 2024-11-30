@@ -1,117 +1,88 @@
 # Installation Guide
 
-This guide covers the complete installation and setup process for the Nostr Relay. For production deployment, see our [Deployment Guide](deployment.md)
-
-## Table of Contents
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Development Setup](#development-setup)
-- [Testing](#testing)
-- [Next Steps](#next-steps)
+This guide will help you set up the Nostr relay server for both development and production environments.
 
 ## Prerequisites
 
-- Node.js (v18 or later)
-- PostgreSQL (v14 or later)
-- Git
+- Node.js (v18+)
+- PostgreSQL (v15+)
+- npm or yarn
 
-For production requirements, see the [Deployment Guide](deployment.md#system-requirements).
+## Development Setup
 
-## Quick Start
-
-1. Clone the repository:
+1. **Clone the Repository**
 ```bash
 git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
 cd nostr-relay-nestjs
 ```
 
-2. Install dependencies:
+2. **Install Dependencies**
 ```bash
 npm install
 ```
 
-3. Configure environment:
+3. **Configure Environment**
 ```bash
 cp .env.example .env
-# Edit .env with your settings
 ```
 
-4. Start the development server:
-```bash
-npm run start:dev
-```
-
-## Configuration
-
-### Environment Variables
-
-Key environment variables to configure:
+Edit `.env` with your settings. Key configurations:
 
 ```env
-# Database Configuration
-DATABASE_URL=postgresql://user:password@localhost:5432/nostr_relay
+# Database
+DATABASE_URL=postgres://user:password@localhost:5432/nostr_relay
 
-# Server Configuration
-PORT=8000
-HOST=localhost
+# WebSocket
+WS_PORT=3000
 
-# Rate Limiting
-THROTTLER_TTL=60
-THROTTLER_LIMIT=30
-
-# See .env.example for all options
+# Security
+MIN_POW_DIFFICULTY=0
+MAX_WS_PAGE_SIZE=100
+MAX_WS_RESPONSE_SIZE=1000
+MAX_WS_OUTGOING_RATE_LIMIT=3
 ```
 
-For security-related configurations, see our [Security Guide](security.md#rate-limiting-configuration).
-
-## Development Setup
-
-1. Set up the database:
+4. **Start PostgreSQL**
+Using Docker:
 ```bash
-# Create database
+docker compose --profile dev up -d
+```
+
+Or local PostgreSQL:
+```bash
 createdb nostr_relay
-
-# Run migrations
-npm run migration:run
 ```
 
-2. Start in development mode:
+5. **Run Migrations**
 ```bash
-# Start with auto-reload
-npm run start:dev
+npx ts-node scripts/migrate-to-latest.ts
+```
 
-# Start with debugging
-npm run start:debug
+6. **Start Development Server**
+```bash
+npm run start:dev
 ```
 
 ## Testing
 
-Run the test suite:
+The relay includes a comprehensive test suite for NIP implementations:
+
 ```bash
-# Unit tests
-npm run test
-
-# E2E tests
-npm run test:e2e
-
-# Test coverage
-npm run test:cov
+node test-nips.js
 ```
 
-## Next Steps
-
-1. **For Development:**
-   - Review the codebase structure
-   - Check out our feature implementation status in the [README](../README.md#features)
-   - Start implementing your custom features
-
-2. **For Production:**
-   - Follow our [Deployment Guide](deployment.md) for production setup
-   - Review our [Security Guide](security.md) for security best practices
-   - Set up [Monitoring](monitoring.md) for your relay
-
-3. **For Maintenance:**
-   - Learn about monitoring in our [Monitoring Guide](monitoring.md)
-   - Set up backup procedures
-   - Configure health checks
+This will test all implemented NIPs:
+- NIP-01: Basic protocol flow
+- NIP-02: Contact List
+- NIP-04: Encrypted Direct Message
+- NIP-05: DNS Mapping
+- NIP-11: Relay Information
+- NIP-13: Proof of Work
+- NIP-17: Report Events
+- NIP-22: Event Timestamps
+- NIP-26: Delegated Events
+- NIP-28: Public Chat
+- NIP-29: Group Chat
+- NIP-40: Expiration
+- NIP-42: Authentication
+- NIP-50: Search

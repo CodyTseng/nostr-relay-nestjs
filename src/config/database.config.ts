@@ -10,6 +10,7 @@ export interface DatabaseConfig {
   };
   security: {
     ssl: boolean;
+    sslMode: string;
     statementTimeout: number;
     queryTimeout: number;
   };
@@ -25,7 +26,8 @@ export function databaseConfig(env: Environment): DatabaseConfig {
       connectionTimeoutMillis: env.DATABASE_CONNECTION_TIMEOUT ?? 5000,
     },
     security: {
-      ssl: env.DATABASE_SSL ?? true,
+      ssl: env.DATABASE_SSL ?? false,
+      sslMode: env.DATABASE_SSL_MODE ?? 'disable',
       statementTimeout: env.DATABASE_STATEMENT_TIMEOUT ?? 30000,
       queryTimeout: env.DATABASE_QUERY_TIMEOUT ?? 10000,
     },

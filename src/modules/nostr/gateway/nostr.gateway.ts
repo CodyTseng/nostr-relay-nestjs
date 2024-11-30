@@ -13,23 +13,20 @@ import { Request } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
-import { WebSocket } from 'ws';
+import { EnhancedWebSocket } from './custom-ws-adapter';
+import { CustomWebSocketAdapter } from './custom-ws-adapter';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { GlobalExceptionFilter } from '../../../common/filters';
 import { WsThrottlerGuard } from '../../../common/guards';
-import { getIpFromReq } from '../../../utils';
 import { LoggingInterceptor } from '../interceptors';
 import { SubscriptionIdSchema } from '../schemas';
 import { EventService } from '../services/event.service';
 import { NostrRelayService } from '../services/nostr-relay.service';
 
 @WebSocketGateway({
-  maxPayload: 256 * 1024, // 256KB
   path: '/',
   cors: true,
-  transports: ['websocket'],
-  allowUpgrades: false
 })
 @UseInterceptors(LoggingInterceptor)
 @UseFilters(GlobalExceptionFilter)
@@ -49,31 +46,29 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  handleConnection(client: WebSocket, req: Request) {
+  async handleConnection(client: EnhancedWebSocket, context: any) {
     try {
       let ip = 'unknown';
-      
-      if (req) {
-        const extractedIp = getIpFromReq(req);
-        if (extractedIp) {
-          ip = extractedIp;
-        }
+      if (context.req?.headers['x-forwarded-for']) {
+        ip = context.req.headers['x-forwarded-for'].split(',')[0].trim();
+      } else if (context.req?.socket?.remoteAddress) {
+        ip = context.req.socket.remoteAddress;
       }
-      
+
       this.nostrRelayService.handleConnection(client, ip);
     } catch (error) {
-      this.logger.error('Error in handleConnection:', error);
+      this.logger.error(error, 'Error handling connection');
       this.nostrRelayService.handleConnection(client, 'unknown');
     }
   }
 
-  handleDisconnect(client: WebSocket) {
+  handleDisconnect(client: EnhancedWebSocket) {
     this.nostrRelayService.handleDisconnect(client);
   }
 
   @SubscribeMessage('DEFAULT')
   async handleMessage(
-    @ConnectedSocket() client: WebSocket,
+    @ConnectedSocket() client: EnhancedWebSocket,
     @MessageBody() data: Array<any>,
   ) {
     return await this.nostrRelayService.handleMessage(client, data);

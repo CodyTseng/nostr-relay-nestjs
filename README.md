@@ -5,136 +5,114 @@
 
 A high-performance Nostr relay implementation powered by [NestJS](https://nestjs.com/) and PostgreSQL.
 
-## Getting Started
+## Documentation
 
-1. **New to Nostr Relay?**
-   - Start with our [Installation Guide](docs/installation.md) for setup instructions
-   - Follow our [Quick Start](#quick-start) section below
-
-2. **Ready for Production?**
-   - Follow our [Deployment Guide](docs/deployment.md) for production setup
-   - Review our [Security Guide](docs/security.md) for best practices
-   - Set up proper [Monitoring](docs/monitoring.md) for your relay
-
-3. **Quick Deploy**
-   [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
-
-## Documentation Roadmap
-
-Our documentation is organized to help you at every stage:
-
-1. [Installation Guide](docs/installation.md)
-   - Complete setup instructions
-   - Development environment setup
-   - Basic configuration
-
-2. [Deployment Guide](docs/deployment.md)
-   - Production deployment walkthrough
-   - Server setup and configuration
-   - Nginx and SSL setup
-
-3. [Security Guide](docs/security.md)
-   - Security best practices
-   - Rate limiting configuration
-   - Access control setup
-
-4. [Monitoring Guide](docs/monitoring.md)
-   - System monitoring
-   - Performance optimization
-   - Maintenance procedures
-   - Troubleshooting
+📚 **Getting Started**
+- [Installation Guide](docs/installation.md) - Complete setup instructions
+- [Deployment Guide](docs/deployment.md) - Production deployment walkthrough
+- [Security Guide](docs/security.md) - Security best practices and configuration
+- [Monitoring Guide](docs/monitoring.md) - System monitoring and maintenance
+- [Troubleshooting Guide](docs/troubleshooting.md) - Common issues and solutions
+- [NIP-29 Guide](docs/nip-29.md) - Group chat implementation details
 
 ## Quick Start
 
-1. Clone and install:
+1. **Clone and Install:**
 ```bash
 git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
 cd nostr-relay-nestjs
 npm install
 ```
 
-2. Configure environment:
+2. **Configure Environment:**
 ```bash
 cp .env.example .env
 # Edit .env with your settings
 ```
 
-3. Start the relay:
+3. **Start PostgreSQL:**
+```bash
+docker compose --profile dev up -d
+```
+
+4. **Run Migrations:**
+```bash
+npx ts-node scripts/migrate-to-latest.ts
+```
+
+5. **Start the Relay:**
 ```bash
 npm run start:dev
 ```
 
-For detailed setup instructions, see our [Installation Guide](docs/installation.md).
+Quick Deploy: [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ooFSnW?referralCode=WYIfFr)
 
 ## Features
 
+### NIPs Support Status
+
  🟢 Full implemented 🟡 Partially implemented 🔴 Not implemented
 
-| Feature                                                                                                                  | Status | Note                                     |
-| ------------------------------------------------------------------------------------------------------------------------ | :----: | ---------------------------------------- |
-| [NIP-01: Basic protocol flow description](https://github.com/nostr-protocol/nips/blob/master/01.md)                      |   🟢   |                                          |
-| [NIP-02: Follow List](https://github.com/nostr-protocol/nips/blob/master/02.md)                                          |   🟢   |                                          |
-| [NIP-04: Encrypted Direct Message](https://github.com/nostr-protocol/nips/blob/master/04.md)                             |   🟢   |                                          |
-| [NIP-05: Mapping Nostr keys to DNS-based internet identifiers](https://github.com/nostr-protocol/nips/blob/master/05.md) |   🟢   |                                          |
-| [NIP-09: Event Deletion](https://github.com/nostr-protocol/nips/blob/master/09.md)                                       |   🔴   | No real deletion in a distributed system |
-| [NIP-11: Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)                           |   🟢   |                                          |
-| [NIP-13: Proof of Work](https://github.com/nostr-protocol/nips/blob/master/13.md)                                        |   🟢   |                                          |
-| [NIP-17: Report Events](https://github.com/nostr-protocol/nips/blob/master/17.md)                                        |   🟢   | Strict validation: requires `e` (event) and `p` (pubkey) tags, optional `k` (kind) tag, non-empty reason required |
-| [NIP-22: Event created_at Limits](https://github.com/nostr-protocol/nips/blob/master/22.md)                              |   🟢   |                                          |
-| [NIP-26: Delegated Event Signing](https://github.com/nostr-protocol/nips/blob/master/26.md)                              |   🟢   |                                          |
-| [NIP-28: Public Chat](https://github.com/nostr-protocol/nips/blob/master/28.md)                                          |   🟢   |                                          |
-| [NIP-29: Group Chat Events](https://github.com/nostr-protocol/nips/blob/master/29.md)                                   |   🟢   | [Group Chat Guide](docs/nip-29.md)      |
-| [NIP-40: Expiration Timestamp](https://github.com/nostr-protocol/nips/blob/master/40.md)                                 |   🟢   |                                          |
-| [NIP-42: Authentication of clients to relays](https://github.com/nostr-protocol/nips/blob/master/42.md)                  |   🟢   |                                          |
-| [NIP-45: Counting results](https://github.com/nostr-protocol/nips/blob/master/45.md)                                     |   🔴   |                                          |
-| [NIP-50: Keywords filter](https://github.com/nostr-protocol/nips/blob/master/50.md)                                      |   🟢   |                                          |
+| NIP | Status | Description | Note |
+|-----|:------:|-------------|------|
+| [01](https://github.com/nostr-protocol/nips/blob/master/01.md) | 🟢 | Basic protocol flow | Core functionality |
+| [02](https://github.com/nostr-protocol/nips/blob/master/02.md) | 🟢 | Contact List | |
+| [04](https://github.com/nostr-protocol/nips/blob/master/04.md) | 🟢 | Encrypted Direct Message | |
+| [05](https://github.com/nostr-protocol/nips/blob/master/05.md) | 🟢 | DNS Identifiers | |
+| [09](https://github.com/nostr-protocol/nips/blob/master/09.md) | 🔴 | Event Deletion | No real deletion in distributed system |
+| [11](https://github.com/nostr-protocol/nips/blob/master/11.md) | 🟢 | Relay Information | |
+| [13](https://github.com/nostr-protocol/nips/blob/master/13.md) | 🟢 | Proof of Work | |
+| [17](https://github.com/nostr-protocol/nips/blob/master/17.md) | 🟢 | Report Events | Strict validation |
+| [22](https://github.com/nostr-protocol/nips/blob/master/22.md) | 🟢 | Event Timestamps | |
+| [26](https://github.com/nostr-protocol/nips/blob/master/26.md) | 🟢 | Delegated Events | |
+| [28](https://github.com/nostr-protocol/nips/blob/master/28.md) | 🟢 | Public Chat | |
+| [29](https://github.com/nostr-protocol/nips/blob/master/29.md) | 🟢 | Group Chat | See [Guide](docs/nip-29.md) |
+| [40](https://github.com/nostr-protocol/nips/blob/master/40.md) | 🟢 | Expiration | |
+| [42](https://github.com/nostr-protocol/nips/blob/master/42.md) | 🟢 | Authentication | |
+| [45](https://github.com/nostr-protocol/nips/blob/master/45.md) | 🔴 | Counting | |
+| [50](https://github.com/nostr-protocol/nips/blob/master/50.md) | 🟢 | Search | |
 
-## Enhanced Security Features
+## Security Features
 
-### WebSocket Security
-- **Connection Limits**: Configurable maximum connections per IP address
-- **Message Size Restrictions**: Limits on WebSocket message sizes to prevent abuse
-- **Authentication Timeouts**: Automatic disconnection of unauthenticated clients after a configurable period
-- **Event Size Limits**: Maximum size limits for individual events
-- **Subscription Controls**: Limits on the number of subscription filters per client
-- **Filter Length Restrictions**: Maximum length limits for subscription filters
+Our relay implements comprehensive security measures across multiple layers:
 
-### Rate Limiting
-- **Event Rate Limiting**: Configurable limits on event submissions per time window
-- **Request Rate Limiting**: Separate rate limits for different types of requests (EVENT, REQ)
-- **Block Duration**: Configurable blocking period for clients exceeding rate limits
+### Connection Security
+- Maximum connections per IP
+- WebSocket message size limits
+- Authentication timeouts
+- Event size restrictions
+- Subscription filter limits
+- Rate limiting per client
 
 ### Database Security
-- **Connection Pooling**: Configurable minimum and maximum connections
-- **Query Timeouts**: Automatic termination of long-running queries
-- **SSL Enforcement**: Secure database connections with SSL/TLS
-- **Statement Timeouts**: Protection against resource-intensive queries
-- **Idle Connection Management**: Automatic cleanup of idle connections
-- **Error Logging**: Comprehensive logging of database errors and warnings
+- Connection pooling
+- Query timeouts
+- SSL/TLS encryption
+- Statement timeouts
+- Idle connection management
+- Comprehensive error logging
 
 ### Configuration
-You can configure these security features through environment variables:
+
+Key security settings can be configured via environment variables:
 
 ```env
-# WebSocket Security Settings
-WS_MAX_MESSAGE_SIZE=65536          # Maximum WebSocket message size in bytes (default: 64KB)
-WS_MAX_CONNECTIONS_PER_IP=10       # Maximum concurrent connections per IP
-WS_RATE_LIMIT_TTL=60000           # Rate limit time window in milliseconds
-WS_RATE_LIMIT_COUNT=30            # Maximum requests per time window
-WS_AUTH_TIMEOUT=30000             # Authentication timeout in milliseconds
-WS_MAX_EVENT_SIZE=32768           # Maximum event size in bytes (default: 32KB)
-WS_MAX_SUBSCRIPTION_FILTERS=10     # Maximum number of subscription filters
-WS_MAX_FILTER_LENGTH=1024         # Maximum length of subscription filters
+# WebSocket Security
+WS_MAX_CONNECTIONS_PER_IP=10
+WS_MAX_MESSAGE_SIZE=65536
+WS_RATE_LIMIT_TTL=60000
+WS_RATE_LIMIT_COUNT=30
+WS_AUTH_TIMEOUT=30000
 
-# Database Security Settings
-DATABASE_MIN_CONNECTIONS=2      # Minimum number of connections in pool
-DATABASE_MAX_CONNECTIONS=10     # Maximum number of connections in pool
-DATABASE_IDLE_TIMEOUT=10000    # Idle connection timeout in milliseconds
-DATABASE_CONNECTION_TIMEOUT=5000 # Connection timeout in milliseconds
-DATABASE_SSL=true              # Enable SSL for database connections
-DATABASE_STATEMENT_TIMEOUT=30000 # Statement timeout in milliseconds
-DATABASE_QUERY_TIMEOUT=15000   # Query timeout in milliseconds
+# Database Security
+DATABASE_SSL=true
+DATABASE_MIN_CONNECTIONS=2
+DATABASE_MAX_CONNECTIONS=10
+DATABASE_STATEMENT_TIMEOUT=30000
+DATABASE_QUERY_TIMEOUT=15000
 ```
+
+For detailed security configuration, see our [Security Guide](docs/security.md).
 
 ## Installation and Setup
 
@@ -676,67 +654,108 @@ ls -la /path/to/relay
      psql -d nostr_relay -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
      ```
 
-## Recent Changes
+## Process Management with PM2
 
-### 2024 Updates
-- Fixed WebSocket connection handling to properly manage undefined request objects and headers
-- Improved IP address extraction from WebSocket connections
-- Enhanced error handling in the NostrGateway
-- Fixed circular dependency in NostrRelayService
+For production deployments, we recommend using PM2 for process management. PM2 ensures your relay stays running and automatically restarts if it crashes.
 
-## Testing Your Installation
+### PM2 Setup
 
-You can verify your relay is working properly using these terminal commands:
-
-1. Test the NIP-11 information endpoint:
+1. Install PM2 globally:
 ```bash
-curl -i -H "Accept: application/nostr+json" https://your-domain.com
+npm install -g pm2
 ```
 
-A successful response should look like:
-```json
-{
-  "name": "Your Relay Name",
-  "description": "Your relay description",
-  "pubkey": "your-public-key",
-  "supported_nips": [1, 2, 4, 11, 13, 22, 26, 28, 29, 40],
-  "software": "git+https://github.com/HumanjavaEnterprises/nostr-relay-nestjs",
-  "version": "2.2.0"
-  // ... other configuration details
+2. Start the relay with PM2:
+```bash
+pm2 start npm --name "nostr-relay" -- start
+```
+
+3. Enable startup script (auto-restart on server reboot):
+```bash
+pm2 startup
+pm2 save
+```
+
+4. Useful PM2 commands:
+```bash
+# View logs
+pm2 logs nostr-relay
+
+# Restart application
+pm2 restart nostr-relay
+
+# View status
+pm2 status
+
+# View detailed metrics
+pm2 monit
+```
+
+### Recent Updates
+
+1. **Custom WebSocket Adapter**
+   - Implemented enhanced WebSocket connection management
+   - Added IP-based rate limiting
+   - Improved message validation and security checks
+   - Added support for connection authentication
+
+2. **Nginx Configuration**
+   - Updated WebSocket proxy settings
+   - Added buffering optimization
+   - Improved header handling for WebSocket upgrades
+
+Example Nginx configuration for WebSocket support:
+```nginx
+server {
+    listen 80;
+    server_name your-relay-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_buffering off;
+    }
 }
 ```
 
-2. Test SSL/WebSocket endpoint:
+## Deployment
+
+The `deploy` directory contains all necessary files for production deployment:
+
+### Scripts
+- `deploy/scripts/deploy.sh` - Main deployment script for setting up the relay
+- `deploy/scripts/check-env.sh` - Environment variable validation script
+
+### Nginx Configuration
+- `deploy/nginx/relay-final.conf` - Production Nginx configuration
+- `deploy/nginx/connection-upgrade.conf` - WebSocket connection upgrade settings
+
+For detailed deployment instructions, see our [Deployment Guide](docs/deployment.md).
+
+## Testing
+
+The `tests` directory contains various test scripts:
+
+- `test-nostr.js` - Tests relay connectivity using nostr-tools
+- `test-relay.js` - Low-level WebSocket connection test
+- `test-ws-server.js` - Test WebSocket server for development
+
+To run the tests:
 ```bash
-nc -zv your-domain.com 443
+# Run nostr-tools based test
+node tests/test-nostr.js
+
+# Run WebSocket connection test
+node tests/test-relay.js
+
+# Start test WebSocket server
+node tests/test-ws-server.js
 ```
-
-You should see: `Connection to your-domain.com port 443 [tcp/https] succeeded!`
-
-3. Check security headers:
-```bash
-curl -I https://your-domain.com
-```
-
-Look for these important headers:
-- `strict-transport-security` (HSTS)
-- `x-frame-options`
-- `x-content-type-options`
-- `content-security-policy`
-
-### Common Issues
-
-1. If curl returns "Connection refused":
-   - Check if Nginx is running: `systemctl status nginx`
-   - Verify your firewall allows port 443: `sudo ufw status`
-
-2. If WebSocket connection fails:
-   - Check Nginx error logs: `tail -f /var/log/nginx/error.log`
-   - Verify PM2 process is running: `pm2 status`
-
-3. If SSL certificate issues occur:
-   - Verify certificate renewal: `certbot certificates`
-   - Check SSL configuration: `nginx -t`
 
 ## Development Tools
 
