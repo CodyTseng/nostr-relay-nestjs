@@ -43,6 +43,11 @@ export class CustomWebSocketAdapter extends WsAdapter {
     this.wsServer = new WebSocket.Server({
       server,
       ...options,
+      verifyClient: (info: { origin: string; secure: boolean; req: Request }) => {
+        // Store the request object so it can be accessed in handleConnection
+        (info.req as any).wsRequest = info.req;
+        return true;
+      },
     });
 
     return server;
@@ -51,38 +56,18 @@ export class CustomWebSocketAdapter extends WsAdapter {
   bindMessageHandlers(
     client: EnhancedWebSocket,
     handlers: any[],
-    transform: (data: any) => any,
-  ) {
-    client.on('message', async (data, isBinary) => {
-      if (isBinary) {
-        return;
-      }
-
-      let message;
+    transform: any,
+  ): void {
+    const { messageHandlers } = transform;
+    client.on('message', (data: WebSocket.Data) => {
       try {
-        message = JSON.parse(data.toString());
-      } catch (e) {
-        return;
-      }
-
-      // Handle authentication
-      this.connectionManager.handleAuth(client, message);
-
-      // Check if authentication is required for this message type
-      if (!client.authenticated && this.connectionManager.requiresAuth(message)) {
-        client.send(JSON.stringify(['NOTICE', 'Authentication required']));
-        return;
-      }
-
-      for (const handler of handlers) {
-        try {
-          const response = await handler(message);
-          if (response) {
-            client.send(JSON.stringify(response));
-          }
-        } catch (err) {
-          client.send(JSON.stringify(['NOTICE', 'Error processing message']));
+        const message = JSON.parse(data.toString());
+        const messageHandler = messageHandlers.get(message[0]);
+        if (messageHandler) {
+          messageHandler.callback(client, message);
         }
+      } catch (error) {
+        console.error('Error handling message:', error);
       }
     });
   }
