@@ -1,18 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger as NestLogger } from '@nestjs/common';
 import { LogLevel, Logger } from '@nostr-relay/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class NostrRelayLogger implements Logger {
   private level: LogLevel = LogLevel.INFO;
+  private readonly logger: NestLogger;
 
-  constructor(
-    @InjectPinoLogger(NostrRelayLogger.name)
-    private readonly logger: PinoLogger,
-  ) {}
+  constructor() {
+    this.logger = new NestLogger(NostrRelayLogger.name);
+  }
 
   setLogLevel(level: LogLevel): void {
     this.level = level;
+  }
+
+  getLogLevel(): LogLevel {
+    return this.level;
   }
 
   debug(message: string, ...args: any[]): void {
@@ -20,7 +23,7 @@ export class NostrRelayLogger implements Logger {
   }
 
   info(message: string, ...args: any[]): void {
-    if (this.level <= LogLevel.INFO) this.logger.info(message, ...args);
+    if (this.level <= LogLevel.INFO) this.logger.log(message, ...args);
   }
 
   warn(message: string, ...args: any[]): void {
