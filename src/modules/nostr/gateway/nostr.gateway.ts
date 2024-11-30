@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
 import { Request } from 'express';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Logger } from '@nestjs/common';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
 import { EnhancedWebSocket } from './custom-ws-adapter';
@@ -35,8 +35,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly messageHandlingConfig: MessageHandlingConfig;
 
   constructor(
-    @InjectPinoLogger(NostrGateway.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: Logger,
     private readonly eventService: EventService,
     private readonly nostrRelayService: NostrRelayService,
     configService: ConfigService<Config, true>,

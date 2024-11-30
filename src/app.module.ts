@@ -3,26 +3,23 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { LoggerModule } from 'nestjs-pino';
-import { GlobalExceptionFilter } from './common/filters';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ParseNostrAuthorizationGuard } from './common/guards';
 import { Config, config } from './config';
 import { Nip05Module } from './modules/nip-05/nip-05.module';
 import { NostrModule } from './modules/nostr/nostr.module';
-import { TaskModule } from './modules/task/task.mdodule';
+import { TaskModule } from './modules/task/task.module';
+import { WotModule } from './modules/wot/wot.module';
 import { ConnectionManagerModule } from './modules/connection-manager/connection-manager.module';
-import { loggerModuleFactory } from './utils';
+import { LoggerModule } from './modules/logger/logger.module';
 
 @Module({
   imports: [
+    LoggerModule,
     ConfigModule.forRoot({
       load: [config],
       cache: true,
       isGlobal: true,
-    }),
-    LoggerModule.forRootAsync({
-      useFactory: loggerModuleFactory,
-      inject: [ConfigService],
     }),
     ThrottlerModule.forRootAsync({
       useFactory: (configService: ConfigService<Config, true>) => {
@@ -34,11 +31,18 @@ import { loggerModuleFactory } from './utils';
     NostrModule,
     Nip05Module,
     TaskModule,
+    WotModule,
     ConnectionManagerModule,
   ],
   providers: [
-    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
-    { provide: APP_GUARD, useClass: ParseNostrAuthorizationGuard },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ParseNostrAuthorizationGuard,
+    },
   ],
 })
 export class AppModule {}

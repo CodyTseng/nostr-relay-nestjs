@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Logger } from '@nestjs/common';
 import { verifySignature, sha256, bytesToHex } from './crypto.utils';
 import { WebSocket } from 'ws';
 
@@ -33,8 +33,7 @@ export class ConnectionManagerService {
   public restrictedKinds = new Set([4]);
 
   constructor(
-    @InjectPinoLogger(ConnectionManagerService.name)
-    private readonly logger: PinoLogger,
+    private readonly logger: Logger,
   ) {}
 
   registerConnection(client: EnhancedWebSocket): void {
@@ -43,13 +42,13 @@ export class ConnectionManagerService {
       return;
     }
     this.connections.set(client.id, client);
-    this.logger.info('Client connected: %s', client.id);
+    this.logger.log('Client connected: %s', client.id);
   }
 
   removeConnection(client: EnhancedWebSocket): void {
     if (client.id) {
       this.connections.delete(client.id);
-      this.logger.info('Client disconnected: %s', client.id);
+      this.logger.log('Client disconnected: %s', client.id);
     }
   }
 
@@ -71,7 +70,7 @@ export class ConnectionManagerService {
       if (await this.verifyAuth(event)) {
         client.authenticated = true;
         client.pubkey = event.pubkey;
-        this.logger.info('Client authenticated: %s', client.id);
+        this.logger.log('Client authenticated: %s', client.id);
       }
     } catch (error) {
       this.logger.error('Error handling auth: %s', error);
