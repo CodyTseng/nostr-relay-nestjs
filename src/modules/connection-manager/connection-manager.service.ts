@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { verify } from '@noble/secp256k1';
-import { sha256 } from '@noble/hashes/sha256';
-import { bytesToHex } from '@noble/hashes/utils';
+import { verifySignature, sha256, bytesToHex } from './crypto.utils';
 import { WebSocket } from 'ws';
 
 export interface EnhancedWebSocket extends WebSocket {
@@ -34,13 +32,15 @@ export class ConnectionManagerService {
   ) {}
 
   registerConnection(client: EnhancedWebSocket): void {
-    this.connections.set(client.id!, client);
+    this.connections.set(client.id, client);
     this.logger.info('Client connected: %s', client.id);
   }
 
   removeConnection(client: EnhancedWebSocket): void {
-    this.connections.delete(client.id!);
-    this.logger.info('Client disconnected: %s', client.id);
+    if (client.id) {
+      this.connections.delete(client.id);
+      this.logger.info('Client disconnected: %s', client.id);
+    }
   }
 
   getConnection(id: string): EnhancedWebSocket | undefined {
@@ -56,33 +56,29 @@ export class ConnectionManagerService {
   }
 
   handleAuth(client: EnhancedWebSocket, message: any): void {
-    if (message[0] === 'AUTH') {
-      const event = message[1];
+    try {
+      const [_, event] = message;
       if (this.verifyEventSignature(event)) {
         client.authenticated = true;
         client.pubkey = event.pubkey;
-        this.logger.info('Client authenticated: %s with pubkey: %s', client.id, client.pubkey);
+        this.logger.info('Client authenticated: %s', client.id);
       }
+    } catch (error) {
+      this.logger.error('Error handling auth: %s', error);
     }
   }
 
   requiresAuth(message: any): boolean {
-    if (!Array.isArray(message)) return false;
-    if (message[0] !== 'EVENT') return false;
-    const event = message[1];
-    return this.restrictedKinds.has(event.kind);
+    const [type, event] = message;
+    return type === 'EVENT' && this.restrictedKinds.has(event.kind);
   }
 
   verifyEventSignature(event: NostrEvent): boolean {
     try {
       const hash = this.getEventHash(event);
-      return verify(
-        event.sig,
-        hash,
-        event.pubkey,
-      );
+      return verifySignature(event.sig, hash, event.pubkey);
     } catch (error) {
-      this.logger.error('Error verifying event signature: %s', error);
+      this.logger.error('Error verifying signature: %s', error);
       return false;
     }
   }
