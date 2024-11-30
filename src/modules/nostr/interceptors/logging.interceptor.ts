@@ -2,6 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -12,8 +13,9 @@ import { Config } from 'src/config';
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly slowExecutionThreshold: number;
+  private readonly logger = new Logger(LoggingInterceptor.name);
+
   constructor(
-    private readonly logger: any, // Replaced Pino logger with NestJS Logger
     configService: ConfigService<Config, true>,
   ) {
     this.slowExecutionThreshold = configService.get('logger', {
@@ -40,9 +42,9 @@ export class LoggingInterceptor implements NestInterceptor {
         )} request took ${executionTime}ms to execute`;
 
         if (executionTime < this.slowExecutionThreshold) {
-          this.logger.log({ data, executionTime }, msg);
+          this.logger.log(msg);
         } else {
-          this.logger.warn({ data, executionTime }, `${msg} (slow)`);
+          this.logger.warn(`${msg} (slow)`);
         }
       }),
     );
