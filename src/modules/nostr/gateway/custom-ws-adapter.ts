@@ -25,6 +25,7 @@ export interface EnhancedWebSocket extends WebSocket {
   authenticated?: boolean;
   pubkey?: string;
   _request?: IncomingMessage;
+  _ip?: string;
 }
 
 export class CustomWebSocketAdapter extends WsAdapter {
@@ -53,10 +54,28 @@ export class CustomWebSocketAdapter extends WsAdapter {
       // Store both the request and its headers directly on the socket
       ws._request = req;
       (ws as any).upgradeReq = req;
+
+      // Extract and store IP directly
+      let ip = 'unknown';
+      if (req.headers['x-real-ip']) {
+        ip = Array.isArray(req.headers['x-real-ip']) 
+          ? req.headers['x-real-ip'][0] 
+          : req.headers['x-real-ip'];
+      } else if (req.headers['x-forwarded-for']) {
+        const forwarded = req.headers['x-forwarded-for'];
+        ip = Array.isArray(forwarded)
+          ? forwarded[0].split(',')[0].trim()
+          : forwarded.split(',')[0].trim();
+      } else if (req.socket?.remoteAddress) {
+        ip = req.socket.remoteAddress;
+      }
+
+      ws._ip = ip;
       
       this.logger.debug('WebSocket connection established', {
         headers: req.headers,
-        remoteAddress: req.socket?.remoteAddress
+        remoteAddress: req.socket?.remoteAddress,
+        assignedIp: ip
       });
     });
 
