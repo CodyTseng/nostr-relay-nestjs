@@ -60,12 +60,17 @@ export class CustomWebSocketAdapter extends WsAdapter {
     this.wsServer.on('connection', async (ws: EnhancedWebSocket, req: IncomingMessage) => {
       this.logger.debug('WebSocket adapter starting connection setup');
       
-      // Initialize connection state
-      ws._connectionState = {
-        ip: 'unknown',
-        ipSet: false,
-        setupComplete: false
-      };
+      // Initialize connection state immediately
+      Object.defineProperty(ws, '_connectionState', {
+        value: {
+          ip: 'unknown',
+          ipSet: false,
+          setupComplete: false
+        },
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
 
       // Store the request on the socket for potential future use
       ws._request = req;
