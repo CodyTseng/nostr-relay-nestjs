@@ -1,155 +1,81 @@
 # Working with AI on the Nostr Relay Project
 
-## Best Practices for AI-Human Collaboration
+## Overview
 
-### Setup and Environment
+This guide outlines best practices for collaborating with AI tools in the Nostr Relay project. The goal is to maintain high code quality while leveraging AI assistance effectively.
 
-1. **IDE Configuration**
-   - Keep your IDE open during the entire session
-   - Enable TypeScript error checking
-   - Watch the Problems panel for immediate feedback
-   - Keep relevant files open for context
+## Development Environment
 
-2. **Terminal Access**
-   - Always have a terminal window ready
-   - Run `npm run build` before commits to catch compilation errors
-   - Keep deployment terminal accessible for quick server updates
+### IDE Setup
+- Keep your IDE open during the entire session
+- Enable TypeScript error checking
+- Watch the Problems panel for immediate feedback
+- Maintain relevant files open for context
 
-### Development Workflow
+### Terminal Access
+- Keep a terminal window ready for commands
+- Run `npm run build` before commits
+- Keep deployment terminal accessible
 
-1. **Iterative Development**
-   - Make small, focused changes
-   - Commit frequently with descriptive messages
-   - Test changes locally before deployment
-   - Monitor logs after deployment
+## Key Considerations
 
-2. **Error Handling**
-   - Address TypeScript errors immediately
-   - Check build errors before committing
-   - Review deployment logs for runtime issues
-   - Share error messages with AI for faster debugging
+### Code Quality
+- Make small, focused changes
+- Run linter checks regularly
+- Ensure type safety in TypeScript
+- Maintain consistent code style
+- Review AI-suggested changes thoroughly
 
-3. **Code Quality**
-   - Run linter checks regularly
-   - Review AI-suggested changes before committing
-   - Ensure type safety in TypeScript
-   - Maintain consistent code style
-
-### Communication Tips
-
-1. **Sharing Context**
-   - Share relevant error messages
-   - Provide log outputs
-   - Mention any related files or components
-   - Describe what you're seeing in the UI/client
-
-2. **Effective Requests**
-   - Be specific about what you want to achieve
-   - Share your thoughts and concerns
-   - Ask for clarification when needed
-   - Provide feedback on suggested solutions
+### Version Control
+- Make atomic commits (one logical change per commit)
+- Use descriptive commit messages
+- Push changes promptly
+- Keep feature branches up to date
+- Save all files before git operations
+- Verify successful pushes
 
 ### Deployment Process
-
 1. **Pre-Deployment**
    - Build locally: `npm run build`
    - Check for TypeScript errors
    - Review changes in source control
-   - Run tests if available
 
 2. **Deployment**
-   - Use the deployment script: `./deploy.sh`
+   - Use `./deploy.sh` and modify as needed
    - Monitor deployment logs
-   - Check server status after deployment
    - Verify changes in production
 
 3. **Post-Deployment**
    - Monitor application logs
    - Test functionality
-   - Share results with AI
-   - Address any issues immediately
+   - Address issues immediately
 
-### Version Control
-
-1. **Git Best Practices**
-   - Make atomic commits (one logical change per commit)
-   - Use descriptive commit messages
-   - Push changes promptly
-   - Keep feature branches up to date
-
-2. **Code Review**
-   - Review AI-suggested changes carefully
-   - Check for unintended side effects
-   - Ensure proper error handling
-   - Verify type safety
-
-### File Management Best Practices
-
-1. **Tab Management**
-   - Close editor tabs after each edit is completed and committed
-   - This prevents accidental edits to old versions
-   - Helps maintain a clear context of what's being changed
-   - Reduces the risk of merge conflicts
-   - Ensures all changes are properly saved before git operations
-
-2. **File Saving**
-   - Always save files after making changes (Cmd+S / Ctrl+S)
-   - Verify changes are saved before git operations
-   - Check the IDE's "unsaved changes" indicators
-
-3. **Version Control Workflow**
-   - Save all files
-   - Stage changes with `git add`
-   - Commit with a descriptive message
-   - Push to remote repository
-   - Verify push was successful
-
-4. **Change Verification**
-   - Review changes in the IDE before saving
-   - Check git status before and after operations
-   - Verify logs after deployment
-   - Monitor for any unexpected behavior
-
-Remember: A clean workspace is a productive workspace. Keeping your editor tabs minimal and focused helps maintain clarity and prevents confusion during the development process.
+### Effective AI Collaboration
+- Be specific in requests
+- Share relevant error messages and logs
+- Provide context about related components
+- Review AI suggestions before implementing
+- Share feedback on solutions
+- Document complex solutions and workarounds
 
 ### Documentation
+- Update documentation for significant changes
+- Keep API documentation current
+- Document configuration changes
+- Note known issues and workarounds
 
-1. **Code Documentation**
-   - Document significant changes
-   - Update README when needed
-   - Keep API documentation current
-   - Document configuration changes
+## Best Practices
 
-2. **Problem Solving**
-   - Document solutions to complex problems
-   - Note any workarounds implemented
-   - Keep track of known issues
-   - Document deployment-specific details
+### Workspace Management
+- Close editor tabs after completing edits
+- Save files frequently (Cmd+S / Ctrl+S)
+- Maintain a clean working directory
+- Keep related files accessible
 
-## Tips for Success
+### Problem Solving
+- Address issues as they arise
+- Monitor logs for runtime issues
+- Share both successes and failures with AI
+- Document solutions to complex problems
 
-1. **Be Proactive**
-   - Check for errors frequently
-   - Address issues as they arise
-   - Keep the AI informed of your observations
-   - Share both successes and failures
-
-2. **Stay Organized**
-   - Keep related files open
-   - Use clear naming conventions
-   - Maintain a clean working directory
-   - Document important decisions
-
-3. **Maintain Context**
-   - Keep track of the current task
-   - Reference previous changes when relevant
-   - Share the bigger picture with AI
-   - Document complex workflows
-
-4. **Continuous Improvement**
-   - Learn from each interaction
-   - Document effective patterns
-   - Share feedback with the AI
-   - Refine the collaboration process
-
-Remember that AI is a powerful tool but works best with human oversight and validation. Regular checking of types, builds, and runtime behavior helps catch issues early and ensures high-quality code output.
+Remember: AI is a powerful tool but works best with human oversight. Regular checking of types, builds, and runtime behavior helps catch issues early and ensures high-quality code output.

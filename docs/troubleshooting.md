@@ -1,285 +1,163 @@
 # Troubleshooting Guide
 
-## WebSocket Connection Issues
+## Overview
 
-If you're experiencing WebSocket connection issues with your Nostr relay, here's a comprehensive guide to diagnose and fix common problems:
+This guide helps diagnose and resolve common issues in the Nostr relay implementation. It covers four main areas:
+- WebSocket connectivity
+- Database operations
+- Event processing
+- System performance
 
-### Common Symptoms
-- WebSocket connection returns 400 Bad Request
-- Connection closes immediately after opening
-- "Unexpected server response: 200" errors
-- EADDRINUSE errors when starting the server
+## Quick Diagnosis
 
-### Diagnosis Steps
-
-1. **Check Server Status**
+Before diving into specific issues, check these common points:
 ```bash
-# Check if server is running
+# Check server status
 pm2 status nostr-relay
 
-# Check server logs
+# View recent logs
 pm2 logs nostr-relay --lines 100
+
+# Check database connection
+psql -U nostr_user -d nostr_relay -c "\conninfo"
 ```
 
-2. **Verify Port Availability**
+## Common Issues and Solutions
+
+### 1. WebSocket Connection Issues
+
+**Symptoms:**
+- 400 Bad Request responses
+- Immediate connection closure
+- "Unexpected server response: 200"
+- EADDRINUSE errors
+
+**Quick Solutions:**
 ```bash
-# Check if port is in use
+# Check port availability
 lsof -i :3000
+kill -9 <PID>  # If needed
 
-# Kill process using port if needed
-kill -9 <PID>
-```
-
-3. **Test WebSocket Connection**
-```bash
-# Using wscat
+# Test connection
 wscat -c ws://localhost:3000
-
-# Using curl
-curl -i -N -H "Connection: Upgrade" \
-  -H "Upgrade: websocket" \
-  -H "Host: localhost:3000" \
-  -H "Origin: http://localhost:3000" \
-  ws://localhost:3000
 ```
 
-### Common Solutions
-
-1. **Port Already in Use**
-```bash
-# Find process
-lsof -i :3000
-
-# Kill process
-kill -9 <PID>
-
-# Start server
-npm run start:dev
-```
-
-2. **Nginx Configuration**
+**Nginx Configuration:**
 ```nginx
-server {
-    listen 80;
-    server_name your.domain.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-    }
+location / {
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
 }
 ```
 
-3. **SSL/TLS Issues**
-```nginx
-server {
-    listen 443 ssl;
-    server_name your.domain.com;
+### 2. Database Issues
 
-    ssl_certificate /etc/letsencrypt/live/your.domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your.domain.com/privkey.pem;
+**Common Problems:**
+1. Connection Failures
+2. Migration Errors
+3. Performance Issues
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-    }
-}
-```
-
-## Database Issues
-
-### Common Problems
-
-1. **Connection Errors**
-```
-error: connection to server failed
-```
-
-**Solutions:**
+**Quick Solutions:**
 ```bash
-# Check PostgreSQL status
+# Database status
 sudo systemctl status postgresql
 
-# Start PostgreSQL if needed
-sudo systemctl start postgresql
-
-# Check logs
-sudo tail -f /var/log/postgresql/postgresql-15-main.log
-```
-
-2. **Migration Errors**
-```
-error: relation "events" does not exist
-```
-
-**Solutions:**
-```bash
 # Run migrations
 npx ts-node scripts/migrate-to-latest.ts
 
-# Check database schema
+# Check tables
 psql -U nostr_user -d nostr_relay -c "\dt"
 ```
 
-3. **Performance Issues**
+**Performance Optimization:**
 ```sql
--- Check slow queries
+-- Check active queries
 SELECT * FROM pg_stat_activity WHERE state = 'active';
 
--- Analyze tables
-ANALYZE events;
-
 -- Update statistics
-VACUUM ANALYZE;
+VACUUM ANALYZE events;
 ```
 
-## Event Processing Issues
+### 3. Event Processing Issues
 
-### Common Problems
-
-1. **Event Validation Failures**
-- Invalid signatures
-- Missing required tags
-- Invalid timestamps
+**Common Problems:**
+1. Invalid Events
+   - Bad signatures
+   - Missing tags
+   - Invalid timestamps
+2. Rate Limiting
 
 **Solutions:**
+
+1. Event Validation:
 ```javascript
-// Check event format
-console.log(JSON.stringify(event, null, 2));
-
-// Verify signature
+// Verify event
 const valid = nostrTools.verifySignature(event);
-
-// Check timestamp
-const now = Math.floor(Date.now() / 1000);
-if (Math.abs(event.created_at - now) > 60 * 60) {
-    console.log('Invalid timestamp');
-}
+console.log(JSON.stringify(event, null, 2));
 ```
 
-2. **Rate Limiting Issues**
-- Too many events from one client
-- Subscription limits exceeded
-
-**Solutions:**
+2. Rate Limiting:
 ```env
-# Adjust rate limits in .env
+# Adjust in .env
 WS_RATE_LIMIT_TTL=60000
 WS_RATE_LIMIT_COUNT=30
 MAX_SUBSCRIPTION_FILTERS=10
 ```
 
-## Performance Issues
+### 4. Performance Issues
 
-### Diagnosis
-
-1. **High CPU Usage**
+**Monitoring Tools:**
 ```bash
-# Check system resources
+# System resources
 top -u nostr_user
-
-# Monitor Node.js process
 pm2 monit
-```
 
-2. **Memory Leaks**
-```bash
-# Check memory usage
-pm2 status
-
-# Generate heap dump
+# Memory analysis
 node --heapsnapshot
 ```
 
-3. **Slow Queries**
-```sql
--- Find slow queries
-SELECT pid, now() - pg_stat_activity.query_start AS duration, query 
-FROM pg_stat_activity 
-WHERE state = 'active';
-```
+**Common Checks:**
+1. CPU Usage
+   - Monitor process load
+   - Check for runaway processes
+2. Memory Usage
+   - Watch for leaks
+   - Monitor heap size
+3. Database Performance
+   - Index usage
+   - Query optimization
 
-### Solutions
+## Advanced Troubleshooting
 
-1. **Database Optimization**
-```sql
--- Add indexes
-CREATE INDEX ON events (created_at);
-CREATE INDEX ON events (kind);
-
--- Clean up old events
-DELETE FROM events WHERE created_at < NOW() - INTERVAL '30 days';
-```
-
-2. **Application Optimization**
-```javascript
-// Implement caching
-const cache = new Map();
-
-// Batch processing
-const batchSize = 1000;
-for (let i = 0; i < events.length; i += batchSize) {
-    const batch = events.slice(i, i + batchSize);
-    await processBatch(batch);
+### SSL/TLS Configuration
+```nginx
+server {
+    listen 443 ssl;
+    server_name your.domain.com;
+    ssl_certificate /etc/letsencrypt/live/your.domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your.domain.com/privkey.pem;
 }
 ```
 
-## Common Error Messages
-
-### 1. "Failed to connect to relay"
-- Check if relay is running
-- Verify WebSocket URL
-- Check firewall settings
-
-### 2. "Event rejected"
-- Verify event format
-- Check signature
-- Confirm timestamp is valid
-
-### 3. "Database connection failed"
-- Check PostgreSQL status
-- Verify connection string
-- Check database permissions
-
-## Quick Reference
-
-### Server Commands
+### Database Maintenance
 ```bash
-# Start server
-npm run start:dev
-
-# Check status
-pm2 status
-
-# View logs
-pm2 logs
-
-# Restart server
-pm2 restart nostr-relay
-```
-
-### Database Commands
-```bash
-# Connect to database
-psql -U nostr_user -d nostr_relay
-
 # Backup database
 pg_dump -U nostr_user nostr_relay > backup.sql
 
-# Restore database
-psql -U nostr_user -d nostr_relay < backup.sql
+# Check indexes
+psql -U nostr_user -d nostr_relay -c "\di"
 ```
 
-### Test Commands
-```bash
-# Run all tests
-node test-nips.js
+## Getting Help
 
-# Test specific NIP
-node test-nips.js --nip=1
+If issues persist:
+1. Check the logs thoroughly
+2. Review recent changes
+3. Test in development environment
+4. Open an issue with:
+   - Error messages
+   - Relevant logs
+   - Steps to reproduce

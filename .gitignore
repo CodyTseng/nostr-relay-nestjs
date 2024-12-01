@@ -18,3 +18,10 @@ npm-debug.log*
 .vscode/
 *.swp
 *.swo
+
+# Build artifacts
+nest
+nostr-relay-nestjs@*
+
+# Test artifacts
+test/middleware/

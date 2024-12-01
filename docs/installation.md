@@ -1,88 +1,129 @@
 # Installation Guide
 
-This guide will help you set up the Nostr relay server for both development and production environments.
+## Overview
 
-## Prerequisites
+This guide focuses on setting up a local development environment for the Nostr relay. For production deployment, see:
+- [Deployment Guide](deployment.md) - General deployment instructions
+- [DigitalOcean Guide](deployment-digitalocean.md) - DigitalOcean-specific deployment
+- [Architecture Decisions](architecture_decisions.md) - Why we chose PM2 over Docker
+
+## Local Development Setup
+
+### Prerequisites
 
 - Node.js (v18+)
 - PostgreSQL (v15+)
 - npm or yarn
+- Git
 
-## Development Setup
+### Quick Start
 
-1. **Clone the Repository**
+1. **Clone and Setup**
 ```bash
+# Clone repository
 git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
 cd nostr-relay-nestjs
-```
 
-2. **Install Dependencies**
-```bash
+# Install dependencies
 npm install
-```
 
-3. **Configure Environment**
-```bash
+# Copy environment template
 cp .env.example .env
 ```
 
-Edit `.env` with your settings. Key configurations:
+2. **Configure Environment**
 
+Edit `.env` for local development:
 ```env
 # Database
 DATABASE_URL=postgres://user:password@localhost:5432/nostr_relay
 
-# WebSocket
+# Development Settings
 WS_PORT=3000
-
-# Security
-MIN_POW_DIFFICULTY=0
-MAX_WS_PAGE_SIZE=100
-MAX_WS_RESPONSE_SIZE=1000
-MAX_WS_OUTGOING_RATE_LIMIT=3
+MIN_POW_DIFFICULTY=0  # Reduced for development
 ```
 
-4. **Start PostgreSQL**
-Using Docker:
+3. **Database Setup**
+
+Choose one method:
+
 ```bash
+# Option 1: Local PostgreSQL
+createdb nostr_relay
+
+# Option 2: Docker (for development only)
 docker compose --profile dev up -d
 ```
 
-Or local PostgreSQL:
-```bash
-createdb nostr_relay
-```
+> ℹ️ While we use PM2 in production (see [Architecture Decisions](architecture_decisions.md#pm2-vs-docker-for-deployment)), 
+> Docker can be convenient for local development.
 
-5. **Run Migrations**
+4. **Run Migrations**
 ```bash
 npx ts-node scripts/migrate-to-latest.ts
 ```
 
-6. **Start Development Server**
+5. **Start Development Server**
 ```bash
 npm run start:dev
 ```
 
-## Testing
+## Development Workflow
 
-The relay includes a comprehensive test suite for NIP implementations:
+### 1. Code Changes
+- Make changes in `src/` directory
+- TypeScript compilation is automatic in dev mode
+- Changes trigger automatic restart
 
+### 2. Testing
 ```bash
-node test-nips.js
+# Run all NIP tests
+npm run test:nips
+
+# Run specific NIP test
+npm run test:nips -- --nip=1
 ```
 
-This will test all implemented NIPs:
+Implemented NIPs:
 - NIP-01: Basic protocol flow
 - NIP-02: Contact List
 - NIP-04: Encrypted Direct Message
-- NIP-05: DNS Mapping
 - NIP-11: Relay Information
-- NIP-13: Proof of Work
-- NIP-17: Report Events
-- NIP-22: Event Timestamps
-- NIP-26: Delegated Events
 - NIP-28: Public Chat
 - NIP-29: Group Chat
-- NIP-40: Expiration
 - NIP-42: Authentication
-- NIP-50: Search
+
+### 3. Local Verification
+1. Check WebSocket connection:
+```bash
+wscat -c ws://localhost:3000
+```
+
+2. Verify relay info:
+```bash
+curl http://localhost:3000
+```
+
+## Preparing for Deployment
+
+When ready to deploy:
+
+1. **Build the Project**
+```bash
+npm run build
+```
+
+2. **Test Production Build**
+```bash
+npm run start:prod
+```
+
+3. **Deploy to Production**
+See [Deployment Guide](deployment.md) for:
+- Server setup
+- PM2 configuration
+- Nginx setup
+- SSL/TLS configuration
+
+> 📚 Read [Architecture Decisions](architecture_decisions.md) to understand our deployment choices,
+> particularly why we chose PM2 over Docker for production.

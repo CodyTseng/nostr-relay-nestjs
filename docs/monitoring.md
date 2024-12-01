@@ -1,154 +1,166 @@
 # Monitoring Guide
 
-This guide covers monitoring and maintaining your Nostr relay.
+## Overview
 
-## System Monitoring
+Effective monitoring is crucial for maintaining a reliable Nostr relay. This guide covers:
+- System and resource monitoring
+- Performance tracking
+- Log analysis
+- Alerting systems
+- Maintenance procedures
 
-### Resource Usage
+For security responses to monitoring alerts, see [Security Guide](security.md).
 
-1. **CPU Usage**
+## Quick Reference
+
+Essential monitoring commands:
 ```bash
-pm2 monit
+# System Status
+pm2 status nostr-relay    # Basic process info
+pm2 monit                 # Real-time monitoring
+pm2 logs nostr-relay      # Live application logs
+
+# Database Health
+psql -U nostr_user -d nostr_relay -c "SELECT pg_size_pretty(pg_database_size('nostr_relay'));"
 ```
 
-2. **Memory Usage**
+## Core Monitoring Areas
+
+### 1. System Resources
+
+**Why Monitor**: Prevents system overload and ensures optimal performance.
+> 🔒 For resource-based attacks and mitigation, see [Security Guide - Infrastructure Security](security.md#2-infrastructure-security)
+
+**Key Metrics**:
+1. CPU Usage:
+   ```bash
+   pm2 monit              # Real-time process monitoring
+   top -u nostr_user      # System-wide view
+   ```
+
+2. Memory Usage:
+   ```bash
+   pm2 status            # Process memory
+   free -h               # System memory
+   ```
+
+3. Disk Usage:
+   ```bash
+   df -h                 # Overall disk usage
+   du -sh /path/to/relay # Application storage
+   ```
+
+### 2. Database Health
+
+**Why Monitor**: Database performance directly impacts relay responsiveness.
+> 🔒 For database security measures and access control, see [Security Guide - Data Protection](security.md#2-infrastructure-security)
+
+**Key Metrics**:
+1. Connection Status:
+   ```sql
+   -- Active connections and queries
+   SELECT * FROM pg_stat_activity 
+   WHERE datname = 'nostr_relay';
+   ```
+
+2. Storage Analysis:
+   ```sql
+   -- Database size
+   SELECT pg_size_pretty(pg_database_size('nostr_relay'));
+   
+   -- Table sizes and growth
+   SELECT 
+       relname as "Table",
+       pg_size_pretty(pg_total_relation_size(relid)) As "Size"
+   FROM pg_catalog.pg_statio_user_tables
+   ORDER BY pg_total_relation_size(relid) DESC;
+   ```
+
+### 3. Application Performance
+
+**Why Monitor**: Ensures optimal user experience and identifies bottlenecks.
+> 🔒 For WebSocket security and rate limiting, see [Security Guide - Access Control](security.md#1-access-control)
+
+**WebSocket Metrics**:
+```javascript
+// Key performance indicators
+const metrics = {
+    activeConnections: await relay.getConnectionCount(),
+    messageRate: await relay.getMessageRate(),
+    subscriptions: await relay.getSubscriptionCount()
+};
+```
+
+**Event Processing**:
+```javascript
+// Event statistics
+const eventMetrics = {
+    processingRate: await relay.getEventRate(),
+    sizeDistribution: await relay.getEventSizeDistribution(),
+    typeDistribution: await relay.getEventTypeDistribution()
+};
+```
+
+## Proactive Monitoring
+
+### 1. Log Analysis
+
+**Why Monitor**: Early problem detection and debugging.
+> 🔒 For log-based security analysis and incident response, see [Security Guide - Best Practices](security.md#best-practices)
+
+**Application Logs**:
 ```bash
-pm2 status
-```
-
-3. **Disk Usage**
-```bash
-df -h
-du -sh /path/to/relay
-```
-
-### Database Monitoring
-
-1. **Connection Status**
-```sql
-SELECT * FROM pg_stat_activity;
-```
-
-2. **Database Size**
-```sql
-SELECT pg_size_pretty(pg_database_size('nostr_relay'));
-```
-
-3. **Table Sizes**
-```sql
-SELECT 
-    relname as "Table",
-    pg_size_pretty(pg_total_relation_size(relid)) As "Size"
-FROM pg_catalog.pg_statio_user_tables
-ORDER BY pg_total_relation_size(relid) DESC;
-```
-
-## Performance Monitoring
-
-### WebSocket Metrics
-
-1. **Active Connections**
-```javascript
-const activeConnections = await relay.getConnectionCount();
-```
-
-2. **Message Rate**
-```javascript
-const messageRate = await relay.getMessageRate();
-```
-
-3. **Subscription Count**
-```javascript
-const subscriptions = await relay.getSubscriptionCount();
-```
-
-### Event Metrics
-
-1. **Event Processing Rate**
-```javascript
-const eventRate = await relay.getEventRate();
-```
-
-2. **Event Size Distribution**
-```javascript
-const eventSizes = await relay.getEventSizeDistribution();
-```
-
-3. **Event Types Distribution**
-```javascript
-const eventTypes = await relay.getEventTypeDistribution();
-```
-
-## Log Analysis
-
-### Application Logs
-
-1. **View Real-time Logs**
-```bash
+# Real-time monitoring
 pm2 logs nostr-relay
-```
 
-2. **Error Tracking**
-```bash
+# Error tracking
 pm2 logs nostr-relay --err --lines 100
-```
 
-3. **Log Patterns**
-```bash
+# Pattern analysis
 grep "error" /path/to/logs/nostr-relay.log
 ```
 
-### Nginx Logs
-
-1. **Access Logs**
+**Nginx Logs**:
 ```bash
+# Access patterns
 tail -f /var/log/nginx/access.log
-```
 
-2. **Error Logs**
-```bash
+# Error detection
 tail -f /var/log/nginx/error.log
 ```
 
-## Performance Optimization
+### 2. Performance Optimization
 
-### Database Optimization
+**Database Tuning**:
+> 🔒 For database security configuration, see [Security Guide - Infrastructure Security](security.md#2-infrastructure-security)
 
-1. **Index Maintenance**
 ```sql
+-- Regular maintenance
 ANALYZE events;
-REINDEX TABLE events;
-```
-
-2. **Vacuum**
-```sql
 VACUUM ANALYZE events;
+
+-- Performance analysis
+EXPLAIN ANALYZE SELECT * FROM events WHERE created_at > NOW() - INTERVAL '1 hour';
 ```
 
-3. **Query Performance**
-```sql
-EXPLAIN ANALYZE SELECT * FROM events WHERE ...;
-```
-
-### Application Optimization
-
-1. **Connection Pool**
+**Application Settings**:
 ```env
+# Connection management
 DATABASE_MIN_CONNECTIONS=2
 DATABASE_MAX_CONNECTIONS=10
-```
 
-2. **Cache Settings**
-```env
+# Caching strategy
 CACHE_TTL=3600
 CACHE_MAX_ITEMS=10000
 ```
 
-## Alerting
+## Automated Monitoring
 
-### System Alerts
+### 1. System Alerts
 
-1. **Disk Space**
+**Disk Space Monitor**:
+> 🔒 For disk-based attack prevention, see [Security Guide - Infrastructure Security](security.md#2-infrastructure-security)
+
 ```bash
 #!/bin/bash
 THRESHOLD=90
@@ -158,7 +170,9 @@ if [ $USAGE -gt $THRESHOLD ]; then
 fi
 ```
 
-2. **Memory Usage**
+**Memory Monitor**:
+> 🔒 For memory-based attack prevention, see [Security Guide - Infrastructure Security](security.md#2-infrastructure-security)
+
 ```bash
 #!/bin/bash
 FREE_MEM=$(free | grep Mem | awk '{print $4/$2 * 100.0}')
@@ -167,78 +181,59 @@ if [ $(echo "$FREE_MEM < 20" | bc) -eq 1 ]; then
 fi
 ```
 
-### Application Alerts
+### 2. Application Alerts
 
-1. **Connection Count**
+**Connection Monitoring**:
+> 🔒 For connection limits and rate limiting, see [Security Guide - Access Control](security.md#1-access-control)
+
 ```javascript
+// Alert on connection overload
 if (activeConnections > maxConnections) {
-    alert('Too many connections');
+    alert('Connection threshold exceeded');
 }
-```
 
-2. **Error Rate**
-```javascript
+// Alert on error spikes
 if (errorRate > threshold) {
-    alert('High error rate detected');
+    alert('Abnormal error rate detected');
 }
 ```
 
-## Maintenance Procedures
+## Maintenance Schedule
 
-### Regular Maintenance
+### Daily Tasks
+- Monitor system resources
+- Check error logs
+- Review connection patterns
+> 🔒 For daily security checks, see [Security Guide - Regular Maintenance](security.md#2-regular-maintenance)
 
-1. **Log Rotation**
-```bash
-/etc/logrotate.d/nostr-relay
-```
+### Weekly Tasks
+- Analyze performance metrics
+- Review database growth
+- Check backup integrity
+> 🔒 For weekly security updates, see [Security Guide - Regular Maintenance](security.md#2-regular-maintenance)
 
-2. **Database Cleanup**
-```sql
-DELETE FROM events WHERE created_at < NOW() - INTERVAL '30 days';
-```
+### Monthly Tasks
+- Database optimization
+- Log rotation
+- Storage cleanup
+> 🔒 For monthly security audits, see [Security Guide - Regular Maintenance](security.md#2-regular-maintenance)
 
-3. **Backup Verification**
-```bash
-pg_dump -U nostr_user nostr_relay > backup.sql
-psql -U nostr_user -d nostr_relay_test < backup.sql
-```
+## Best Practices
 
-### Emergency Procedures
+1. **Proactive Monitoring**
+   - Set up alerts before issues occur
+   - Monitor trends, not just current values
+   - Keep historical metrics for analysis
+   > 🔒 See [Security Guide - Best Practices](security.md#best-practices) for security-focused monitoring
 
-1. **Quick Restart**
-```bash
-pm2 restart nostr-relay
-```
+2. **Resource Management**
+   - Set appropriate thresholds
+   - Monitor resource trends
+   - Plan for scaling
+   > 🔒 See [Security Guide - Infrastructure Security](security.md#2-infrastructure-security) for resource protection
 
-2. **Database Recovery**
-```bash
-pg_restore -U nostr_user -d nostr_relay backup.sql
-```
-
-3. **Service Recovery**
-```bash
-sudo systemctl restart nginx
-pm2 reload nostr-relay
-```
-
-## Documentation
-
-### Metrics Documentation
-
-1. **System Metrics**
-- CPU Usage
-- Memory Usage
-- Disk Usage
-- Network I/O
-
-2. **Application Metrics**
-- Active Connections
-- Message Rate
-- Event Rate
-- Error Rate
-
-3. **Database Metrics**
-- Query Performance
-- Connection Count
-- Table Sizes
-- Index Usage
+3. **Performance Optimization**
+   - Regular database maintenance
+   - Query optimization
+   - Connection pool tuning
+   > 🔒 See [Security Guide - Data Validation](security.md#3-data-validation) for secure optimization

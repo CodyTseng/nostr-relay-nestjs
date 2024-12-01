@@ -1,176 +1,186 @@
 # Security Guide
 
-This guide covers security best practices for running a Nostr relay in production.
+## Overview
 
-## WebSocket Security
+This guide outlines essential security measures for running a Nostr relay in production. It covers:
+- Access control and rate limiting
+- Network and infrastructure security
+- Data validation and protection
+- Monitoring and maintenance
 
-### Connection Limits
+For monitoring implementation and alerts, see [Monitoring Guide](monitoring.md).
+
+## Quick Setup
+
+Essential security configurations to implement immediately:
 ```env
+# Basic Protection
 WS_MAX_CONNECTIONS_PER_IP=10
+WS_MAX_MESSAGE_SIZE=65536
+WS_RATE_LIMIT_COUNT=30
 ```
-Limits concurrent connections from a single IP address to prevent DoS attacks.
+> Monitor these limits using [WebSocket Metrics](monitoring.md#3-application-performance)
 
-### Message Size Restrictions
+## Core Security Measures
+
+### 1. Access Control
+
+**WebSocket Limits:**
+> Track connection patterns in [Monitoring Guide - Application Performance](monitoring.md#3-application-performance)
+
 ```env
+# Connection Control
+WS_MAX_CONNECTIONS_PER_IP=10
+WS_AUTH_TIMEOUT=30000
+
+# Message Control
 WS_MAX_MESSAGE_SIZE=65536
 WS_MAX_EVENT_SIZE=32768
 ```
-Prevents memory exhaustion from large messages.
 
-### Authentication Timeouts
-```env
-WS_AUTH_TIMEOUT=30000
-```
-Disconnects unauthenticated clients after timeout.
+**Rate Limiting:**
+> Monitor rate limit effectiveness in [Application Alerts](monitoring.md#2-application-alerts)
 
-### Subscription Controls
 ```env
+# Event Submission
+WS_RATE_LIMIT_TTL=60000
+WS_RATE_LIMIT_COUNT=30
+
+# Subscription Control
 WS_MAX_SUBSCRIPTION_FILTERS=10
 WS_MAX_FILTER_LENGTH=1024
 ```
-Prevents abuse through excessive subscriptions.
 
-## Rate Limiting
+### 2. Infrastructure Security
 
-### Event Rate Limiting
+**Database Protection:**
+> Track database health in [Monitoring Guide - Database Health](monitoring.md#2-database-health)
+
 ```env
-WS_RATE_LIMIT_TTL=60000
-WS_RATE_LIMIT_COUNT=30
-```
-Limits event submissions per time window.
-
-### Request Rate Limiting
-```env
-MAX_WS_OUTGOING_RATE_LIMIT=3
-```
-Controls outgoing message rate.
-
-## Database Security
-
-### Connection Management
-```env
+# Connection Pool
 DATABASE_MIN_CONNECTIONS=2
 DATABASE_MAX_CONNECTIONS=10
 DATABASE_IDLE_TIMEOUT=10000
-```
-Prevents connection exhaustion.
 
-### Query Protection
-```env
+# Query Safety
 DATABASE_STATEMENT_TIMEOUT=30000
 DATABASE_QUERY_TIMEOUT=15000
-```
-Prevents resource exhaustion from long queries.
-
-### SSL Enforcement
-```env
 DATABASE_SSL=true
 ```
-Encrypts database connections.
 
-## Network Security
+**Network Security:**
+> Monitor network patterns in [System Resources](monitoring.md#1-system-resources)
 
-### Nginx Configuration
 ```nginx
-# Rate limiting
-limit_req_zone $binary_remote_addr zone=nostr_limit:10m rate=10r/s;
-
-# WebSocket timeouts
-proxy_read_timeout 300;
-proxy_connect_timeout 300;
-proxy_send_timeout 300;
-
-# Headers
+# Nginx Security Headers
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 add_header X-Frame-Options "SAMEORIGIN" always;
-add_header X-XSS-Protection "1; mode=block" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+# Rate Limiting
+limit_req_zone $binary_remote_addr zone=nostr_limit:10m rate=10r/s;
 ```
 
-### Firewall Configuration
+**Firewall Rules:**
 ```bash
-# Allow SSH
+# Basic Protection
 sudo ufw allow 22/tcp
-
-# Allow HTTP/HTTPS
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-
-# Allow PostgreSQL only from localhost
 sudo ufw allow from 127.0.0.1 to any port 5432
 ```
 
-## Event Validation
+### 3. Data Validation
 
-### Proof of Work
+**Event Validation:**
+> Track validation failures in [Event Processing](monitoring.md#event-processing)
+
+- Size Limits:
+  ```env
+  WS_MAX_EVENT_SIZE=32768  # 32KB max event size
+  MAX_CONTENT_LENGTH=16384 # 16KB content length
+  MAX_TAG_COUNT=2000      # Maximum tags per event
+  ```
+- Content Checks:
+  - JSON format validation
+  - Required fields verification
+  - Tag format validation
+  - Timestamp checks
+
+**Proof of Work:**
 ```env
-MIN_POW_DIFFICULTY=20
+MIN_POW_DIFFICULTY=20  # Adjust based on your needs
 ```
-Requires computational work for event submission.
 
-### Event Size Limits
-- Maximum event size: 32KB
-- Maximum content length: 16KB
-- Maximum tag count: 2000
+## Monitoring & Maintenance
 
-### Content Validation
-- Strict JSON format checking
-- Required field validation
-- Tag format validation
-- Timestamp validation
+### 1. Active Monitoring
+> See complete monitoring setup in [Monitoring Guide](monitoring.md)
 
-## Monitoring and Alerts
-
-### Log Monitoring
-```javascript
-// Enable detailed logging
+**Logging:**
+```env
 LOG_LEVEL=debug
 LOG_FORMAT=json
-
-// Monitor for suspicious patterns
 LOG_ALERTS=true
 ```
 
-### Performance Monitoring
+**Metrics:**
 ```env
 ENABLE_METRICS=true
 METRICS_PORT=9090
-```
-
-### Health Checks
-```env
 HEALTH_CHECK_PATH=/health
 HEALTH_CHECK_INTERVAL=60000
 ```
 
-## Backup Security
+### 2. Regular Maintenance
 
-### Database Backups
-- Encrypted backups
-- Secure transfer protocols
-- Regular backup testing
-- Offsite storage
+**Backup Strategy:**
+> Monitor backup success in [Maintenance Schedule](monitoring.md#maintenance-schedule)
 
-### Configuration Backups
-- Version control for configs
-- Encrypted sensitive data
-- Regular audits
+- Database:
+  - Encrypted backups
+  - Secure transfers
+  - Regular testing
+- Configuration:
+  - Version control
+  - Encrypted secrets
+  - Regular audits
 
-## Regular Maintenance
+**Security Updates:**
+> Track system health in [System Resources](monitoring.md#1-system-resources)
 
-### Updates
-- Regular dependency updates
-- Security patch monitoring
-- Version compatibility checks
+1. Weekly Tasks:
+   - Dependency updates
+   - Security patches
+   - Log review
 
-### Audits
-- Access log review
-- Rate limit effectiveness
-- Resource usage patterns
-- Connection patterns
+2. Monthly Tasks:
+   - Access pattern review
+   - Rate limit adjustments
+   - Resource usage audit
 
-### Key Rotation
-- Regular SSL certificate renewal
-- Database credential rotation
-- API key rotation
+3. Quarterly Tasks:
+   - SSL certificate renewal
+   - Credential rotation
+   - Security policy review
+
+## Best Practices
+
+1. **Defense in Depth:**
+   > Monitor all layers in [Core Monitoring Areas](monitoring.md#core-monitoring-areas)
+   - Multiple security layers
+   - No single point of failure
+   - Regular security reviews
+
+2. **Minimal Exposure:**
+   > Track exposure in [System Alerts](monitoring.md#1-system-alerts)
+   - Close unused ports
+   - Restrict database access
+   - Minimize attack surface
+
+3. **Incident Response:**
+   > Set up alerts using [Automated Monitoring](monitoring.md#automated-monitoring)
+   - Monitor for anomalies
+   - Have response procedures
+   - Regular backup testing
