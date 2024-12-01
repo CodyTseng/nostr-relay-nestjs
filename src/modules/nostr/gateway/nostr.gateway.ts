@@ -47,10 +47,18 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
-      // The IP should already be set by the CustomWebSocketAdapter
-      const ip = client._ip || 'unknown';
+      // Wait for the IP to be set by the adapter (max 1 second)
+      const maxAttempts = 10;
+      let attempts = 0;
+      
+      while (!client._ip && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms each attempt
+        attempts++;
+      }
 
-      this.logger.debug(`New WebSocket connection from IP: ${ip}`);
+      const ip = client._ip || 'unknown';
+      
+      this.logger.debug(`New WebSocket connection from IP: ${ip} (waited ${attempts * 100}ms)`);
       this.nostrRelayService.handleConnection(client, ip);
     } catch (error) {
       this.logger.error('Error handling connection');
