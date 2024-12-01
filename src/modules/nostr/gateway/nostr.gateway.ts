@@ -47,20 +47,36 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
-      this.logger.debug('Gateway handling connection', {
-        connectionState: client._connectionState
-      });
-
-      // Wait a tiny bit more if needed (max 100ms)
-      let attempts = 0;
-      while (!client._connectionState.ipSet && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        attempts++;
-        this.logger.debug(`Waiting for IP (attempt ${attempts})`, {
-          connectionState: client._connectionState
+      // Initialize a default state if it doesn't exist
+      if (!client._connectionState) {
+        Object.defineProperty(client, '_connectionState', {
+          value: {
+            ip: 'unknown',
+            ipSet: false,
+            setupComplete: false
+          },
+          writable: true,
+          enumerable: true,
+          configurable: true
         });
       }
 
+      this.logger.debug('Gateway handling connection');
+      this.logger.debug(client._connectionState);
+
+      // Wait for the connection state to be ready
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (!client._connectionState?.setupComplete && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 50)); // Wait 50ms between checks
+        attempts++;
+      }
+
+      if (!client._connectionState?.setupComplete) {
+        throw new Error('Connection setup did not complete in time');
+      }
+
+      // Now we can safely use the connection state
       const ip = client._connectionState.ip || 'unknown';
       this.logger.debug(`New WebSocket connection from IP: ${ip}`, {
         connectionState: client._connectionState,
