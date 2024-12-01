@@ -61,16 +61,14 @@ export class CustomWebSocketAdapter extends WsAdapter {
       this.logger.debug('WebSocket adapter starting connection setup');
       
       // Initialize connection state immediately
-      Object.defineProperty(ws, '_connectionState', {
-        value: {
-          ip: 'unknown',
-          ipSet: false,
-          setupComplete: false
-        },
-        writable: true,
-        enumerable: true,
-        configurable: true
-      });
+      const state = {
+        ip: 'unknown',
+        ipSet: false,
+        setupComplete: false
+      };
+      
+      // Set the state object directly on the socket
+      ws._connectionState = state;
 
       // Store the request on the socket for potential future use
       ws._request = req;
@@ -78,21 +76,21 @@ export class CustomWebSocketAdapter extends WsAdapter {
       
       // Extract IP from headers
       if (req.headers['x-real-ip']) {
-        ws._connectionState.ip = Array.isArray(req.headers['x-real-ip'])
+        state.ip = Array.isArray(req.headers['x-real-ip'])
           ? req.headers['x-real-ip'][0]
           : req.headers['x-real-ip'];
       } else if (req.headers['x-forwarded-for']) {
         const forwarded = req.headers['x-forwarded-for'];
-        ws._connectionState.ip = Array.isArray(forwarded)
+        state.ip = Array.isArray(forwarded)
           ? forwarded[0].split(',')[0].trim()
           : forwarded.split(',')[0].trim();
       } else if (req.socket?.remoteAddress) {
-        ws._connectionState.ip = req.socket.remoteAddress;
+        state.ip = req.socket.remoteAddress;
       }
       
       // Mark as set and complete
-      ws._connectionState.ipSet = true;
-      ws._connectionState.setupComplete = true;
+      state.ipSet = true;
+      state.setupComplete = true;
       
       this.logger.debug('WebSocket connection setup complete', {
         headers: req.headers,

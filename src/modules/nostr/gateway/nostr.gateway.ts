@@ -47,29 +47,31 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
-      // Initialize a default state if it doesn't exist
+      this.logger.debug('Gateway handling connection');
+      
+      // Initialize state if needed
       if (!client._connectionState) {
-        Object.defineProperty(client, '_connectionState', {
-          value: {
-            ip: 'unknown',
-            ipSet: false,
-            setupComplete: false
-          },
-          writable: true,
-          enumerable: true,
-          configurable: true
-        });
+        client._connectionState = {
+          ip: 'unknown',
+          ipSet: false,
+          setupComplete: false
+        };
       }
 
-      this.logger.debug('Gateway handling connection');
-      this.logger.debug(client._connectionState);
+      // Log the current state
+      this.logger.debug('Connection state:', client._connectionState);
 
       // Wait for the connection state to be ready
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20; 
       while (!client._connectionState?.setupComplete && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 50)); // Wait 50ms between checks
+        await new Promise(resolve => setTimeout(resolve, 100)); 
         attempts++;
+        
+        // Log each attempt
+        this.logger.debug(`Waiting for setup (attempt ${attempts})`, {
+          connectionState: client._connectionState
+        });
       }
 
       if (!client._connectionState?.setupComplete) {
@@ -77,12 +79,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Now we can safely use the connection state
-      const ip = client._connectionState.ip || 'unknown';
-      this.logger.debug(`New WebSocket connection from IP: ${ip}`, {
-        connectionState: client._connectionState,
-        attempts
-      });
-      
+      const ip = client._connectionState.ip;
       this.nostrRelayService.handleConnection(client, ip);
     } catch (error) {
       this.logger.error('Error handling connection');
