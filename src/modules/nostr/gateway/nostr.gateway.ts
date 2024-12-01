@@ -47,38 +47,8 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
-      // Extract IP from headers directly
-      let ip = 'unknown';
-      
-      // Access headers from the client's _request property if context is undefined
-      const headers = context?.headers || client._request?.headers;
-      
-      if (headers) {
-        if (headers['x-real-ip']) {
-          ip = Array.isArray(headers['x-real-ip'])
-            ? headers['x-real-ip'][0]
-            : headers['x-real-ip'];
-        } else if (headers['x-forwarded-for']) {
-          const forwarded = headers['x-forwarded-for'];
-          ip = Array.isArray(forwarded)
-            ? forwarded[0].split(',')[0].trim()
-            : forwarded.split(',')[0].trim();
-        }
-      }
-      
-      // Fallback to socket remote address
-      if (ip === 'unknown' && client._request?.socket?.remoteAddress) {
-        ip = client._request.socket.remoteAddress;
-      }
-
-      // Store the IP on the client for future use
-      client._ip = ip;
-
-      this.logger.debug('Connection established:', {
-        headers: headers,
-        remoteAddress: client._request?.socket?.remoteAddress,
-        extractedIp: ip
-      });
+      // The IP should already be set by the CustomWebSocketAdapter
+      const ip = client._ip || 'unknown';
 
       this.logger.debug(`New WebSocket connection from IP: ${ip}`);
       this.nostrRelayService.handleConnection(client, ip);
