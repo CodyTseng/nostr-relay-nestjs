@@ -28,6 +28,14 @@ npm install
 echo "Building application..."
 npm run build
 
+echo "Copying views to dist..."
+mkdir -p dist/views
+cp -r src/views/* dist/views/
+
+echo "Setting proper permissions..."
+chown -R root:root .
+chmod -R 755 .
+
 echo "Starting service..."
 NODE_ENV=production pm2 start dist/src/main.js --name nostr-relay
 
