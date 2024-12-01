@@ -1,123 +1,89 @@
 import { ConfigService } from '@nestjs/config';
-import { INestApplicationContext } from '@nestjs/common';
-import { WsAdapter } from '@nestjs/platform-ws';
+import { INestApplicationContext, Logger } from '@nestjs/common';
+import { WebSocketAdapter, WsMessageHandler } from '@nestjs/common';
 import * as WebSocket from 'ws';
 import { Config } from '@/config';
-import { ConnectionManagerService } from '@/modules/connection-manager/connection-manager.service';
 import { IncomingMessage } from 'http';
-import { Logger } from '@nestjs/common';
-
-// Basic message types for NIP-42
-interface AuthMessage {
-  type: 'auth';
-  data: {
-    challenge: string;
-  };
-}
-
-interface NostrMessage {
-  type: 'nostr';
-  data: any;
-}
-
-interface ConnectionState {
-  ip: string;
-  ipSet: boolean;
-  setupComplete: boolean;
-}
+import { Observable } from 'rxjs';
 
 export interface EnhancedWebSocket extends WebSocket {
-  id?: string;
-  authenticated?: boolean;
-  pubkey?: string;
   _request?: IncomingMessage;
-  _connectionState: ConnectionState;
+  _clientId?: string;
 }
 
-export class CustomWebSocketAdapter extends WsAdapter {
-  private wsServer: WebSocket.Server;
-  private readonly appContext: INestApplicationContext;
+export class CustomWebSocketAdapter implements WebSocketAdapter {
   protected readonly logger = new Logger(CustomWebSocketAdapter.name);
+  private wsServer: WebSocket.Server;
 
   constructor(
-    app: INestApplicationContext,
-    private readonly connectionManager: ConnectionManagerService,
+    private readonly app: INestApplicationContext,
     private readonly configService: ConfigService<Config, true>,
-  ) {
-    super(app);
-    this.appContext = app;
-  }
+  ) {}
 
   create(port: number, options: any = {}): any {
-    const server = (this.appContext as any).getHttpServer();
-    
+    const server = (this.app as any).getHttpServer();
     this.wsServer = new WebSocket.Server({
       server,
       ...options,
     });
 
-    // Handle connection event to attach request to socket
-    this.wsServer.on('connection', async (ws: EnhancedWebSocket, req: IncomingMessage) => {
+    this.wsServer.on('connection', (ws: EnhancedWebSocket, req: IncomingMessage) => {
       this.logger.debug('WebSocket adapter starting connection setup');
       
-      // Initialize connection state immediately
-      const state = {
-        ip: 'unknown',
-        ipSet: false,
-        setupComplete: false
-      };
-      
-      // Set the state object directly on the socket
-      ws._connectionState = state;
-
-      // Store the request on the socket for potential future use
+      // Generate a unique ID for this connection
+      const clientId = Math.random().toString(36).substring(7);
+      ws._clientId = clientId;
       ws._request = req;
-      (ws as any).upgradeReq = req;
-      
-      // Extract IP from headers
-      if (req.headers['x-real-ip']) {
-        state.ip = Array.isArray(req.headers['x-real-ip'])
-          ? req.headers['x-real-ip'][0]
-          : req.headers['x-real-ip'];
-      } else if (req.headers['x-forwarded-for']) {
-        const forwarded = req.headers['x-forwarded-for'];
-        state.ip = Array.isArray(forwarded)
-          ? forwarded[0].split(',')[0].trim()
-          : forwarded.split(',')[0].trim();
-      } else if (req.socket?.remoteAddress) {
-        state.ip = req.socket.remoteAddress;
-      }
-      
-      // Mark as set and complete
-      state.ipSet = true;
-      state.setupComplete = true;
-      
+
       this.logger.debug('WebSocket connection setup complete', {
-        headers: req.headers,
-        remoteAddress: req.socket?.remoteAddress,
-        connectionState: ws._connectionState
+        clientId,
+        remoteAddress: req.socket?.remoteAddress
       });
     });
 
-    return server;
+    return this.wsServer;
+  }
+
+  bindClientConnect(server: WebSocket.Server, callback: Function): void {
+    server.on('connection', (client: WebSocket, req: IncomingMessage) => {
+      callback(client, req);
+    });
   }
 
   bindMessageHandlers(
-    client: EnhancedWebSocket,
-    handlers: any[],
-    transform: any,
+    client: WebSocket,
+    handlers: WsMessageHandler<any>[],
+    transform: (data: any) => Observable<any>,
   ): void {
-    const { messageHandlers } = transform;
     client.on('message', (data: WebSocket.Data) => {
+      let message;
       try {
-        const message = JSON.parse(data.toString());
-        const messageHandler = messageHandlers.get(message[0]);
-        if (messageHandler) {
-          messageHandler.callback(client, message);
-        }
-      } catch (error) {
-        console.error('Error handling message:', error);
+        message = JSON.parse(data.toString());
+      } catch (e) {
+        message = data; // Raw message, pass as is
       }
+
+      handlers.forEach(handler => {
+        try {
+          handler.message(message);
+        } catch (error) {
+          this.logger.error(`Error handling message: ${error}`);
+        }
+      });
     });
+
+    // Handle connection close
+    client.on('close', () => {
+      this.logger.debug(`Client ${(client as EnhancedWebSocket)._clientId} disconnected`);
+    });
+
+    // Handle errors
+    client.on('error', (err) => {
+      this.logger.error(`WebSocket error for client ${(client as EnhancedWebSocket)._clientId}:`, err);
+    });
+  }
+
+  close(server: WebSocket.Server): void {
+    server.close();
   }
 }

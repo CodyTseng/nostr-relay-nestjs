@@ -40,7 +40,7 @@ async function bootstrap() {
     app.enableCors();
     app.use(ExpressStatic(join(__dirname, '..', 'public')));
     
-    const wsAdapter = new CustomWebSocketAdapter(app, connectionManager, configService);
+    const wsAdapter = new CustomWebSocketAdapter(app, configService);
     app.useWebSocketAdapter(wsAdapter);
 
     // Setup Swagger if enabled
