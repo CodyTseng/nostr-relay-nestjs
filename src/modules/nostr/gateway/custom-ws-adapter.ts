@@ -59,8 +59,11 @@ export class CustomWebSocketAdapter implements WebSocketAdapter {
       let message;
       try {
         message = JSON.parse(data.toString());
+        this.logger.debug(`Received message from client ${(client as EnhancedWebSocket)._clientId}:`, 
+          Array.isArray(message) ? message[0] : 'unknown type');
       } catch (e) {
         message = data; // Raw message, pass as is
+        this.logger.debug(`Received raw message from client ${(client as EnhancedWebSocket)._clientId}`);
       }
 
       try {
@@ -70,7 +73,7 @@ export class CustomWebSocketAdapter implements WebSocketAdapter {
           handler.callback(transformed);
         });
       } catch (error) {
-        this.logger.error(`Error handling message: ${error}`);
+        this.logger.error(`Error handling message from client ${(client as EnhancedWebSocket)._clientId}: ${error}`);
       }
     });
 
