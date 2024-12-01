@@ -23,6 +23,7 @@ export interface EnhancedWebSocket extends WebSocket {
   id?: string;
   authenticated?: boolean;
   pubkey?: string;
+  _request?: Request;
 }
 
 export class CustomWebSocketAdapter extends WsAdapter {
@@ -43,10 +44,12 @@ export class CustomWebSocketAdapter extends WsAdapter {
     this.wsServer = new WebSocket.Server({
       server,
       ...options,
-      verifyClient: (info: { origin: string; secure: boolean; req: Request }) => {
-        // Store the request object so it can be accessed in handleConnection
-        (info.req as any).wsRequest = info.req;
-        return true;
+      verifyClient: (info: { origin: string; secure: boolean; req: Request }, done) => {
+        // Store the request object directly on the socket when it connects
+        this.wsServer.on('connection', (ws: EnhancedWebSocket, req: Request) => {
+          ws._request = req;
+        });
+        done(true);
       },
     });
 

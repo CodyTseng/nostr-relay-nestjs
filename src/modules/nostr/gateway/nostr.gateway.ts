@@ -48,9 +48,14 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: EnhancedWebSocket, context: any) {
     try {
       let ip = 'unknown';
-      const request = context?.request || context?.req || (context as any)?.wsRequest;
-      
-      if (request?.headers?.['x-forwarded-for']) {
+      // Try to get the request from various possible locations
+      const request = client._request || 
+                     context?.request || 
+                     context?.req;
+
+      if (request?.headers?.['x-real-ip']) {
+        ip = request.headers['x-real-ip'];
+      } else if (request?.headers?.['x-forwarded-for']) {
         ip = request.headers['x-forwarded-for'].toString().split(',')[0].trim();
       } else if (request?.socket?.remoteAddress) {
         ip = request.socket.remoteAddress;
