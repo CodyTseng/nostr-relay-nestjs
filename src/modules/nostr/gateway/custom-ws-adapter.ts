@@ -4,7 +4,7 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import * as WebSocket from 'ws';
 import { Config } from '@/config';
 import { ConnectionManagerService } from '@/modules/connection-manager/connection-manager.service';
-import { Request } from 'express';
+import { IncomingMessage } from 'http';
 
 // Basic message types for NIP-42
 interface AuthMessage {
@@ -23,6 +23,7 @@ export interface EnhancedWebSocket extends WebSocket {
   id?: string;
   authenticated?: boolean;
   pubkey?: string;
+  _request?: IncomingMessage;
 }
 
 export class CustomWebSocketAdapter extends WsAdapter {
@@ -43,6 +44,17 @@ export class CustomWebSocketAdapter extends WsAdapter {
     this.wsServer = new WebSocket.Server({
       server,
       ...options,
+      verifyClient: (info, cb) => {
+        // Store the request object directly in the socket when it's created
+        (info.req as any).socket.websocket = info.req;
+        if (cb) cb(true);
+        return true;
+      }
+    });
+
+    // Handle connection event to attach request to socket
+    this.wsServer.on('connection', (ws: EnhancedWebSocket, req: IncomingMessage) => {
+      ws._request = req;
     });
 
     return server;

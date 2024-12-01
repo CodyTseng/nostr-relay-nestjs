@@ -9,7 +9,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { createOutgoingNoticeMessage } from '@nostr-relay/common';
-import { Request } from 'express';
+import { IncomingMessage } from 'http';
 import { Logger } from '@nestjs/common';
 import { Config } from 'src/config';
 import { MessageHandlingConfig } from 'src/config/message-handling.config';
@@ -33,9 +33,9 @@ import { NostrRelayService } from '../services/nostr-relay.service';
 @UseGuards(WsThrottlerGuard)
 export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly messageHandlingConfig: MessageHandlingConfig;
+  private readonly logger = new Logger(NostrGateway.name);
 
   constructor(
-    private readonly logger: Logger,
     private readonly eventService: EventService,
     private readonly nostrRelayService: NostrRelayService,
     configService: ConfigService<Config, true>,
@@ -48,13 +48,14 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: EnhancedWebSocket, context: any) {
     try {
       let ip = 'unknown';
-      const request = context?.request || context?.req;
+      const request = client._request || context?.request || context?.req;
 
       this.logger.debug('Connection context:', {
         hasRequest: !!request,
         headers: request?.headers,
         remoteAddress: request?.socket?.remoteAddress,
         rawHeaders: request?.rawHeaders,
+        clientRequest: !!client._request
       });
 
       if (request?.headers?.['x-real-ip']) {
