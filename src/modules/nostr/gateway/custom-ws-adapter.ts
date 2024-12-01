@@ -45,47 +45,20 @@ export class CustomWebSocketAdapter extends WsAdapter {
   create(port: number, options: any = {}): any {
     const server = (this.appContext as any).getHttpServer();
     
-    // Create WebSocket server with custom client tracking
     this.wsServer = new WebSocket.Server({
       server,
       ...options,
-      verifyClient: (info, cb) => {
-        // Extract and store IP before connection is established
-        let ip = 'unknown';
-        if (info.req.headers['x-real-ip']) {
-          ip = Array.isArray(info.req.headers['x-real-ip']) 
-            ? info.req.headers['x-real-ip'][0] 
-            : info.req.headers['x-real-ip'];
-        } else if (info.req.headers['x-forwarded-for']) {
-          const forwarded = info.req.headers['x-forwarded-for'];
-          ip = Array.isArray(forwarded)
-            ? forwarded[0].split(',')[0].trim()
-            : forwarded.split(',')[0].trim();
-        } else if (info.req.socket?.remoteAddress) {
-          ip = info.req.socket.remoteAddress;
-        }
-        
-        // Store IP on request object to access it in connection handler
-        (info.req as any)._clientIp = ip;
-        
-        // Always accept the connection
-        cb(true);
-      }
     });
 
-    // Handle connection event to attach request and IP to socket
+    // Handle connection event to attach request to socket
     this.wsServer.on('connection', (ws: EnhancedWebSocket, req: IncomingMessage) => {
-      // Store both the request and its headers directly on the socket
+      // Store the request on the socket for potential future use
       ws._request = req;
       (ws as any).upgradeReq = req;
       
-      // Get the IP we stored during verification
-      ws._ip = (req as any)._clientIp || 'unknown';
-      
       this.logger.debug('WebSocket connection established', {
         headers: req.headers,
-        remoteAddress: req.socket?.remoteAddress,
-        assignedIp: ws._ip
+        remoteAddress: req.socket?.remoteAddress
       });
     });
 
