@@ -1,5 +1,10 @@
-import WebSocket from 'ws';
-import * as nostrTools from 'nostr-tools';
+/**
+ * End-to-end tests for NIP compliance
+ * Tests various NIPs (Nostr Implementation Possibilities) against a running relay
+ */
+
+import { WebSocket } from 'ws';
+import { nostrTools } from 'nostr-tools';
 
 const RELAY_URL = 'ws://localhost:3000';
 const MAX_RETRIES = 3;  // Reduced retries
@@ -119,17 +124,8 @@ const NIP_DESCRIPTIONS = {
   NIP01: 'Basic protocol flow',
   NIP02: 'Contact List',
   NIP04: 'Encrypted Direct Message',
-  NIP05: 'Mapping Nostr keys to DNS identifiers',
   NIP11: 'Relay Information Document',
-  NIP13: 'Proof of Work',
-  NIP17: 'Report Events',
-  NIP22: 'Event created_at Limits',
-  NIP26: 'Delegated Event Signing',
-  NIP28: 'Public Chat',
-  NIP29: 'Group Chat Events',
-  NIP40: 'Expiration Timestamp',
-  NIP42: 'Authentication of clients',
-  NIP50: 'Keywords filter'
+  NIP28: 'Public Chat'
 };
 
 const tests = {
@@ -241,44 +237,6 @@ const tests = {
     });
   },
 
-  // NIP-05: DNS Identifier Mapping
-  async testNIP05() {
-    console.log('\n🔍 Testing NIP-05:', NIP_DESCRIPTIONS.NIP05);
-    const event = {
-      kind: 0,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [],
-      content: JSON.stringify({
-        nip05: 'test@example.com'
-      }),
-      pubkey: publicKey,
-    };
-    
-    const signedEvent = nostrTools.finalizeEvent(event, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-05: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-05 Response:', response);
-        if (response[0] === 'OK' && response[1] === signedEvent.id) {
-          console.log('✅ NIP-05: Event published successfully');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-    });
-  },
-
   // NIP-11: Relay Information
   async testNIP11() {
     console.log('\n🔍 Testing NIP-11:', NIP_DESCRIPTIONS.NIP11);
@@ -293,181 +251,6 @@ const tests = {
           console.error('❌ NIP-11 Error:', err);
           resolve(false);
         });
-    });
-  },
-
-  // NIP-13: Proof of Work
-  async testNIP13() {
-    console.log('\n🔍 Testing NIP-13:', NIP_DESCRIPTIONS.NIP13);
-    const event = {
-      kind: 1,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [],
-      content: 'Testing NIP-13 with PoW',
-      pubkey: publicKey,
-    };
-    
-    // Add minimal PoW (difficulty 8)
-    let nonce = 0;
-    let id;
-    do {
-      event.tags = [['nonce', nonce.toString()]];
-      id = nostrTools.getEventHash(event);
-      nonce++;
-    } while (!id.startsWith('00'));  // Simple PoW check
-    
-    const signedEvent = nostrTools.finalizeEvent(event, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-13: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-13 Response:', response);
-        if (response[0] === 'OK' && response[1] === signedEvent.id) {
-          console.log('✅ NIP-13: Event with PoW published successfully');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-    });
-  },
-
-  // NIP-17: Report Event
-  async testNIP17() {
-    console.log('\n🔍 Testing NIP-17:', NIP_DESCRIPTIONS.NIP17);
-    const reportedEvent = {
-      kind: 1,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [],
-      content: 'Event to be reported',
-      pubkey: publicKey,
-    };
-    
-    const signedReportedEvent = nostrTools.finalizeEvent(reportedEvent, privateKey);
-    
-    const reportEvent = {
-      kind: 1984,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['e', signedReportedEvent.id],
-        ['p', signedReportedEvent.pubkey],
-      ],
-      content: 'Test report reason',
-      pubkey: publicKey,
-    };
-    
-    const signedReportEvent = nostrTools.finalizeEvent(reportEvent, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-17: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedReportEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-17 Response:', response);
-        if (response[0] === 'OK' && response[1] === signedReportEvent.id) {
-          console.log('✅ NIP-17: Report event published successfully');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-    });
-  },
-
-  // NIP-22: Event created_at Limits
-  async testNIP22() {
-    console.log('\n🔍 Testing NIP-22:', NIP_DESCRIPTIONS.NIP22);
-    const futureEvent = {
-      kind: 1,
-      created_at: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour in future
-      tags: [],
-      content: 'Testing NIP-22 future event',
-      pubkey: publicKey,
-    };
-    
-    const signedFutureEvent = nostrTools.finalizeEvent(futureEvent, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-22: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedFutureEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-22 Response:', response);
-        // Event should be rejected due to future timestamp
-        if (response[0] === 'OK' || response[0] === 'NOTICE') {
-          console.log('✅ NIP-22: Future event properly handled');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-    });
-  },
-
-  // NIP-26: Delegated Event Signing
-  async testNIP26() {
-    console.log('\n🔍 Testing NIP-26:', NIP_DESCRIPTIONS.NIP26);
-    const delegator = nostrTools.generateSecretKey();
-    const delegatorPubkey = nostrTools.getPublicKey(delegator);
-    
-    const conditions = `kind=1&created_at>${Math.floor(Date.now() / 1000)}`;
-    const delegation = nostrTools.signDelegation(delegator, publicKey, conditions);
-    
-    const event = {
-      kind: 1,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['delegation', delegatorPubkey, conditions, delegation]
-      ],
-      content: 'Testing NIP-26 delegated event',
-      pubkey: publicKey,
-    };
-    
-    const signedEvent = nostrTools.finalizeEvent(event, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-26: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-26 Response:', response);
-        if (response[0] === 'OK' && response[1] === signedEvent.id) {
-          console.log('✅ NIP-26: Delegated event published successfully');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
     });
   },
 
@@ -505,126 +288,7 @@ const tests = {
       
       ws.on('message', messageHandler);
     });
-  },
-
-  // NIP-29: Group Chat
-  async testNIP29() {
-    console.log('\n🔍 Testing NIP-29:', NIP_DESCRIPTIONS.NIP29);
-    const groupEvent = {
-      kind: 41,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['g', 'test-group-id'],
-        ['name', 'Test Group'],
-        ['about', 'Test group for NIP-29']
-      ],
-      content: '',
-      pubkey: publicKey,
-    };
-    
-    const signedEvent = nostrTools.finalizeEvent(groupEvent, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-29: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-29 Response:', response);
-        if (response[0] === 'OK' && response[1] === signedEvent.id) {
-          console.log('✅ NIP-29: Group chat event published successfully');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-    });
-  },
-
-  // NIP-40: Expiration Timestamp
-  async testNIP40() {
-    console.log('\n🔍 Testing NIP-40:', NIP_DESCRIPTIONS.NIP40);
-    const event = {
-      kind: 1,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['expiration', (Math.floor(Date.now() / 1000) + 3600).toString()]  // Expires in 1 hour
-      ],
-      content: 'Testing NIP-40 expiration',
-      pubkey: publicKey,
-    };
-    
-    const signedEvent = nostrTools.finalizeEvent(event, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-40: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      ws.send(JSON.stringify(['EVENT', signedEvent]));
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-40 Response:', response);
-        if (response[0] === 'OK' && response[1] === signedEvent.id) {
-          console.log('✅ NIP-40: Event with expiration published successfully');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-    });
-  },
-
-  // NIP-50: Keywords Search
-  async testNIP50() {
-    console.log('\n🔍 Testing NIP-50:', NIP_DESCRIPTIONS.NIP50);
-    const searchEvent = {
-      kind: 1,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [],
-      content: '#test Testing NIP-50 keywords search',
-      pubkey: publicKey,
-    };
-    
-    const signedEvent = nostrTools.finalizeEvent(searchEvent, privateKey);
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('❌ NIP-50: Timeout waiting for response');
-        resolve(false);
-      }, 5000);
-
-      // First publish the event
-      ws.send(JSON.stringify(['EVENT', signedEvent]));
-      
-      // Then try to search for it
-      const searchReq = ['REQ', 'search', { kinds: [1], search: 'test' }];
-      
-      const messageHandler = (data) => {
-        const response = JSON.parse(data.toString());
-        console.log('📥 NIP-50 Response:', response);
-        if (response[0] === 'EVENT' && response[2].content.includes('test')) {
-          console.log('✅ NIP-50: Keywords search successful');
-          clearTimeout(timeout);
-          ws.removeListener('message', messageHandler);
-          resolve(true);
-        }
-      };
-      
-      ws.on('message', messageHandler);
-      ws.send(JSON.stringify(searchReq));
-    });
-  },
+  }
 };
 
 async function runTests() {

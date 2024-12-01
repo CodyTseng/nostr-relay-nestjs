@@ -36,7 +36,7 @@ cp .env.example .env
 
 3. **Start PostgreSQL:**
 ```bash
-docker compose --profile dev up -d
+sudo service postgresql start
 ```
 
 4. **Run Migrations:**
@@ -122,10 +122,9 @@ For detailed security configuration, see our [Security Guide](docs/security.md).
 
 ### Prerequisites
 - Node.js (LTS version recommended)
-- Docker and Docker Compose
-- PostgreSQL 15 (if not using Docker)
+- PostgreSQL 15
 
-### Quick Start with Docker
+### Quick Start
 
 1. Clone the repository:
    ```bash
@@ -138,334 +137,66 @@ For detailed security configuration, see our [Security Guide](docs/security.md).
    cp .env.example .env
    ```
 
-3. Start PostgreSQL in development mode:
-   ```bash
-   docker compose --profile dev up -d
-   ```
-
-4. Install dependencies and run migrations:
+3. Install dependencies:
    ```bash
    npm install
+   ```
+
+4. Start PostgreSQL:
+   ```bash
+   sudo service postgresql start
+   ```
+
+5. Run migrations:
+   ```bash
    npx ts-node scripts/migrate-to-latest.ts
    ```
 
-5. Start the application:
+6. Start the application:
    ```bash
    npm run start
    ```
 
-## Deployment Guide
+## Deployment
 
-This section provides detailed instructions for deploying the relay on a production server (tested on Ubuntu/DigitalOcean).
+This project uses PM2 for process management in production. Here's how to deploy:
 
-### Prerequisites
-
-- Node.js (v18+)
-- PostgreSQL
-- Nginx
-- PM2 (`npm install -g pm2`)
-- Domain name with DNS configured
-
-### Step 1: Initial Setup
-
-1. Clone the repository:
+1. Ensure PM2 is installed globally:
 ```bash
-git clone https://github.com/HumanjavaEnterprises/nostr-relay-nestjs.git
-cd nostr-relay-nestjs
+npm install -g pm2
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Generate relay keys:
-```bash
-node generate-keys.js
-# Save the output - you'll need the public key for the .env file
-```
-
-### Step 2: Database Setup
-
-1. Install PostgreSQL:
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-```
-
-2. Create database and user:
-```bash
-sudo -u postgres psql
-
-CREATE DATABASE nostr_relay;
-CREATE USER nostr_relay WITH ENCRYPTED PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE nostr_relay TO nostr_relay;
-\q
-```
-
-### Step 3: Environment Configuration
-
-1. Create .env file:
-```bash
-cp example.env .env
-```
-
-2. Configure essential variables:
-```env
-# Database
-DATABASE_URL=postgresql://nostr_relay:your_password@localhost:5432/nostr_relay
-
-# Relay Configuration
-RELAY_NAME="Your Relay Name"
-RELAY_DESCRIPTION="Your relay description"
-RELAY_PUBKEY="your-public-key-from-generate-keys"
-MIN_POW_DIFFICULTY=1
-
-# Server Configuration
-PORT=3000
-HOST=127.0.0.1
-```
-
-### Step 4: Build and Deploy
-
-1. Build the application:
+2. Build the project:
 ```bash
 npm run build
 ```
 
-2. Set up PM2 for process management:
+3. Start the relay with PM2:
 ```bash
-pm2 start dist/src/main.js --name nostr-relay
-pm2 save
-pm2 startup
+pm2 start ecosystem.config.js
 ```
 
-### Step 5: Nginx Configuration
-
-1. Create Nginx configuration:
-```bash
-sudo nano /etc/nginx/sites-available/your-domain
-```
-
-2. Add the following configuration:
-```nginx
-# HTTP -> HTTPS redirect
-server {
-    listen 80;
-    listen [::]:80;
-    server_name your-domain.com;
-    
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-# Main HTTPS server
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    http2 on;
-    server_name your-domain.com;
-
-    # SSL Configuration
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-Frame-Options DENY;
-    add_header X-XSS-Protection "1; mode=block";
-
-    # WebSocket and HTTP proxy configuration
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket timeouts
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
-        proxy_buffering off;
-
-        # Allow large uploads
-        client_max_body_size 10M;
-    }
-}
-```
-
-3. Enable the configuration:
-```bash
-sudo ln -s /etc/nginx/sites-available/your-domain /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Step 6: SSL Certificate
-
-1. Install Certbot:
-```bash
-sudo apt install certbot python3-certbot-nginx
-```
-
-2. Obtain SSL certificate:
-```bash
-sudo certbot --nginx -d your-domain.com
-```
-
-### Common Issues and Troubleshooting
-
-1. **Port 3000 Already in Use**
-   - Check for existing processes: `lsof -i :3000`
-   - Kill conflicting process: `kill -9 <PID>`
-   - Ensure no systemd services are auto-starting: `systemctl list-units | grep nostr`
-
-2. **Database Connection Issues**
-   - Verify PostgreSQL is running: `systemctl status postgresql`
-   - Check connection string in .env
-   - Ensure database user has proper permissions
-
-3. **WebSocket Connection Failed**
-   - Verify Nginx configuration
-   - Check PM2 process status: `pm2 status`
-   - Review logs: `pm2 logs nostr-relay`
-
-### Monitoring and Maintenance
-
-1. View application logs:
-```bash
-pm2 logs nostr-relay
-```
-
-2. Monitor performance:
+4. Monitor the application:
 ```bash
 pm2 monit
 ```
 
-3. Check metrics:
+5. View logs:
 ```bash
-curl http://localhost:3000/metrics
+pm2 logs nostr-relay
 ```
 
-4. Restart the relay:
-```bash
-pm2 restart nostr-relay
-```
+### PM2 Commands
 
-### Adding to Public Directories
+- Restart the relay: `pm2 restart nostr-relay`
+- Stop the relay: `pm2 stop nostr-relay`
+- View status: `pm2 status`
+- Save current process list: `pm2 save`
+- Setup PM2 to start on system boot: `pm2 startup`
 
-Once your relay is running, consider adding it to public directories:
-- [nostr.watch](https://nostr.watch/add)
-- [nostr.info](https://nostr.info)
+For more PM2 commands, see the [PM2 documentation](https://pm2.keymetrics.io/docs/usage/quick-start/).
 
-Use your WebSocket URL: `wss://your-domain.com`
-
-## Production Deployment Guide
-
-### Key Generation and Security
-
-Before deploying the relay, you must generate a key pair for relay authentication:
-
-```bash
-# Generate keys using the provided script
-node scripts/generate-keys.js
-```
-
-The script will output:
-- A 64-character public key
-- A private key for authentication
-
-Important security notes:
-- Store the private key securely (e.g., password manager)
-- Never share or expose the private key
-- Add only the public key to your `.env` file
-- Verify the public key is exactly 64 characters
-
-### Environment Configuration
-
-Create a production `.env` file with these settings:
-
-```env
-# Required Core Settings
-DATABASE_URL=postgresql://user:password@localhost:5432/nostr_relay
-RELAY_PUBKEY=<your-64-character-public-key>
-
-# Server Configuration
-PORT=3000
-HOST=127.0.0.1
-
-# Performance Tuning
-MAX_SUBSCRIPTION_PER_CLIENT=20
-MAX_FILTERS_PER_SUBSCRIPTION=10
-MIN_POW_DIFFICULTY=0
-MAX_WS_PAGE_SIZE=100
-MAX_WS_RESPONSE_SIZE=1000
-MAX_WS_OUTGOING_RATE_LIMIT=3
-
-# Search Configuration
-MEILI_SEARCH_SYNC_EVENT_KINDS=0,1,30023,1984
-
-# Optional Web of Trust Settings
-WOT_TRUST_ANCHOR_PUBKEY=
-WOT_TRUST_DEPTH=
-WOT_FETCH_FOLLOW_LIST_FROM=
-```
-
-Performance recommendations:
-- Adjust `MAX_WS_PAGE_SIZE` based on your server capacity
-- Monitor `MAX_SUBSCRIPTION_PER_CLIENT` impact on memory usage
-- Set appropriate `MIN_POW_DIFFICULTY` for spam prevention
-
-### Systemd Service Configuration
-
-Create a systemd service file for automatic startup:
-
-```bash
-sudo nano /etc/systemd/system/nostr-relay.service
-```
-
-Add this content:
-```ini
-[Unit]
-Description=Nostr Relay Service
-After=network.target postgresql.service nginx.service
-Wants=postgresql.service nginx.service
-
-[Service]
-Type=simple
-User=root
-Group=root
-WorkingDirectory=/path/to/nostr-relay
-Environment=NODE_ENV=production
-Environment=PATH=/usr/bin:/usr/local/bin:/usr/local/node/bin
-
-ExecStart=/usr/bin/node dist/src/main.js
-
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-LogLevelMax=debug
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start the service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable nostr-relay
-sudo systemctl start nostr-relay
-```
-
-### Security with Fail2ban
+## Security with Fail2ban
 
 1. Install and configure fail2ban:
 ```bash
