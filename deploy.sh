@@ -1,6 +1,23 @@
 #!/bin/bash
 set -e
 
+# Safety check for script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ "$SCRIPT_DIR" == *"/nostr-relay-nestjs" ]]; then
+    echo -e "\n❌ \033[1;31mERROR: Deploy script cannot be run from within the project directory!\033[0m"
+    echo -e "\n⚠️  Please follow these steps:\n"
+    echo -e "1. Copy the deploy script to the parent directory:"
+    echo -e "   \033[1;36mcp deploy.sh ../deploy-nostr.sh\033[0m"
+    echo -e "\n2. Change to the parent directory:"
+    echo -e "   \033[1;36mcd ..\033[0m"
+    echo -e "\n3. Make the script executable:"
+    echo -e "   \033[1;36mchmod +x deploy-nostr.sh\033[0m"
+    echo -e "\n4. Run the deployment:"
+    echo -e "   \033[1;36m./deploy-nostr.sh\033[0m"
+    echo -e "\nFor more information, please read the deployment section in README.md\n"
+    exit 1
+fi
+
 # Configuration
 DEPLOY_DIR="/opt/maiqr-relay"
 PM2_NAME="nostr-relay"
