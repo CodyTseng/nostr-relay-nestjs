@@ -63,13 +63,15 @@ export class CustomWebSocketAdapter implements WebSocketAdapter {
         message = data; // Raw message, pass as is
       }
 
-      handlers.forEach(handler => {
-        try {
-          handler.message(message);
-        } catch (error) {
-          this.logger.error(`Error handling message: ${error}`);
-        }
-      });
+      try {
+        // Transform the message and pass it to all handlers
+        const transformed = transform(message);
+        handlers.forEach(handler => {
+          handler.callback(transformed);
+        });
+      } catch (error) {
+        this.logger.error(`Error handling message: ${error}`);
+      }
     });
 
     // Handle connection close
