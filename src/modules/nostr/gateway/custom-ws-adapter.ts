@@ -27,6 +27,7 @@ export interface EnhancedWebSocket extends WebSocket {
   _request?: IncomingMessage;
   _ip?: string;
   _setupComplete?: Promise<void>;
+  _ipSet?: boolean;
 }
 
 export class CustomWebSocketAdapter extends WsAdapter {
@@ -78,12 +79,13 @@ export class CustomWebSocketAdapter extends WsAdapter {
         
         // Store the IP directly on the websocket object
         ws._ip = ip;
+        ws._ipSet = true;
         
         this.logger.debug('WebSocket connection setup complete', {
           headers: req.headers,
           remoteAddress: req.socket?.remoteAddress,
           extractedIp: ip,
-          _ipSet: !!ws._ip
+          _ipSet: !!ws._ipSet
         });
         
         resolve();

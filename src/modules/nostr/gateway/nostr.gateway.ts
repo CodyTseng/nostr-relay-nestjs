@@ -52,6 +52,13 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await client._setupComplete;
       }
 
+      // Wait a tiny bit more if needed (max 100ms)
+      let attempts = 0;
+      while (!client._ipSet && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        attempts++;
+      }
+
       const ip = client._ip || 'unknown';
       this.logger.debug(`New WebSocket connection from IP: ${ip}`);
       this.nostrRelayService.handleConnection(client, ip);
