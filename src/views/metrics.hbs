@@ -7,9 +7,38 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
   <style>
+    :root {
+      --bg-color: #1a1a1a;
+      --text-color: #e0e0e0;
+      --grid-color: #333333;
+      --chart-colors: #4CAF50, #2196F3, #FFC107, #E91E63, #9C27B0;
+    }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
     .container {
       max-width: 800px;
       margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      color: var(--text-color);
+      border-bottom: 1px solid var(--grid-color);
+      padding-bottom: 10px;
+    }
+
+    canvas {
+      margin: 20px 0;
+      border-radius: 8px;
+      background-color: #222222;
+      padding: 10px;
     }
   </style>
 </head>
@@ -30,6 +59,11 @@
   </div>
 
   <script>
+    // Set Chart.js default styles for dark mode
+    Chart.defaults.color = '#e0e0e0';
+    Chart.defaults.borderColor = '#333333';
+    Chart.defaults.backgroundColor = '#222222';
+
     const connectionChart = document.getElementById('connection');
     const reqProcessingTimeChart = document.getElementById('reqProcessingTime');
     const eventProcessingTimeChart = document.getElementById('eventProcessingTime');
@@ -38,6 +72,16 @@
 
     const metrics = {{{json metrics}}};
     const labels = metrics.map(metric => dayjs(metric.timestamp).format('HH:mm'));
+    
+    // Dark mode chart colors
+    const colors = [
+      '#4CAF50', // Green
+      '#2196F3', // Blue
+      '#FFC107', // Amber
+      '#E91E63', // Pink
+      '#9C27B0'  // Purple
+    ];
+
     const chartOptions = {
       elements: {
         line: {
@@ -48,6 +92,25 @@
         intersect: false,
         axis: 'x'
       },
+      scales: {
+        x: {
+          grid: {
+            color: '#333333'
+          }
+        },
+        y: {
+          grid: {
+            color: '#333333'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#e0e0e0'
+          }
+        }
+      }
     };
 
     new Chart(connectionChart, {
@@ -58,9 +121,13 @@
           {
             label: 'Maximum concurrent online user count',
             data: metrics.map(metric => metric.maxConcurrentConnectionCount),
+            borderColor: colors[0],
+            backgroundColor: colors[0] + '33'
           }, {
             label: 'Connection count',
             data: metrics.map(metric => metric.connectionCount),
+            borderColor: colors[1],
+            backgroundColor: colors[1] + '33'
           }
         ]
       },
@@ -75,22 +142,32 @@
           {
             label: 'P50',
             data: metrics.map(metric => metric.reqProcessingTimes[0]),
+            borderColor: colors[0],
+            backgroundColor: colors[0] + '33'
           },
           {
             label: 'P75',
             data: metrics.map(metric => metric.reqProcessingTimes[1]),
+            borderColor: colors[1],
+            backgroundColor: colors[1] + '33'
           },
           {
             label: 'P90',
             data: metrics.map(metric => metric.reqProcessingTimes[2]),
+            borderColor: colors[2],
+            backgroundColor: colors[2] + '33'
           },
           {
             label: 'P95',
             data: metrics.map(metric => metric.reqProcessingTimes[3]),
+            borderColor: colors[3],
+            backgroundColor: colors[3] + '33'
           },
           {
             label: 'P99',
             data: metrics.map(metric => metric.reqProcessingTimes[4]),
+            borderColor: colors[4],
+            backgroundColor: colors[4] + '33'
           },
         ]
       },
@@ -105,22 +182,32 @@
           {
             label: 'P50',
             data: metrics.map(metric => metric.eventProcessingTimes[0]),
+            borderColor: colors[0],
+            backgroundColor: colors[0] + '33'
           },
           {
             label: 'P75',
             data: metrics.map(metric => metric.eventProcessingTimes[1]),
+            borderColor: colors[1],
+            backgroundColor: colors[1] + '33'
           },
           {
             label: 'P90',
             data: metrics.map(metric => metric.eventProcessingTimes[2]),
+            borderColor: colors[2],
+            backgroundColor: colors[2] + '33'
           },
           {
             label: 'P95',
             data: metrics.map(metric => metric.eventProcessingTimes[3]),
+            borderColor: colors[3],
+            backgroundColor: colors[3] + '33'
           },
           {
             label: 'P99',
             data: metrics.map(metric => metric.eventProcessingTimes[4]),
+            borderColor: colors[4],
+            backgroundColor: colors[4] + '33'
           },
         ]
       },
@@ -135,22 +222,32 @@
           {
             label: 'P50',
             data: metrics.map(metric => metric.authProcessingTimes[0]),
+            borderColor: colors[0],
+            backgroundColor: colors[0] + '33'
           },
           {
             label: 'P75',
             data: metrics.map(metric => metric.authProcessingTimes[1]),
+            borderColor: colors[1],
+            backgroundColor: colors[1] + '33'
           },
           {
             label: 'P90',
             data: metrics.map(metric => metric.authProcessingTimes[2]),
+            borderColor: colors[2],
+            backgroundColor: colors[2] + '33'
           },
           {
             label: 'P95',
             data: metrics.map(metric => metric.authProcessingTimes[3]),
+            borderColor: colors[3],
+            backgroundColor: colors[3] + '33'
           },
           {
             label: 'P99',
             data: metrics.map(metric => metric.authProcessingTimes[4]),
+            borderColor: colors[4],
+            backgroundColor: colors[4] + '33'
           },
         ]
       },
@@ -165,22 +262,32 @@
           {
             label: 'P50',
             data: metrics.map(metric => metric.closeProcessingTimes[0]),
+            borderColor: colors[0],
+            backgroundColor: colors[0] + '33'
           },
           {
             label: 'P75',
             data: metrics.map(metric => metric.closeProcessingTimes[1]),
+            borderColor: colors[1],
+            backgroundColor: colors[1] + '33'
           },
           {
             label: 'P90',
             data: metrics.map(metric => metric.closeProcessingTimes[2]),
+            borderColor: colors[2],
+            backgroundColor: colors[2] + '33'
           },
           {
             label: 'P95',
             data: metrics.map(metric => metric.closeProcessingTimes[3]),
+            borderColor: colors[3],
+            backgroundColor: colors[3] + '33'
           },
           {
             label: 'P99',
             data: metrics.map(metric => metric.closeProcessingTimes[4]),
+            borderColor: colors[4],
+            backgroundColor: colors[4] + '33'
           },
         ]
       },
