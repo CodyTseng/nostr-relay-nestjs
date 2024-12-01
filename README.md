@@ -15,6 +15,9 @@ A high-performance Nostr relay implementation powered by [NestJS](https://nestjs
 - [Troubleshooting Guide](docs/troubleshooting.md) - Common issues and solutions
 - [NIP-29 Guide](docs/nip-29.md) - Group chat implementation details
 - [Connection Handling](docs/CONNECTION_HANDLING.md) - WebSocket connection architecture and implementation details
+- [API Documentation](./docs/api.md)
+- [Development Guide](./docs/development.md)
+- [Working with AI](./docs/working_with_ai.md) - Best practices for AI-assisted development
 
 ## Quick Start
 

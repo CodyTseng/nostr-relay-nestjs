@@ -83,6 +83,35 @@
    - Ensure proper error handling
    - Verify type safety
 
+### File Management Best Practices
+
+1. **Tab Management**
+   - Close editor tabs after each edit is completed and committed
+   - This prevents accidental edits to old versions
+   - Helps maintain a clear context of what's being changed
+   - Reduces the risk of merge conflicts
+   - Ensures all changes are properly saved before git operations
+
+2. **File Saving**
+   - Always save files after making changes (Cmd+S / Ctrl+S)
+   - Verify changes are saved before git operations
+   - Check the IDE's "unsaved changes" indicators
+
+3. **Version Control Workflow**
+   - Save all files
+   - Stage changes with `git add`
+   - Commit with a descriptive message
+   - Push to remote repository
+   - Verify push was successful
+
+4. **Change Verification**
+   - Review changes in the IDE before saving
+   - Check git status before and after operations
+   - Verify logs after deployment
+   - Monitor for any unexpected behavior
+
+Remember: A clean workspace is a productive workspace. Keeping your editor tabs minimal and focused helps maintain clarity and prevents confusion during the development process.
+
 ### Documentation
 
 1. **Code Documentation**
