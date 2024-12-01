@@ -45,23 +45,29 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  async handleConnection(client: EnhancedWebSocket, context: any) {
+  async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
       let ip = 'unknown';
-      const request = client._request || context?.request || context?.req;
+      const request = client._request || context;
 
       this.logger.debug('Connection context:', {
         hasRequest: !!request,
         headers: request?.headers,
         remoteAddress: request?.socket?.remoteAddress,
         rawHeaders: request?.rawHeaders,
-        clientRequest: !!client._request
+        clientRequest: !!client._request,
+        contextHeaders: context?.headers
       });
 
-      if (request?.headers?.['x-real-ip']) {
-        ip = request.headers['x-real-ip'];
-      } else if (request?.headers?.['x-forwarded-for']) {
-        ip = request.headers['x-forwarded-for'].toString().split(',')[0].trim();
+      const realIp = request?.headers?.['x-real-ip'];
+      const forwardedFor = request?.headers?.['x-forwarded-for'];
+
+      if (realIp) {
+        ip = Array.isArray(realIp) ? realIp[0] : realIp;
+      } else if (forwardedFor) {
+        ip = Array.isArray(forwardedFor) 
+          ? forwardedFor[0].split(',')[0].trim()
+          : forwardedFor.split(',')[0].trim();
       } else if (request?.socket?.remoteAddress) {
         ip = request.socket.remoteAddress;
       }
