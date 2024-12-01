@@ -57,7 +57,7 @@ export class CustomWebSocketAdapter extends WsAdapter {
       this.logger.debug('WebSocket adapter starting connection setup');
       
       // Create a setup promise
-      const setupPromise = new Promise<void>((resolve) => {
+      ws._setupComplete = new Promise<void>((resolve) => {
         // Store the request on the socket for potential future use
         ws._request = req;
         (ws as any).upgradeReq = req;
@@ -85,17 +85,15 @@ export class CustomWebSocketAdapter extends WsAdapter {
           headers: req.headers,
           remoteAddress: req.socket?.remoteAddress,
           extractedIp: ip,
-          _ipSet: !!ws._ipSet
+          _ipSet: !!ws._ipSet,
+          _ip: ws._ip
         });
         
         resolve();
       });
 
-      // Store the setup promise on the websocket object
-      ws._setupComplete = setupPromise;
-
       // Wait for setup to complete
-      await setupPromise;
+      await ws._setupComplete;
     });
 
     return server;
