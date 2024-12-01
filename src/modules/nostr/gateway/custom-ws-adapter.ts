@@ -50,7 +50,10 @@ export class CustomWebSocketAdapter extends WsAdapter {
 
     // Handle connection event to attach request to socket
     this.wsServer.on('connection', (ws: EnhancedWebSocket, req: IncomingMessage) => {
+      // Store both the request and its headers directly on the socket
       ws._request = req;
+      (ws as any).upgradeReq = req;
+      
       this.logger.debug('WebSocket connection established', {
         headers: req.headers,
         remoteAddress: req.socket?.remoteAddress

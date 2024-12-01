@@ -48,27 +48,35 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
       let ip = 'unknown';
-      const request = client._request || context;
+      // Try multiple places where the request might be stored
+      const request = client._request || 
+                     (client as any).upgradeReq || 
+                     context;
 
       this.logger.debug('Connection context:', {
         hasRequest: !!request,
         headers: request?.headers,
         remoteAddress: request?.socket?.remoteAddress,
-        rawHeaders: request?.rawHeaders,
         clientRequest: !!client._request,
-        contextHeaders: context?.headers
+        upgradeReq: !!(client as any).upgradeReq,
+        contextExists: !!context
       });
 
-      const realIp = request?.headers?.['x-real-ip'];
-      const forwardedFor = request?.headers?.['x-forwarded-for'];
-
-      if (realIp) {
-        ip = Array.isArray(realIp) ? realIp[0] : realIp;
-      } else if (forwardedFor) {
-        ip = Array.isArray(forwardedFor) 
-          ? forwardedFor[0].split(',')[0].trim()
-          : forwardedFor.split(',')[0].trim();
-      } else if (request?.socket?.remoteAddress) {
+      // Get IP from headers first
+      if (request?.headers?.['x-real-ip']) {
+        ip = Array.isArray(request.headers['x-real-ip']) 
+          ? request.headers['x-real-ip'][0] 
+          : request.headers['x-real-ip'];
+      } 
+      // Fallback to x-forwarded-for
+      else if (request?.headers?.['x-forwarded-for']) {
+        const forwarded = request.headers['x-forwarded-for'];
+        ip = Array.isArray(forwarded)
+          ? forwarded[0].split(',')[0].trim()
+          : forwarded.split(',')[0].trim();
+      }
+      // Last resort: direct socket address
+      else if (request?.socket?.remoteAddress) {
         ip = request.socket.remoteAddress;
       }
 
