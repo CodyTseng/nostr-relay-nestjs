@@ -20,14 +20,18 @@ interface NostrMessage {
   data: any;
 }
 
+interface ConnectionState {
+  ip: string;
+  ipSet: boolean;
+  setupComplete: boolean;
+}
+
 export interface EnhancedWebSocket extends WebSocket {
   id?: string;
   authenticated?: boolean;
   pubkey?: string;
   _request?: IncomingMessage;
-  _ip?: string;
-  _setupComplete?: Promise<void>;
-  _ipSet?: boolean;
+  _connectionState: ConnectionState;
 }
 
 export class CustomWebSocketAdapter extends WsAdapter {
@@ -56,54 +60,40 @@ export class CustomWebSocketAdapter extends WsAdapter {
     this.wsServer.on('connection', async (ws: EnhancedWebSocket, req: IncomingMessage) => {
       this.logger.debug('WebSocket adapter starting connection setup');
       
-      // Create a setup promise
-      ws._setupComplete = new Promise<void>((resolve) => {
-        // Store the request on the socket for potential future use
-        ws._request = req;
-        (ws as any).upgradeReq = req;
-        
-        // Extract IP from headers
-        let ip = 'unknown';
-        if (req.headers['x-real-ip']) {
-          ip = Array.isArray(req.headers['x-real-ip'])
-            ? req.headers['x-real-ip'][0]
-            : req.headers['x-real-ip'];
-        } else if (req.headers['x-forwarded-for']) {
-          const forwarded = req.headers['x-forwarded-for'];
-          ip = Array.isArray(forwarded)
-            ? forwarded[0].split(',')[0].trim()
-            : forwarded.split(',')[0].trim();
-        } else if (req.socket?.remoteAddress) {
-          ip = req.socket.remoteAddress;
-        }
-        
-        // Store the IP directly on the websocket object
-        ws._ip = ip;
-        ws._ipSet = true;
-        
-        this.logger.debug('WebSocket connection setup complete', {
-          headers: req.headers,
-          remoteAddress: req.socket?.remoteAddress,
-          extractedIp: ip,
-          _ipSet: !!ws._ipSet,
-          _ip: ws._ip
-        });
+      // Initialize connection state
+      ws._connectionState = {
+        ip: 'unknown',
+        ipSet: false,
+        setupComplete: false
+      };
 
-        // Try setting it again after logging
-        this.logger.debug('Attempting to set IP again after logging');
-        ws._ip = ip;
-        ws._ipSet = true;
-        
-        this.logger.debug('IP set again', {
-          _ipSet: !!ws._ipSet,
-          _ip: ws._ip
-        });
-        
-        resolve();
+      // Store the request on the socket for potential future use
+      ws._request = req;
+      (ws as any).upgradeReq = req;
+      
+      // Extract IP from headers
+      if (req.headers['x-real-ip']) {
+        ws._connectionState.ip = Array.isArray(req.headers['x-real-ip'])
+          ? req.headers['x-real-ip'][0]
+          : req.headers['x-real-ip'];
+      } else if (req.headers['x-forwarded-for']) {
+        const forwarded = req.headers['x-forwarded-for'];
+        ws._connectionState.ip = Array.isArray(forwarded)
+          ? forwarded[0].split(',')[0].trim()
+          : forwarded.split(',')[0].trim();
+      } else if (req.socket?.remoteAddress) {
+        ws._connectionState.ip = req.socket.remoteAddress;
+      }
+      
+      // Mark as set and complete
+      ws._connectionState.ipSet = true;
+      ws._connectionState.setupComplete = true;
+      
+      this.logger.debug('WebSocket connection setup complete', {
+        headers: req.headers,
+        remoteAddress: req.socket?.remoteAddress,
+        connectionState: ws._connectionState
       });
-
-      // Wait for setup to complete
-      await ws._setupComplete;
     });
 
     return server;
