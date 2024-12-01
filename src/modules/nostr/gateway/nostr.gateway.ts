@@ -48,9 +48,9 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: EnhancedWebSocket, context: IncomingMessage) {
     try {
       this.logger.debug('Gateway handling connection', {
-        hasSetupComplete: !!client._setupComplete,
-        hasIpSet: !!client._ipSet,
-        currentIp: client._ip
+        _setupComplete: !!client._setupComplete,
+        _ipSet: !!client._ipSet,
+        _ip: client._ip
       });
 
       // Wait for the adapter setup to complete
@@ -64,15 +64,15 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await new Promise(resolve => setTimeout(resolve, 10));
         attempts++;
         this.logger.debug(`Waiting for IP (attempt ${attempts})`, {
-          hasIpSet: !!client._ipSet,
-          currentIp: client._ip
+          _ipSet: !!client._ipSet,
+          _ip: client._ip
         });
       }
 
       const ip = client._ip || 'unknown';
       this.logger.debug(`New WebSocket connection from IP: ${ip}`, {
-        finalIpSet: !!client._ipSet,
-        finalIp: client._ip,
+        _ipSet: !!client._ipSet,
+        _ip: client._ip,
         attempts
       });
       this.nostrRelayService.handleConnection(client, ip);
