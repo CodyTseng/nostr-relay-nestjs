@@ -49,37 +49,22 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       this.logger.debug('Gateway handling connection');
       
-      // Initialize state if needed
-      if (!client._connectionState) {
-        client._connectionState = {
-          ip: 'unknown',
-          ipSet: false,
-          setupComplete: false
-        };
+      // Extract IP from headers or socket
+      let ip = 'unknown';
+      if (context.headers['x-real-ip']) {
+        ip = Array.isArray(context.headers['x-real-ip'])
+          ? context.headers['x-real-ip'][0]
+          : context.headers['x-real-ip'];
+      } else if (context.headers['x-forwarded-for']) {
+        const forwarded = context.headers['x-forwarded-for'];
+        ip = Array.isArray(forwarded)
+          ? forwarded[0].split(',')[0].trim()
+          : forwarded.split(',')[0].trim();
+      } else if (context.socket?.remoteAddress) {
+        ip = context.socket.remoteAddress;
       }
 
-      // Log the current state
-      this.logger.debug('Connection state:', client._connectionState);
-
-      // Wait for the connection state to be ready
-      let attempts = 0;
-      const maxAttempts = 20; 
-      while (!client._connectionState?.setupComplete && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100)); 
-        attempts++;
-        
-        // Log each attempt
-        this.logger.debug(`Waiting for setup (attempt ${attempts})`, {
-          connectionState: client._connectionState
-        });
-      }
-
-      if (!client._connectionState?.setupComplete) {
-        throw new Error('Connection setup did not complete in time');
-      }
-
-      // Now we can safely use the connection state
-      const ip = client._connectionState.ip;
+      this.logger.debug(`Connection established from IP: ${ip}`);
       this.nostrRelayService.handleConnection(client, ip);
     } catch (error) {
       this.logger.error('Error handling connection');
