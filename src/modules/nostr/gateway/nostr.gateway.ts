@@ -50,6 +50,13 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
       let ip = 'unknown';
       const request = context?.request || context?.req;
 
+      this.logger.debug('Connection context:', {
+        hasRequest: !!request,
+        headers: request?.headers,
+        remoteAddress: request?.socket?.remoteAddress,
+        rawHeaders: request?.rawHeaders,
+      });
+
       if (request?.headers?.['x-real-ip']) {
         ip = request.headers['x-real-ip'];
       } else if (request?.headers?.['x-forwarded-for']) {
