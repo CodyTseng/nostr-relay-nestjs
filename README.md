@@ -50,6 +50,48 @@ Quick Deploy: [![Deploy on Railway](https://railway.app/button.svg)](https://rai
 - [Testing Guide](docs/testing.md) - Testing procedures and infrastructure
 - [Working with AI](docs/working_with_ai.md) - AI-assisted development
 
+## Deployment
+
+⚠️ **IMPORTANT DEPLOYMENT SAFETY NOTICE**
+
+The deployment process requires specific steps to ensure safe execution:
+
+1. **Prepare for Deployment:**
+   ```bash
+   # CRITICAL: Copy deploy script to parent directory first
+   cp deploy.sh ../deploy-nostr.sh
+   
+   # Move to parent directory
+   cd ..
+   
+   # Make script executable
+   chmod +x deploy-nostr.sh
+   ```
+
+2. **Execute Deployment:**
+   ```bash
+   # Run deployment from outside the project directory
+   ./deploy-nostr.sh
+   ```
+
+   > ⚠️ **WARNING**: Never run the deploy script from within the project directory!
+   > The deployment process removes and replaces the project directory,
+   > which could interrupt the script if run from within.
+
+3. **After Deployment:**
+   ```bash
+   # Optional: Remove the copied deploy script
+   rm deploy-nostr.sh
+   ```
+
+### Why These Steps Matter
+
+- **Safety**: Running from outside the target directory ensures the script continues executing even when the project directory is modified
+- **Reliability**: Prevents script interruption during critical deployment steps
+- **Security**: Maintains a clean deployment process with no self-copying scripts
+
+For detailed deployment configuration and options, see our [Deployment Guide](docs/deployment.md).
+
 ## Features
 
 ### NIPs Support Status
