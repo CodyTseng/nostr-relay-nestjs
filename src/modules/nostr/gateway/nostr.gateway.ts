@@ -48,10 +48,7 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: EnhancedWebSocket, context: any) {
     try {
       let ip = 'unknown';
-      // Try to get the request from various possible locations
-      const request = client._request || 
-                     context?.request || 
-                     context?.req;
+      const request = context?.request || context?.req;
 
       if (request?.headers?.['x-real-ip']) {
         ip = request.headers['x-real-ip'];
