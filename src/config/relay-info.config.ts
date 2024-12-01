@@ -10,5 +10,10 @@ export function relayInfoConfig(env: Environment) {
     software: packageJson.repository.url,
     version: packageJson.version,
     gitCommitSha: env.GIT_COMMIT_SHA,
+    propagateTo: env.RELAY_PROPAGATE_TO ?? [
+      'wss://relay.damus.io',
+      'wss://nos.lol',
+      'wss://nostr.wine'
+    ],
   };
 }

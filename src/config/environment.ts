@@ -40,6 +40,7 @@ export const EnvironmentSchema = z.object({
     .length(64)
     .optional(),
   RELAY_CONTACT: z.string().optional(),
+  RELAY_PROPAGATE_TO: arraySchema(z.string().url()).optional(),
 
   CREATED_AT_UPPER_LIMIT: z.number().int().positive().optional(),
   CREATED_AT_LOWER_LIMIT: z.number().int().positive().optional(),
