@@ -88,6 +88,16 @@ export class CustomWebSocketAdapter extends WsAdapter {
           _ipSet: !!ws._ipSet,
           _ip: ws._ip
         });
+
+        // Try setting it again after logging
+        this.logger.debug('Attempting to set IP again after logging');
+        ws._ip = ip;
+        ws._ipSet = true;
+        
+        this.logger.debug('IP set again', {
+          _ipSet: !!ws._ipSet,
+          _ip: ws._ip
+        });
         
         resolve();
       });
