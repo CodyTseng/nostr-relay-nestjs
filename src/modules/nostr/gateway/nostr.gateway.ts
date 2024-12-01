@@ -49,32 +49,42 @@ export class NostrGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       // Extract IP from headers directly
       let ip = 'unknown';
-      if (context.headers['x-real-ip']) {
-        ip = Array.isArray(context.headers['x-real-ip'])
-          ? context.headers['x-real-ip'][0]
-          : context.headers['x-real-ip'];
-      } else if (context.headers['x-forwarded-for']) {
-        const forwarded = context.headers['x-forwarded-for'];
-        ip = Array.isArray(forwarded)
-          ? forwarded[0].split(',')[0].trim()
-          : forwarded.split(',')[0].trim();
-      } else if (context.socket?.remoteAddress) {
-        ip = context.socket.remoteAddress;
+      
+      // Access headers from the client's _request property if context is undefined
+      const headers = context?.headers || client._request?.headers;
+      
+      if (headers) {
+        if (headers['x-real-ip']) {
+          ip = Array.isArray(headers['x-real-ip'])
+            ? headers['x-real-ip'][0]
+            : headers['x-real-ip'];
+        } else if (headers['x-forwarded-for']) {
+          const forwarded = headers['x-forwarded-for'];
+          ip = Array.isArray(forwarded)
+            ? forwarded[0].split(',')[0].trim()
+            : forwarded.split(',')[0].trim();
+        }
+      }
+      
+      // Fallback to socket remote address
+      if (ip === 'unknown' && client._request?.socket?.remoteAddress) {
+        ip = client._request.socket.remoteAddress;
       }
 
       // Store the IP on the client for future use
       client._ip = ip;
 
-      this.logger.debug('Connection context:', {
-        headers: context.headers,
-        remoteAddress: context.socket?.remoteAddress,
+      this.logger.debug('Connection established:', {
+        headers: headers,
+        remoteAddress: client._request?.socket?.remoteAddress,
         extractedIp: ip
       });
 
       this.logger.debug(`New WebSocket connection from IP: ${ip}`);
       this.nostrRelayService.handleConnection(client, ip);
     } catch (error) {
-      this.logger.error('Error handling connection', error);
+      this.logger.error('Error handling connection');
+      this.logger.error(error);
       this.nostrRelayService.handleConnection(client, 'unknown');
     }
   }
