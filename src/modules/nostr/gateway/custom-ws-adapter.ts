@@ -26,6 +26,7 @@ export interface EnhancedWebSocket extends WebSocket {
   pubkey?: string;
   _request?: IncomingMessage;
   _ip?: string;
+  _setupComplete?: Promise<void>;
 }
 
 export class CustomWebSocketAdapter extends WsAdapter {
@@ -51,37 +52,48 @@ export class CustomWebSocketAdapter extends WsAdapter {
     });
 
     // Handle connection event to attach request to socket
-    this.wsServer.on('connection', (ws: EnhancedWebSocket, req: IncomingMessage) => {
+    this.wsServer.on('connection', async (ws: EnhancedWebSocket, req: IncomingMessage) => {
       this.logger.debug('WebSocket adapter starting connection setup');
       
-      // Store the request on the socket for potential future use
-      ws._request = req;
-      (ws as any).upgradeReq = req;
-      
-      // Extract IP from headers
-      let ip = 'unknown';
-      if (req.headers['x-real-ip']) {
-        ip = Array.isArray(req.headers['x-real-ip'])
-          ? req.headers['x-real-ip'][0]
-          : req.headers['x-real-ip'];
-      } else if (req.headers['x-forwarded-for']) {
-        const forwarded = req.headers['x-forwarded-for'];
-        ip = Array.isArray(forwarded)
-          ? forwarded[0].split(',')[0].trim()
-          : forwarded.split(',')[0].trim();
-      } else if (req.socket?.remoteAddress) {
-        ip = req.socket.remoteAddress;
-      }
-      
-      // Store the IP directly on the websocket object
-      ws._ip = ip;
-      
-      this.logger.debug('WebSocket connection established', {
-        headers: req.headers,
-        remoteAddress: req.socket?.remoteAddress,
-        extractedIp: ip,
-        _ipSet: !!ws._ip
+      // Create a setup promise
+      const setupPromise = new Promise<void>((resolve) => {
+        // Store the request on the socket for potential future use
+        ws._request = req;
+        (ws as any).upgradeReq = req;
+        
+        // Extract IP from headers
+        let ip = 'unknown';
+        if (req.headers['x-real-ip']) {
+          ip = Array.isArray(req.headers['x-real-ip'])
+            ? req.headers['x-real-ip'][0]
+            : req.headers['x-real-ip'];
+        } else if (req.headers['x-forwarded-for']) {
+          const forwarded = req.headers['x-forwarded-for'];
+          ip = Array.isArray(forwarded)
+            ? forwarded[0].split(',')[0].trim()
+            : forwarded.split(',')[0].trim();
+        } else if (req.socket?.remoteAddress) {
+          ip = req.socket.remoteAddress;
+        }
+        
+        // Store the IP directly on the websocket object
+        ws._ip = ip;
+        
+        this.logger.debug('WebSocket connection setup complete', {
+          headers: req.headers,
+          remoteAddress: req.socket?.remoteAddress,
+          extractedIp: ip,
+          _ipSet: !!ws._ip
+        });
+        
+        resolve();
       });
+
+      // Store the setup promise on the websocket object
+      ws._setupComplete = setupPromise;
+
+      // Wait for setup to complete
+      await setupPromise;
     });
 
     return server;
