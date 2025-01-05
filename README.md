@@ -121,6 +121,40 @@ Start the server
 ```bash
 npm run start
 ```
+### Running as a systemd service
+It is best practice to not run services as root where possible. If you want to ignore that, remove the User and Group lines from the service file. Otherwise, start with creating a locked down user to run the service as
+
+```bash
+useradd --shell /bin/false nestjs
+usermod -L nestjs
+chown -R nestjs:nestjs /opt/nostr-relay-nestjs
+chmod g+s /opt/nostr-relay-nestjs
+```
+
+The last two lines assume you cloned the project to /opt/nostr-relay-nestjs, update them as needed.
+
+To create the service file, copy and paste the below to /etc/systemd/system/nostr-relay-nestjs.service
+
+```
+[Unit]
+Description=Nostr Relay Nestjs Service
+After=network.target
+
+[Service]
+User=nestjs
+Group=nestjs
+ExecStart=/usr/bin/npm run start
+WorkingDirectory=/opt/nostr-relay-nestjs
+Restart=always
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Run `sudo systemctl daemon-reload`
+
+Start, stop or check status with `systemctl start|stop|status nostr-relay-nestjs`
 
 ## Metrics
 
